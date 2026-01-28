@@ -19,6 +19,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
 <<<<<<< HEAD
+<<<<<<< HEAD
         'name',
         'email',
         'password',
@@ -30,6 +31,11 @@ class User extends Authenticatable
         'kelas',
         'role'
 >>>>>>> CrudUsers
+=======
+        'name',
+        'email',
+        'password',
+>>>>>>> 9e49eb1d5bd8dba657255b965419e2559044f188
     ];
 
     /**

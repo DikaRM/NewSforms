@@ -14,6 +14,9 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 9e49eb1d5bd8dba657255b965419e2559044f188
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
@@ -36,6 +39,7 @@ return new class extends Migration
             $table->longText('payload');
             $table->integer('last_activity')->index();
         });
+<<<<<<< HEAD
 =======
             $table->string('nama');
             $table->string('mapel')->nullable();
@@ -48,6 +52,8 @@ return new class extends Migration
 
         
 >>>>>>> CrudUsers
+=======
+>>>>>>> 9e49eb1d5bd8dba657255b965419e2559044f188
     }
 
     /**
@@ -57,9 +63,14 @@ return new class extends Migration
     {
         Schema::dropIfExists('users');
 <<<<<<< HEAD
+<<<<<<< HEAD
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
 =======
 >>>>>>> CrudUsers
+=======
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('sessions');
+>>>>>>> 9e49eb1d5bd8dba657255b965419e2559044f188
     }
 };
