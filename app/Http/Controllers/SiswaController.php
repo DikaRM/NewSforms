@@ -16,7 +16,7 @@ class SiswaController
     {
       $data = Siswa::all();
       $ire = Auth::user();
-      return view("admin.siswa.index",compact("data","ire"));
+      return view("siswa.index",compact("data","ire"));
     }
 
     /**

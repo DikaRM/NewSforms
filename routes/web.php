@@ -15,7 +15,7 @@ Route::get("/login",[App\Http\Controllers\UsersController::class,"index"]);
 Route::resource("/admin",AdminController::class);
 
 Route::post("/login/load",[App\Http\Controllers\UsersController::class,"login"])->name("users.store");
-
+Route::resource("/siswa",App\Http\Controllers\SiswaController::class);
 Route::post("/logout",[App\Http\Controllers\UsersController::class,"logout"])->name("users.logout");
 Route::resource("admin/siswa",SiswaController::class);
 
