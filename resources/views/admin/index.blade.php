@@ -8,8 +8,57 @@
   <link rel="stylesheet" href="bulma.min.css">
 </head>
 <body>
-  <h1 class="title">Welcome Your Admin</h1>
-  <button class="button is-info"  onclick="document.getElementById('modals').classList.add('is-active');">Tambah Users</button>
+  <div class="has-navbar-fixed-top">
+  <div class="panel is-light">
+    <div class="panel-heading ">
+    <div class="level is-mobile">
+    <div class="level-left">
+      @if($ire)
+  <h1 class="title">Welcome Your {{$ire->nama}}</h1>
+  @else
+  <h1 class="title">Welcome Dik</h1>
+  @endif
+    </div>
+    <div class="level-right">
+      <form action="{{route('users.logout')}}" method="post">
+        @csrf
+        
+        <button class="button is-danger mt-2" type="submit">Logout</button>
+      </form>
+    </div>
+  </div>
+    </div>
+    <div class="panel-tabs has-text-info">
+      <a href="" class="has-text-info">Users</a>
+      <a href="" class="panel-item">Ujian</a>
+      <a href="">Bank Soal</a>
+      <a href="">Laporan Hasil Ujian</a>
+      <a href="">Materi</a>
+      
+    </div>
+  </div>
+  </div>
+  <div class="level is-mobile">
+    <div class="level-left">
+      <form method="get">
+        <div class="select">
+        <select name="role" class="select" onchange="this.form.submit()">
+          <option value="">Sort Role</option>
+          <option value="siswa">Siswa</option>
+          <option value="guru">Guru</option>
+          <option value="pengawas">Pengawas</option>
+          <option value="admin-ops">Admin Operasional</option>
+          <option value="admin">Admin</option>
+          
+        </select>
+        </div>
+      </form>
+    </div>
+    <div class="level-right">
+       <button class="button is-info"  onclick="document.getElementById('modals').classList.add('is-active');">Tambah Users</button>
+    </div>
+  </div>
+ 
   <div class="modal" id="modals">
     <div class="modal-background"></div>
     <div class="modal-card">
@@ -31,27 +80,14 @@
               <input type="text" class="input" name="password" placeholder="Password">
             </div>
           </div>
-          <div class="field">
-            <div class="control">
-              <input type="text" class="input" name="no_id" placeholder="Nomor Identitas Anda">
-            </div>
-          </div>
             <div class="field">
-            <div class="control">
+            <div class="select">
               <select name="role" id="role">
                 <option>Pilih Role Ini</option>
-                <option value="siswa">Siswa</option>
-                <option value="guru">Guru</option>
-                <option value="pengawas">Pengawas</option>
+                <option value="admin-ops">Admin Operasional</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
-          </div>
-          <div class="field" >
-            <input type="text" class="input" name="mapel" id="mapel" placeholder="Mata Pelajaran Guru">
-          </div>
-          <div class="field" >
-            <input type="text" class="input" name="kelas" id="kelas" placeholder="Kelas :">
           </div>
       </section>
       <footer class="modal-card-foot">
@@ -69,7 +105,6 @@
         <td>id</td>
         <td>Nama Lengkap</td>
         <td>Role</td>
-        <td>No Identitas</td>
         <td>Aksi</td>
       </tr>
     </thead>
@@ -79,7 +114,6 @@
         <td>{{$d->id}}</td>
         <td>{{$d->nama}}</td>
         <td>{{$d->role}}</td>
-        <td>{{$d->no_id}}</td>
         <td class="buttons">
           <form action="{{route('admin.destroy',$d->id)}}" method="post">
             @csrf
@@ -111,25 +145,6 @@
                   <input type="text" name="role" class="input" value="{{$d->role}}">
                 </div>
               </div>
-              <div class="field">
-                <div class="control">
-                  <input type="text" name="no_id" class="input" value="{{$d->no_id}}">
-            @if($d->role == "siswa")
-              <div class="field">
-                <div class="control">
-                  <input type="text" class="input" value="{{$d->kelas}}">
-                </div>
-              </div>
-                </div>
-              </div>
-            @else
-            <div class="field">
-                <div class="control">
-                  <input type="text" class="input" value="{{$d->mapel}}" name="mapel">
-                </div>
-              </div>
-            @endif
-          
           </section>
           <footer class="modal-card-foot">
             <div class="buttons">
@@ -143,20 +158,28 @@
       @endforeach
     </tbody>
   </table>
+  <nav class="navbar has-navbar-fixed-top has-text-centered">
+    <h5 class="title">By Dika</h5>
+  </nav>
   <script>
     const kelas = document.getElementById("kelas");
-    const mapel = document.getElementById("mapel");
+    const nip = document.getElementById("nip");
+    const nisn = document.getElementById("nisn");
     kelas.style.display="none"
-    mapel.style.display="none"
+    nip.style.display="none"
+    nisn.style.display="none"
+    
     const role = document.getElementById("role");
     role.onchange = () => {
       if(role.value == "siswa"){
         kelas.style.display="block"
-        mapel.style.display="none"
+        nisn.style.display="block"
+        nip.style.display="none"
       }
       else if(role.value == "guru"){
-        mapel.style.display="block"
+        nip.style.display="block"
         kelas.style.display="none"
+        nisn.style.display="none"
       }
     }
   </script>
