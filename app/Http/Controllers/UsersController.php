@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 use App\Models\User;
-use Ilumminate\Http\Request;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+
 class UsersController
 {
     public function index()
@@ -15,9 +17,10 @@ class UsersController
       $request->validate([
         "nama" => "required",
         "password" =>"required",
-        "no_id" => "required"
+        
         ]);
-        if(Auth::attempt($request->only("nama","password","no_id"))){
+        $pass = Hash::make($request->password);
+        if(Auth::attempt($request->only("nama","password"))){
           $request->session()->regenerate();
           $user = Auth::user();
           switch ($user->role){
@@ -36,5 +39,11 @@ class UsersController
               return redirect("/login");
           }
         }
+    }
+    public function logout(Request $request){
+      Auth::logout();
+      $request->session->invalidate();
+      $request->session->regenerateToken();
+      return redirect("/login");
     }
 }

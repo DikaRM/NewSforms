@@ -1,22 +1,36 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 9e49eb1d5bd8dba657255b965419e2559044f188
+
 
 Route::get('/', function () {
     return view('welcome');
 });
-<<<<<<< HEAD
-=======
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\SiswaController;
 Route::get('/', function () {
     return view('welcome');
 });
 Route::get("/login",[App\Http\Controllers\UsersController::class,"index"]);
 Route::resource("/admin",AdminController::class);
->>>>>>> CrudUsers
-=======
->>>>>>> 9e49eb1d5bd8dba657255b965419e2559044f188
+
+Route::post("/login/load",[App\Http\Controllers\UsersController::class,"login"])->name("users.store");
+
+Route::post("/logout",[App\Http\Controllers\UsersController::class,"logout"])->name("users.logout");
+Route::resource("admin/siswa",SiswaController::class);
+
+  Route::resource("/admin-guru",App\Http\Controllers\GuruController::class);
+  Route::resource("/admin-siswa",App\Http\Controllers\SiswaController::class);
+Route::get("/guru",[App\Http\Controllers\GuruController::class,"TeachIndex"])->name("guru.index");
+Route::post("/guru",[App\Http\Controllers\GuruController::class,"CreateUjian"])->name("guru.store");
+Route::get("/admin-kelas",[AdminController::class,"KelasIndex"])->name("admin.kelas");
+Route::post("/admin-kelas",[AdminController::class,"KelasCreate"])->name("admin.tambah");
+Route::put("/admin-kelas/{id}",[AdminController::class,"KelasUpdate"])->name("admin.date");
+Route::delete("/admin-kelas/{id}",[AdminController::class,"KelasDestroy"])->name("admin.let");
+Route::post("/admin-kelas/{id}",[AdminController::class,"AddSiswa"])->name("admin.ade");
+Route::get("/admin-mapel",[AdminController::class,"MapelIndex"])->name("admin.mapel");
+Route::post("/admin-mapel/buat",[AdminController::class,"Made"])->name("admin.made");
+Route::put("/admin-mapel/{id}",[AdminController::class,"MapelUpdate"])->name("admin.deat");
+Route::delete("/admin-mapel/{id}",[AdminController::class,"MapelDestroy"])->name("admin.letroy");
+Route::post("/admin-mapel",[AdminController::class,"AddGuru"])->name("admin.built");
+?>
