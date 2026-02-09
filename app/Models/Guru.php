@@ -14,6 +14,13 @@ class Guru extends Authenticatable
         'nama',
         'nip',
     ];
-    
+    public function mapels(){
+      return $this->belongsToMany(Mapel::class,"
+      Guru_Mapel,
+      guru_id,
+      mapel_id,
+      id
+      ");
+    }
 
 }

@@ -143,12 +143,12 @@ table th{
     <!-- Header -->
     <div class="header">
         <h3>Dashboard Siswa</h3>
-        <p>Selamat datang, <strong>Nama Siswa</strong></p>
+        <p>Selamat datang, <strong>{{$ire->nama}}</strong></p>
     </div>
 
     <!-- Ujian Hari Ini -->
     <div class="section">
-        <h4>📝 Ujian Hari Ini</h4>
+        <h4>Ujian Hari Ini</h4>
 
         <div class="exam">
             <div>

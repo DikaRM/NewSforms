@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Siswa;
 use App\Models\User;
+use App\Models\Ujian;
+use App\Models\Kelas;
+use App\Models\SiswaKelas;
 class SiswaController
 {
     /**
@@ -14,9 +17,10 @@ class SiswaController
      */
     public function index()
     {
-      $data = Siswa::all();
+      $data = Siswa::with("kelas")->get();
       $ire = Auth::user();
-      return view("siswa.index",compact("data","ire"));
+      $kelas = Kelas::all();
+      return view("admin.siswa.index",compact("data","ire","kelas"));
     }
 
     /**
@@ -39,11 +43,17 @@ class SiswaController
         "role" => "siswa",
         ]);
         $us = User::where("nama",$request->nama)->first();
-      Siswa::create([
+      $sis = Siswa::create([
         "user_id" => $us->id,
         "nama" => $request->nama,
         "nisn" => $request->nisn,
+        'kelas_id' => $request->kelas_id,
         ]);
+        if($request->has("kelas_id")){
+          $kels = Kelas::find($request->kelas_id);
+          $sis->kelas()->associate($kels);
+          $sis->save();
+        }
         return redirect()->route("admin-siswa.index")->with("success","Berhasil Mantap!");
     }
 
@@ -69,24 +79,39 @@ class SiswaController
     public function update(Request $request, string $id)
     {
       $siswa = Siswa::findOrFail($id);
+      $usd = User::findOrFail($siswa->user_id);
+      $usd->nama = $request->nama;
+      if($request->filled("password")){
+      $usd->password = Hash::make($request->password);
+      }
+      $usd->save();
         $request->validate([
-          "user_id" => "required",
           "nama" => "required",
           "nisn" => "required",
+          "password" => "required",
+          
           ]);
-        $siswa->update($request->all());
+          $siswa->nama = $request->nama;
+          $siswa->nisn = $request->nisn;
+        $siswa->save();
         return redirect()->route("admin-siswa.index");
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Siswa $admin_siswa)
     {
-        $siswa = Siswa::findOrFail($id);
-        $siswa->delete();
+        $admin_siswa->delete();
         return redirect()->route("admin-siswa.index");
     }
-    
+    public function Siswas()
+    {
+      $ire = Auth::user();
+      $data = Siswa::where("nama",$ire->nama)->first();
+      $uhs = SiswaKelas::where("siswa_id",$data->id)->first();
+      $uji = Ujian::find($uhs->kelas_id);
+      return view("siswa.index",compact("ire","data"));
+    }
     
 }

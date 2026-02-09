@@ -10,7 +10,6 @@ use App\Models\Guru;
 use App\Models\Pengawas;
 use App\Models\Kelas;
 use App\Models\GuruMapel;
-use App\Models\SiswaKelas;
 use App\Models\Mapel;
 
 class AdminController
@@ -116,9 +115,7 @@ class AdminController
     {
       $ire = Auth::user();
       $dat = Kelas::all();
-      $siswa = Siswa::all();
-      $dt = SiswaKelas::all();
-      return view("admin.kelas",compact("dat","ire","siswa","dt"));
+      $siswa = Siswa::all();return view("admin.kelas",compact("dat","ire","siswa",));
     }
     public function KelasCreate(Request $request)
     {

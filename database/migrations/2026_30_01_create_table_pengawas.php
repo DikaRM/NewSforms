@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('nama');
             $table->string('nip');
             $table->timestamps();
+            
+            $table->foreign("guru_id")->references("id")->on("guru")->onDelete("cascade");
         });
 
         

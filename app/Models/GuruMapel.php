@@ -13,6 +13,14 @@ class GuruMapel extends Authenticatable
       'mapel_id',
       'guru_id',
     ];
+    public function guru()
+    {
+      return $this->belongsToMany(Siswa::class);
+    }
+    public function mapel()
+    {
+      return $this->belongsTo(Mapel::class);
+    }
 
 
 }

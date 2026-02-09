@@ -8,6 +8,11 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Guru;
 use App\Models\User;
 use App\Models\Ujian;
+use App\Models\Kelas;
+use App\Models\Mapel;
+use App\Models\banksoal ;
+use App\Models\GuruMapel;
+use App\Models\Ujian_soals;
 class GuruController
 {
     /**
@@ -99,15 +104,19 @@ class GuruController
       $ire = Auth::user();
       $dt = Guru::where("nama",$ire->nama)->first();
       $uji = Ujian::all();
-      return view("guru.index",compact("ire","uji","dt"));
+      $klas = Kelas::all();
+      $sd = Guru::all();
+      $kop = GuruMapel::all();
+      $map = Mapel::all();
+      return view("guru.index",compact("ire","uji","dt","klas","map"));
     }
     public function CreateUjian(Request $request)
     {
-      
+      $es = Guru::where("nama",$request->nama)->first();
       Ujian::create([
-        "mapel_id" => $request->mapel_id,
+        "mapel" => $request->mapel_id,
         "kelas_id" => $request->kelas_id,
-        "guru_id" => $request->kelas_id,
+        "guru_id" => $es->id,
         "nama_ujian" => $request->nama_ujian,
         "waktu_mulai" => $request->waktu_mulai,
         "waktu_selesai" => $request->waktu_selesai,
@@ -121,8 +130,53 @@ class GuruController
       
       return view("guru.test",compact("ire","dt","uji","qs"));
     }
-    public function CreateSoal(Request $request)
+    public function CreateSoal(Request $request,$id)
     {
-      //
+      $uji = Ujian::find($id);
+      $fu = Ujian_soals::find($uji->id);
+      $gurus = Guru::find($uji->guru_id);
+      $mapel = Mapel::find($uji->mapel);
+      $bak = banksoal::where("guru_id",$uji->guru_id)->get();
+      return view("guru.create",compact("uji","gurus","bak","mapel","fu"));
+    }
+    public function rheina(Request $request)
+    {
+      $request->validate([
+        "soal" => "required",
+        "guru_id" => "required",
+        "mapel_id" => "required",
+        "jawaban_benar" => "required",
+        "opsi_a" => "nullable",
+        "opsi_b" => "nullable",
+        "opsi_c" => "nullable",
+        "opsi_d" => "nullable",
+        ]);
+        $bn = banksoal::where("guru_id",$request->guru_id)->latest();
+        $soal = banksoal::create($request->all());
+        $idea = $soal->id;
+        Ujian_soals::create([
+          "ujian_id" => $request->ujian_id,
+          "bank_id" => $idea,
+          ]);
+          return redirect()->route("guru.create",['id' => $request->ujian_id]);
+          return redirect()->route("guru.create",['id' => $request->ujian_id]);
+    }
+    public function bowl($id)
+    {
+      $ujian = Ujian::find($id);
+      #'$ju = Ujian_soals::find($id2); 
+      $ujian->delete();
+      #if($ju){
+      #$ju->delete();
+      #dd("Halo");
+      #}
+      return redirect()->route("guru.create",['id' => $id]);
+    }
+    public function def($id)
+    {
+      $ujia = Ujian::find($id);
+      $ujia->update([
+        "status" => "ready"]);
+      return redirect()->route("guru.index");
     }
 }

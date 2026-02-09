@@ -47,7 +47,8 @@
                <select name="ids" id="ids">
                  <option value="">Pilih Guru</option>
                  @foreach($guru as $gu)
-                 <option value="{{$gu->id}}">{{$gu->nama}}</option>
+                 <option value="{{$gu->id}}">{{$gu->
+                 nama}}</option>
                  
                </select>
               </div>
@@ -116,6 +117,7 @@
       </div>
     </div>
    
+    @endforeach
     @endforeach
   </tbody>
 </table>

@@ -24,6 +24,9 @@ return new class extends Migration
             $table->timestamp('jawaban_benar')->nullable();
             
             $table->timestamps();
+            $table->foreign("mapel_id")->references("id")->on("mapel")->onDelete("cascade");
+            
+            $table->foreign("guru_id")->references("id")->on("guru")->onDelete("cascade");
         });
 
         

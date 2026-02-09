@@ -18,6 +18,12 @@ return new class extends Migration
             $table->string('pengawas_id');
             $table->string('catatan');
             $table->timestamps();
+            
+            $table->foreign("siswa_id")->references("id_siswa")->on("siswa")->onDelete("cascade");
+            
+            $table->foreign("ujian_id")->references("id")->on("ujian")->onDelete("cascade");
+            
+            $table->foreign("pengawas_id")->references("id")->on("pengawas")->onDelete("cascade");
         });
 
         

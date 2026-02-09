@@ -17,4 +17,13 @@ class banksoal extends Model
       "opsi_d",
       "jawaban_benar",
       ];
+      public function guru()
+    {
+      return $this->belongsTo(Siswa::class);
+    }
+    
+    public function mapel()
+    {
+      return $this->belongsTo(Mapel::class);
+    }
 }

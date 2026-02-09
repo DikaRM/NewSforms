@@ -17,6 +17,12 @@ return new class extends Migration
             $table->string('siswa_id');
             $table->string('jenis_pelanggaran');
             $table->timestamps("waktu");
+            
+            
+            $table->foreign("ujian_id")->references("id")->on("ujian")->onDelete("cascade");
+            
+            $table->foreign("siswa_id")->references("id")->on("siswa")->onDelete("cascade");
+            
         });
 
         

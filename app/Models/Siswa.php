@@ -9,12 +9,17 @@ class Siswa extends Authenticatable
 {
     use HasFactory, Notifiable;
     protected $table = "siswa";
+    protected $primaryKey = "id_siswa";
+    public $incrementing = true;
     protected $fillable = [
         'user_id',
         'nama',
         'nisn',
-        'kelas',
+        'kelas_id'
     ];
-
+    public function kelas()
+{
+ return $this->belongsTo(Kelas::class);
+}
 
 }

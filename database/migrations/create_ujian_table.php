@@ -22,6 +22,10 @@ return new class extends Migration
             $table->date("durasi");
             $table->string("status");
             $table->timestamps();
+            
+            $table->foreign("guru_id")->references("id")->on("guru")->onDelete("cascade");
+            $table->foreign("mapel")->references("id")->on("mapel")->onDelete("cascade");
+            $table->foreign("kelas_id")->references("id")->on("kelas")->onDelete("cascade");
         });
 
         

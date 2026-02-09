@@ -16,6 +16,9 @@ return new class extends Migration
             $table->string('guru_id');
             $table->string('mapel_id');
             $table->timestamps();
+            
+            $table->foreign("guru_id")->references("id")->on("guru")->onDelete("cascade");
+            $table->foreign("mapel_id")->references("id")->on("mapel")->onDelete("cascade");
         });
 
         
