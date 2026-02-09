@@ -12,6 +12,10 @@ class Kelas extends Authenticatable
     protected $fillable = [
         'nama_kelas',
     ];
+public function siswa()
+{
+ return $this->HasMany(Siswa::class);
+}
 
 
 }

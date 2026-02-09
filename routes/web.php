@@ -15,14 +15,19 @@ Route::get("/login",[App\Http\Controllers\UsersController::class,"index"]);
 Route::resource("/admin",AdminController::class);
 
 Route::post("/login/load",[App\Http\Controllers\UsersController::class,"login"])->name("users.store");
-Route::resource("/siswa",App\Http\Controllers\SiswaController::class);
+Route::resource("/admin-siswa",App\Http\Controllers\SiswaController::class);
+Route::get("/siswa",[App\Http\Controllers\SiswaController::class,"Siswas"])->name("siswa.index");
 Route::post("/logout",[App\Http\Controllers\UsersController::class,"logout"])->name("users.logout");
 Route::resource("admin/siswa",SiswaController::class);
 
   Route::resource("/admin-guru",App\Http\Controllers\GuruController::class);
   Route::resource("/admin-siswa",App\Http\Controllers\SiswaController::class);
 Route::get("/guru",[App\Http\Controllers\GuruController::class,"TeachIndex"])->name("guru.index");
+Route::post("/guru/create-soal",[App\Http\Controllers\GuruController::class,"rheina"])->name("soal.save");
+Route::delete("/guru/create-soal/pus/{id}",[App\Http\Controllers\GuruController::class,"bowl"])->name("soal.destroy");
 Route::post("/guru",[App\Http\Controllers\GuruController::class,"CreateUjian"])->name("guru.store");
+Route::get("/guru/create-soal/{id}",[App\Http\Controllers\GuruController::class,"CreateSoal"])->name("guru.create");
+Route::put("/guru/save/{id}",[App\Http\Controllers\GuruController::class,"def"])->name("ujian.sold");
 Route::get("/admin-kelas",[AdminController::class,"KelasIndex"])->name("admin.kelas");
 Route::post("/admin-kelas",[AdminController::class,"KelasCreate"])->name("admin.tambah");
 Route::put("/admin-kelas/{id}",[AdminController::class,"KelasUpdate"])->name("admin.date");

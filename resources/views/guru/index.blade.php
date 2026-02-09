@@ -73,6 +73,9 @@
            <div class="select">
              <select name="mapel_id" id="mapel_id">
                <option value="">Pilih Mapel Anda</option>
+               @foreach($map as $mp)
+               <option value="{{$mp->id}}">{{$mp->nama_mapel}}</option>
+               @endforeach
              </select>
            </div>
          </div>
@@ -82,6 +85,9 @@
            <div class="select">
              <select name="kelas_id" id="kelas_id">
                <option value="">Kelas</option>
+               @foreach($klas as $kl)
+               <option value="{{$kl->id}}">{{$kl->nama_kelas}}</option>
+               @endforeach
              </select>
            </div>
          </div>
@@ -89,7 +95,7 @@
          </div>
          
          
-         <input type="text" class="input" value="{{$ire->nama}}" readonly>
+         <input type="text" class="input" name="nama" value="{{$ire->nama}}" readonly>
          <label for="" class="label">Nama Ujian</label>
          <div class="field">
            <div class="control">
@@ -118,11 +124,26 @@
     <div class="message-header">
       <h5>{{$uj->nama_ujian}}</h5>
       
-c c    </div>
+   </div>
     <div class="message-body">
       {{$uj->durasi}} <br>
-      {{$uj->waktu_mulai}} - {{$uj->waktu->selesai}} <br>
+      {{$uj->waktu_mulai}} - {{$uj->waktu_selesai}} <br>
+      {{$uj->id}} <br>
       
+    </div>
+    <div class="buttons">
+      <form action="" method="post">
+        @csrf
+        @method("DELETE")
+        <button type="submit" class="button is-danger">DELETE</button>
+      </form>
+      
+        <a class="button is-primary" href="{{route('guru.create',$uj->id)}}">Manage</a>
+        @if($uj->status === "draft")
+        <button class="button is-info">Publish</button>
+        @else
+        <h5 class="title">Tersedia</h5>
+        @endif
     </div>
   </div>
   @endforeach

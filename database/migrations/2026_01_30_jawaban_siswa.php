@@ -20,6 +20,10 @@ return new class extends Migration
             $table->string('jawaban');
             $table->boolean("benar");
             $table->timestamps();
+                
+            $table->foreign("siswa_id")->references("id_siswa")->on("siswa")->onDelete("cascade");
+            $table->foreign("ujian_id")->references("id_ujian")->on("ujian")->onDelete("cascade");
+            $table->foreign("bank_id")->references("id")->on("bank")->onDelete("cascade");
         });
 
         

@@ -5,24 +5,28 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class Peserta_ujian extends Authenticatable
+class Berita extends Authenticatable
 {
     use HasFactory, Notifiable;
-    protected $table = "ujian_peserta";
+    protected $table = "berita";
     protected $fillable = [
         'siswa_id',
         'ujian_id',
-        'status',
+        'pengawas_id',
+        'catatan',
     ];
-    
     public function siswa()
-    {
-      return $this->belongsTo(Siswa::class);
-    }
-    public function guru()
-    {
-      return $this->belongsTo(Guru::class);
-    }
+{
+ return $this->belongsTo(Siswa::class);
+}
+public function ujian()
+{
+ return $this->belongsTo(Ujian::class);
+}
+public function pengawas()
+{
+ return $this->belongsTo(Pengawas::class);
+}
 
 
 }

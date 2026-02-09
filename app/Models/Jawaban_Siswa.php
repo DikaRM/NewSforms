@@ -15,6 +15,13 @@ class Jawaban_siswa extends Authenticatable
         'jawaban',
         'benar',
     ];
-
+    public function ujian()
+    {
+      return $this->belongsTo(Ujian::class);
+    }
+    public function bank()
+    {
+      return $this->belongsTo(banksoal::class);
+    }
 
 }

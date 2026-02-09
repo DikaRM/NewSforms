@@ -13,6 +13,10 @@ class Mapel extends Authenticatable
     protected $fillable = [
         'nama_mapel',
     ];
+    public function guru()
+    {
+      return $this->HasMany(Guru::class);
+    }
 
 
 }

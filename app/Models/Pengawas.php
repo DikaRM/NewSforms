@@ -14,6 +14,8 @@ class Pengawas extends Authenticatable
         'nama',
         'nip',
     ];
-
-
+    public function guru()
+    {
+      return $this->belongsTo(Guru::class);
+    }
 }

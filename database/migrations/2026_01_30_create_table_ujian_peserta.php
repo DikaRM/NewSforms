@@ -17,6 +17,10 @@ return new class extends Migration
             $table->string('ujian_id');
             $table->string('status');
             $table->timestamps();
+            
+            $table->foreign("siswa_id")->references("id_siswa")->on("siswa")->onDelete("cascade");
+            
+            $table->foreign("ujian_id")->references("id")->on("ujian")->onDelete("cascade");
         });
 
         

@@ -2,7 +2,7 @@
 @section("content")
 <button class="button is-info"  onclick="document.getElementById('modals').classList.add('is-active')">Tambah Guru</button>
 @if(session("succes"))
-<div class="notification is-info">
+<div class="notification is-info is-light">
   <div class="content">
     {{session("succes")}}
   </div>
@@ -61,7 +61,7 @@
       <td>{{$s->nama}}</td>
       <td>{{$s->nip}}</td>
       <td>
-        <button class="button is-warning" onclick="document.getElementById('modd{{$s->id}}').classList.add('is-active')">Edit</button>
+        <button class="button is-warning" onclick="document.getElementById('modd{{$s->user_id}}').classList.add('is-active')">Edit</button>
         <form action="{{route('admin-guru.destroy',$s->id)}}" method="post">
           @csrf
           @method("DELETE")
@@ -70,7 +70,7 @@
         
       </td>
     </tr>
-    <div class="modal" id="modd{{$s->id}}">
+    <div class="modal" id="modd{{$s->user_id}}">
       <div class="modal-background"></div>
       <div class="modal-card">
         <header class="modal-card-head">
