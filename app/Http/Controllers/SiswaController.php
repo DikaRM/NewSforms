@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\Siswa;
 use App\Models\User;
 use App\Models\Ujian;
 use App\Models\Kelas;
-use App\Models\SiswaKelas;
+use App\Models\banksoal;
+use App\Models\Ujian_soals;
+use App\Models\Jawaban_Siswa;
 class SiswaController
 {
     /**
@@ -108,10 +111,25 @@ class SiswaController
     public function Siswas()
     {
       $ire = Auth::user();
-      $data = Siswa::where("nama",$ire->nama)->first();
-      $uhs = SiswaKelas::where("siswa_id",$data->id)->first();
-      $uji = Ujian::find($uhs->kelas_id);
-      return view("siswa.index",compact("ire","data"));
+      $data = Siswa::with("kelas")->where("nama",$ire->nama)->first();
+      $uji = Ujian::where("kelas_id",$data->kelas->id)->get();
+      return view("siswa.index",compact("ire","data","uji"));
+    }
+    public function Starts($id)
+    {
+      $ire = Auth::user();
+      $uji = Ujian::with("mapels")->where("id",$id)->first();
+      $ujians = Ujian_soals::where("ujian_id",$uji->id)->get();
+      $sis = Siswa::with("kelas")->where("nama",$ire->nama)->first();
+      $soal = banksoal::all();
+      return view("siswa.ujian",compact("uji","soal","ire","sis","ujians"));
+    }
+    public function saved(Request $request){
+      $request-validate([
+        "jawaban" => "required|array"
+        ]);
+      
+      return redirect()->route("siswa.index");
     }
     
 }

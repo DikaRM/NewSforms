@@ -133,7 +133,7 @@ class GuruController
     public function CreateSoal(Request $request,$id)
     {
       $uji = Ujian::find($id);
-      $fu = Ujian_soals::find($uji->id);
+      $fu = Ujian_soals::where("ujian_id",$uji->id)->get();
       $gurus = Guru::find($uji->guru_id);
       $mapel = Mapel::find($uji->mapel);
       $bak = banksoal::where("guru_id",$uji->guru_id)->get();

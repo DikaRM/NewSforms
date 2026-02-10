@@ -143,29 +143,32 @@ table th{
     <!-- Header -->
     <div class="header">
         <h3>Dashboard Siswa</h3>
-        <p>Selamat datang, <strong>{{$ire->nama}}</strong></p>
+        <p>Selamat datang, <strong>{{$ire->nama}}</strong> Kelas {{$data->kelas->nama_kelas}}</p>
     </div>
 
     <!-- Ujian Hari Ini -->
     <div class="section">
-        <h4>Ujian Hari Ini</h4>
-
-        <div class="exam">
-            <div>
-                <strong>Matematika</strong><br>
-                <small>Senin, 08:00 - 09:30</small>
+        <h4>Ujian Hari Ini {{\Carbon\Carbon::now()->format('d/m/Y')}}</h4>
+        @foreach($uji as $uj)
+          
+            <div class="exam">
+              <div>
+                <strong>{{$uj->nama_ujian}}</strong><br>
+                <small>{{\Carbon\Carbon::parse($uj->waktu_mulai)->format('D F Y H:i')}}</small>
             </div>
-            <span class="badge open">Berlangsung</span>
+          @if($uj->status === "ready")
+            <a href="{{route('siswa.shop',$uj->id)}}" class="badge open">{{$uj->status}}</a>
+            </div>
+          @elseif($uj->status === "done")
+              <span class="badge">{{$uj->status}}</span>
+          @else
+           <h5 class="title">On Going</h5>
+           
+           @endif
+        @endforeach
         </div>
 
-        <div class="exam">
-            <div>
-                <strong>Bahasa Indonesia</strong><br>
-                <small>Selasa, 10:00 - 11:30</small>
-            </div>
-            <span class="badge upcoming">Akan Datang</span>
-        </div>
-    </div>
+       
 
     <!-- Berita Acara -->
     <div class="section">

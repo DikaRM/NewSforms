@@ -17,6 +17,8 @@ Route::resource("/admin",AdminController::class);
 Route::post("/login/load",[App\Http\Controllers\UsersController::class,"login"])->name("users.store");
 Route::resource("/admin-siswa",App\Http\Controllers\SiswaController::class);
 Route::get("/siswa",[App\Http\Controllers\SiswaController::class,"Siswas"])->name("siswa.index");
+Route::get("/siswa/{id}",[App\Http\Controllers\SiswaController::class,"Starts"])->name("siswa.shop");
+Route::get("/siswa/saved",[App\Http\Controllers\SiswaController::class,"Saved"])->name("siswa.save");
 Route::post("/logout",[App\Http\Controllers\UsersController::class,"logout"])->name("users.logout");
 Route::resource("admin/siswa",SiswaController::class);
 
