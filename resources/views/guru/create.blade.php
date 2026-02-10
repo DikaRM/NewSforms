@@ -27,7 +27,7 @@
   </h5>
   <div class="card">
     <div class="card-head">
-      <h5>{{\Carbon\Carbon::parse($uji->waktu_mulai)->format('d F Y H:i')}} S.d {{$uji->waktu_selesai}}</h5>
+      <h5>{{\Carbon\Carbon::parse($uji->waktu_mulai)->format('d F Y H:i')}} S.d {{\Carbon\Carbon::parse($uji->waktu_selesai)->format('D F Y H:i')}}</h5> 
     </div>
     <div class="card-content">
       <h5 class="title"></h5>
@@ -47,27 +47,30 @@
        </tr>
      </thead>
      <tbody>
-       @if($fu)
+       @foreach($fu as $f)
+       
          @foreach($bak as $b)
-         <tr>
-           <td>{{$b->id}}</td>
-         <td>{{$b->soal}}</td>
-         <td>{{$b->opsi_a}}</td>
-         <td>{{$b->opsi_b}}</td>
-         <td>{{$b->opsi_c}}</td>
-         <td>{{$b->opsi_d}}</td>
-         <td>{{$b->jawaban_benar}}</td>
-         <td>
-           <button class="button is-warning is-dark" >Edit </button>
-           <form action="{{route('soal.destroy',['id' => $b->id])}}" method="post">
+           @if($f->bank_id == $b->id)
+             <tr>
+             <td>{{$b->id}}</td>
+             <td>{{$b->soal}}</td>
+             <td>{{$b->opsi_a}}</td>
+             <td>{{$b->opsi_b}}</td>
+             <td>{{$b->opsi_c}}</td>
+             <td>{{$b->opsi_d}}</td>
+             <td>{{$b->jawaban_benar}}</td>
+             <td>
+             <button class="button is-warning is-dark" >Edit </button>
+             <form action="{{route('soal.destroy',['id' => $b->id])}}" method="post">
              @csrf
              @method("DELETE")
              <button type="submit" class="button is-danger is-dark">Hapus</button>
-           </form>
-         </td>
-       </tr>
-         @endforeach
-      @endif
+             </form>
+             </td>
+             </tr>
+          @endif
+        @endforeach
+      @endforeach
        <tr>
          <td colspan="6">Tambahkan Soal</td>
          <td><button class="button is-info" onclick="document.getElementById('modals').classList.add('is-active')">

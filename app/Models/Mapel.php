@@ -17,6 +17,9 @@ class Mapel extends Authenticatable
     {
       return $this->HasMany(Guru::class);
     }
+    public function ujian(){
+      return $this->HasMany(Ujian::class,"mapel","id");
+    }
 
 
 }

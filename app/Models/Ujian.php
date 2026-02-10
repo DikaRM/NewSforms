@@ -25,9 +25,9 @@ class Ujian extends Authenticatable
       return $this->belongsTo(Guru::class);
     }
     
-    public function mapel()
+    public function mapels()
     {
-      return $this->belongsTo(Mapel::class);
+      return $this->belongsTo(Mapel::class,"mapel","id");
     }
     public function kelas()
     {
