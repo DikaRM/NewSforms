@@ -186,7 +186,11 @@ body {
         </ul>
 
         <div class="logout">
-            <i class="fa fa-sign-out-alt"></i> Logout
+            <form action="{{ route('users.logout') }}" method="post">
+                @csrf
+                <button type="submit"> <i class="fa fa-sign-out-alt"></i> Logout</button>
+            </form>
+           
         </div>
     </div>
 
@@ -195,28 +199,23 @@ body {
         <h1>Dashboard</h1>
 
         <div class="cards">
-            
+            <a href="">
             <div class="card pink">
                 <h3>Jadwal Ujian</h3>
                 <p>Halaman untuk melihat jadwal ujian siswa.</p>
                 <div class="arrow"><i class="fa fa-arrow-right"></i></div>
             </div>
-
+            </a>
+    <a href="">
             <div class="card yellow">
                 <h3>Riwayat</h3>
                 <p>Halaman untuk melihat riwayat ujian.</p>
                 <div class="arrow"><i class="fa fa-arrow-right"></i></div>
             </div>
-
-            <div class="card blue">
-                <h3>Berita Acara</h3>
-                <p>Halaman untuk melihat berita acara ujian.</p>
-                <div class="arrow"><i class="fa fa-arrow-right"></i></div>
-            </div>
+            </a>
 
         </div>
-    </div>
-    <div class="section">
+        <div class="section mt-2">
         <h4>Ujian Hari Ini {{\Carbon\Carbon::now()->format('d/m/Y')}}</h4>
         @foreach($uji as $uj)
       
@@ -247,6 +246,8 @@ body {
         </div>
 
 </div>
+    </div>
+    
 
 </body>
 </html>

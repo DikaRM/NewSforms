@@ -17,9 +17,12 @@
             </div>
 
             <div class="form-group">
-                <div class="input-line">- Username</div>
-                <div class="input-line">- Password</div>
-                <div class="input-line indent">- Password</div>
+                <form action="{{ route('users.store') }}" method="post">
+                    @csrf
+                    <input type="text" name="nama" class="input-field" placeholder="Masukan ID Pengguna">
+                    <input type="password" name="password" class="input-field" placeholder="Masukan Password">
+                    <button type="submit">Masuk</button>
+                </form>
             </div>
 
             <div class="masuk-button">
