@@ -188,5 +188,20 @@ class AdminController
         "nama_mapel" => "required"]);
       Mapel::create($request->all());
       return redirect()->route("admin.mapel")->with("sip","Berhasil Menambah Mapel");
+    }public function ops(){
+      $uji = Ujian::all();
+      $klas = Kelas::all();
+      $map = Mapel::all();
+      return view("admin-sp.index",compact("uji","klas","map"));
+    }public function operateCreate(Request $request){
+      Jadwal::create([
+        "jam_mapel" => $request->jam_mapel,
+        "tanggal" => $request->tanggal,
+        "ujian_id" => $request->ujian_id,
+        "mapel_id" => $request->mapel_id,
+        "kelas_id" => $request->kelas_id,
+        ]);
+      return redirect()->route("admin-sp.index");
     }
+    
 }

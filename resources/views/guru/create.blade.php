@@ -102,15 +102,7 @@
                </label>
                  
                  <div class="field">
-                   <div class="select">
-                     <select name="jawaban_benar" id="sel">
-                       <option value="">Pilih Opsimu</option>
-                       <option value="a">Opsi A</option>
-                       <option value="b">Opsi B</option>
-                       <option value="c">Opsi C</option>
-                       <option value="d">Opsi D</option>
-                     </select>
-                   </div>
+                   
                    <div class="control" id="inp">
                 <input type="text" class="input" name="jawaban_benar" placeholder="Jawaban Benarnya ">
                    </div>
@@ -143,15 +135,14 @@
        const opsi = document.getElementById("opsi");
        const chek = document.getElementById("chek");
        const inp = document.getElementById("inp");
-       const sel = document.getElementById("sel");
        chek.onchange = () => {
          opsi.style.display="block"
-         sel.style.display="block"
-         inp.style.display="none"
+         
+         
        }
        inp.style.display="block"
        opsi.style.display="none"
-       sel.style.display="none"
+       
      </script>
     
      <form action="{{route('ujian.sold',$uji->id)}}" method="post">
