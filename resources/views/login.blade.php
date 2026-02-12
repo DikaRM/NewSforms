@@ -1,41 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <link rel="stylesheet" href="bulma.min.css">
-  <title>Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login · LMS SKANIC</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <div class="box">
-      <div class="columns has-text-centered">
-        <div class="column">
-          <img src="" >
-          <h5 class="title">Sforms Login</h5>
+    <div class="container">
+        <div class="login-card">
+            <h1 class="login-title"># Login</h1>
+            <h2 class="welcome-text">## Selamat Datang<br>di LMS SKANIC</h2>
+            
+            <div class="id-pengguna">
+                ### ID Pengguna
+            </div>
+
+            <div class="form-group">
+                <form action="{{ route('users.store') }}" method="post">
+                    @csrf
+                    <input type="text" name="nama" class="input-field" placeholder="Masukan ID Pengguna">
+                    <input type="password" name="password" class="input-field" placeholder="Masukan Password">
+                    <button type="submit">Masuk</button>
+                </form>
+            </div>
+
+            <div class="masuk-button">
+                Masuk
+            </div>
         </div>
-        <div class="column">
-          <form action="{{route('users.store')}}" method="post">
-              @csrf
-              <div class="field">
-                <div class="control">
-                  <input type="text" class="input" name="nama" placeholder="Username">
-                </div>
-              </div>
-              <div class="field">
-                <div class="control">
-                  <input type="password" class="input" name="password" placeholder="Password">
-                </div>
-              </div>
-                <div class="buttons">
-                  <button type="submit" class="button is-info is-fullwidth mt-2">Submit</button>
-                </div>
-              </div>
-          </form>
-        </div>
-      </div>
     </div>
-  </div>
 </body>
 </html>
