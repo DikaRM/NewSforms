@@ -33,4 +33,11 @@ class Ujian extends Authenticatable
     {
       return $this->belongsTo(Kelas::class);
     }
+    public function statusCheck($value){
+      if($this->waktu_selesai <= Carbon::now() && $value !== "done"){
+        \DB::table("ujian")->where('id',$this->id)->where("status","!==","done")->update(["status" => "done"]);
+        return "done";
+      }
+      return $value;
+    }
 }

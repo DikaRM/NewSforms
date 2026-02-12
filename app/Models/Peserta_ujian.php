@@ -12,6 +12,7 @@ class Peserta_ujian extends Authenticatable
     protected $fillable = [
         'siswa_id',
         'ujian_id',
+        'nilai',
         'status',
     ];
     
