@@ -13,6 +13,7 @@ use App\Models\Kelas;
 use App\Models\banksoal;
 use App\Models\Ujian_soals;
 use App\Models\Jawaban_Siswa;
+use App\Models\Peserta_ujian;
 class SiswaController
 {
     /**
@@ -113,7 +114,8 @@ class SiswaController
       $ire = Auth::user();
       $data = Siswa::with("kelas")->where("nama",$ire->nama)->first();
       $uji = Ujian::where("kelas_id",$data->kelas->id)->get();
-      return view("siswa.index",compact("ire","data","uji"));
+      $hasil = Peserta_ujian::where("siswa_id",$data->id_siswa)->get();
+      return view("siswa.index",compact("ire","data","uji","hasil"));
     }
     public function Starts($id)
     {
@@ -124,12 +126,57 @@ class SiswaController
       $soal = banksoal::all();
       return view("siswa.ujian",compact("uji","soal","ire","sis","ujians"));
     }
-    public function saved(Request $request){
-      $request-validate([
+    public function Saved(Request $request){
+      $request->validate([
         "jawaban" => "required|array"
         ]);
-      
+        $jawabanSiswa = $request->jawaban;
+        $soal_ids = array_keys($jawabanSiswa);
+        $soals = banksoal::whereIn("id",$soal_ids)->get()->keyBy("id");
+      $score = 0;
+      $total_soal = count($jawabanSiswa);
+      foreach($jawabanSiswa as $soal_id => $jawabans){
+        $soal = $soals[$soal_id] ?? null;
+        if (!$soal) continue;
+        $benar = 0;
+        if($soal->opsi_a != null){
+          $benar = strtoupper($jawabans) == strtoupper($soal->jawaban_benar);
+        }
+      else{
+          $jawaban_siswa = strtolower(trim($jawabans));
+          $soale = strtolower(trim($soal->jawaban_benar));
+          if(strpos($jawaban_siswa,$soale) !== false){
+            $benar = 1;
+          }else{
+          $benar = 0;
+          }
+      }
+        if($benar){
+          $score += 1;
+        }
+        Jawaban_Siswa::updateOrCreate([
+          "ujian_id" => $request->ujian_id,
+          "siswa_id" => $request->siswa_id,
+          "bank_id" => $soal->id,
+          ],
+          [
+            "jawaban" => $jawabans,
+            "benar" => $benar,
+            
+          ]);
+        
+      $nilai = ($total_soal > 0) ? ($score / $total_soal) *100 : 0;
+      Peserta_ujian::create([
+          "ujian_id" => $request->ujian_id,
+          "siswa_id" => $request->siswa_id,
+          "nilai" => $nilai,
+          "status" => "done",
+          
+          ]);
+          
       return redirect()->route("siswa.index");
+      
+      }
     }
     
 }

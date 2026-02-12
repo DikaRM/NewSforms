@@ -26,4 +26,8 @@ class banksoal extends Model
     {
       return $this->belongsTo(Mapel::class);
     }
+    public function ujia()
+    {
+      return $this->belongsTo(Ujian::class);
+    }
 }

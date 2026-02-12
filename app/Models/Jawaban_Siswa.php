@@ -11,6 +11,7 @@ class Jawaban_siswa extends Authenticatable
     protected $table = "jawaban_siswa";
     protected $fillable = [
         'ujian_id',
+        'siswa_id',
         'bank_id',
         'jawaban',
         'benar',

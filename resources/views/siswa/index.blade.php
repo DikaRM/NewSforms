@@ -150,6 +150,8 @@ table th{
     <div class="section">
         <h4>Ujian Hari Ini {{\Carbon\Carbon::now()->format('d/m/Y')}}</h4>
         @foreach($uji as $uj)
+      
+        
           
             <div class="exam">
               <div>
@@ -165,6 +167,13 @@ table th{
            <h5 class="title">On Going</h5>
            
            @endif
+       
+      @endforeach
+       @foreach($hasil as $sil)
+        
+            <h5 class="title">{{$sil->status}}</h5>
+            <h5 class="title is-family-code">Nilai Kamu : {{$sil->nilai}}</h5>
+          
         @endforeach
         </div>
 
