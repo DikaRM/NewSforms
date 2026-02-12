@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -5,66 +6,71 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Siswa</title>
 
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
     font-family: 'Segoe UI', sans-serif;
 }
 
-body{
-    background:#f4f6f9;
-    display:flex;
+body {
+    background: #f3f5f9;
 }
 
-/* Sidebar */
-.sidebar{
-    width:220px;
-    background:#0f172a;
-    color:white;
-    min-height:100vh;
-    padding:20px;
+/* ===== HEADER ===== */
+.header {
+    background: #2e5b9a;
+    color: white;
+    padding: 15px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.sidebar h2{
-    margin-bottom:30px;
-    text-align:center;
+.header h2 {
+    font-size: 18px;
 }
 
-.sidebar a{
-    display:block;
-    color:#cbd5e1;
-    text-decoration:none;
-    padding:10px;
-    border-radius:6px;
-    margin-bottom:8px;
+/* ===== LAYOUT ===== */
+.container {
+    display: flex;
 }
 
-.sidebar a:hover{
-    background:#1e293b;
-    color:white;
+/* ===== SIDEBAR ===== */
+.sidebar {
+    width: 230px;
+    background: #5c6fa6;
+    min-height: 100vh;
+    padding-top: 20px;
+    color: white;
 }
 
-/* Main */
-.main{
-    flex:1;
-    padding:20px;
+.sidebar ul {
+    list-style: none;
 }
 
-/* Header */
-.header{
-    background:white;
-    padding:16px 20px;
-    border-radius:8px;
-    margin-bottom:20px;
+.sidebar ul li {
+    padding: 14px 25px;
+    cursor: pointer;
+    transition: 0.3s;
 }
 
-.header h3{
-    color:#0f172a;
+.sidebar ul li:hover {
+    background: rgba(255,255,255,0.2);
 }
 
-/* Section */
+.sidebar ul li i {
+    margin-right: 10px;
+}
+
+.logout {
+    position: absolute;
+    bottom: 20px;
+    left: 25px;
+}
 .section{
     background:white;
     padding:20px;
@@ -96,57 +102,120 @@ body{
     color:white;
 }
 
-.open{ background:#16a34a; }
-.upcoming{ background:#2563eb; }
-.done{ background:#6b7280; }
-
-/* Table */
-table{
-    width:100%;
-    border-collapse:collapse;
+/* ===== MAIN CONTENT ===== */
+.main {
+    flex: 1;
+    padding: 30px;
 }
 
-table th, table td{
-    padding:12px;
-    border-bottom:1px solid #e5e7eb;
-    text-align:left;
+.main h1 {
+    margin-bottom: 30px;
+    color: #2e5b9a;
 }
 
-table th{
-    background:#f1f5f9;
+/* ===== CARDS ===== */
+.cards {
+    display: flex;
+    gap: 25px;
+    flex-wrap: wrap;
 }
 
-/* Responsive */
-@media(max-width:768px){
-    .sidebar{
-        display:none;
-    }
+.card {
+    width: 300px;
+    padding: 25px;
+    border-radius: 15px;
+    color: #333;
+    position: relative;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+    transition: 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card h3 {
+    margin-bottom: 10px;
+}
+
+.card p {
+    font-size: 14px;
+    color: #555;
+}
+
+.card .arrow {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    font-size: 20px;
+}
+
+/* Warna Card */
+.pink {
+    background: #f8d7da;
+}
+
+.yellow {
+    background: #fff3cd;
+}
+
+.blue {
+    background: #cfe2ff;
 }
 </style>
 </head>
 
 <body>
 
-<!-- Sidebar -->
-<div class="sidebar">
-    <h2>Siswa</h2>
-    <a href="#">Dashboard</a>
-    <a href="#">Ujian</a>
-    <a href="#">Nilai</a>
-    <a href="#">Berita Acara</a>
-    <a href="#">Logout</a>
+<div class="header">
+    <h2>SMK NEGERI 1 CIOMAS</h2>
+    <div>
+        {{$ire->nama}}<i class="fa fa-chevron-down"></i>
+    </div>
 </div>
 
-<!-- Main -->
-<div class="main">
+<div class="container">
+    
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <ul>
+            <li><i class="fa fa-home"></i> Dashboard</li>
+            <li><i class="fa fa-calendar"></i> Jadwal Ujian</li>
+            <li><i class="fa fa-history"></i> Riwayat</li>
+            <li><i class="fa fa-file"></i> Hasil Ujian</li>
+        </ul>
 
-    <!-- Header -->
-    <div class="header">
-        <h3>Dashboard Siswa</h3>
-        <p>Selamat datang, <strong>{{$ire->nama}}</strong> Kelas {{$data->kelas->nama_kelas}}</p>
+        <div class="logout">
+            <i class="fa fa-sign-out-alt"></i> Logout
+        </div>
     </div>
 
-    <!-- Ujian Hari Ini -->
+    <!-- Main Content -->
+    <div class="main">
+        <h1>Dashboard</h1>
+
+        <div class="cards">
+            
+            <div class="card pink">
+                <h3>Jadwal Ujian</h3>
+                <p>Halaman untuk melihat jadwal ujian siswa.</p>
+                <div class="arrow"><i class="fa fa-arrow-right"></i></div>
+            </div>
+
+            <div class="card yellow">
+                <h3>Riwayat</h3>
+                <p>Halaman untuk melihat riwayat ujian.</p>
+                <div class="arrow"><i class="fa fa-arrow-right"></i></div>
+            </div>
+
+            <div class="card blue">
+                <h3>Berita Acara</h3>
+                <p>Halaman untuk melihat berita acara ujian.</p>
+                <div class="arrow"><i class="fa fa-arrow-right"></i></div>
+            </div>
+
+        </div>
+    </div>
     <div class="section">
         <h4>Ujian Hari Ini {{\Carbon\Carbon::now()->format('d/m/Y')}}</h4>
         @foreach($uji as $uj)
@@ -167,50 +236,6 @@ table th{
            @endif
         @endforeach
         </div>
-
-       
-
-    <!-- Berita Acara -->
-    <div class="section">
-        <h4>📢 Berita Acara</h4>
-        <ul>
-            <li>Ujian dilaksanakan secara tertib</li>
-            <li>Tidak diperkenankan membawa HP</li>
-            <li>Gunakan seragam lengkap</li>
-        </ul>
-    </div>
-
-    <!-- Hasil Ujian -->
-    <div class="section">
-        <h4>📊 Hasil Ujian / Nilai</h4>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Mata Pelajaran</th>
-                    <th>Nilai</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Matematika</td>
-                    <td>85</td>
-                    <td>Lulus</td>
-                </tr>
-                <tr>
-                    <td>Bahasa Inggris</td>
-                    <td>78</td>
-                    <td>Lulus</td>
-                </tr>
-                <tr>
-                    <td>Fisika</td>
-                    <td>65</td>
-                    <td>Remedial</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
 
 </div>
 
