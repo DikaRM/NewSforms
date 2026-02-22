@@ -9,6 +9,8 @@ use App\Models\Siswa;
 use App\Models\Guru;
 use App\Models\Pengawas;
 use App\Models\Kelas;
+use App\Models\Ujian;
+use App\Models\Jadwal;
 use App\Models\GuruMapel;
 use App\Models\Mapel;
 
@@ -115,7 +117,8 @@ class AdminController
     {
       $ire = Auth::user();
       $dat = Kelas::all();
-      $siswa = Siswa::all();return view("admin.kelas",compact("dat","ire","siswa",));
+      $siswa = Siswa::all();
+      return view("admin.kelas",compact("dat","ire","siswa"));
     }
     public function KelasCreate(Request $request)
     {
@@ -152,11 +155,9 @@ class AdminController
     public function MapelIndex()
     {
       $ire = Auth::user();
-      $dat = Mapel::all();
-      $guru = Guru::all();
-      
-      $dt = GuruMapel::all();
-      return view("admin.mapel",compact("dat","ire","guru","dt"));
+      $guru = Mapel::with("guru")->get();
+      $guruList = Guru::with("mapel")->get();
+      return view("admin.mapel",compact("ire","guru","guruList"));
     }
     public function MapelUpdate(Request $request ,$id)
     {
@@ -176,10 +177,8 @@ class AdminController
     public function AddGuru(Request $request)
     {
       $sis = Guru::where("nama",$request->nama)->first();
-      GuruMapel::create([
-        "guru_id" => $request->ids,
-        "mapel_id" => $request->mapel_id,
-        ]);
+      $gu = Guru::with("mapel")->find($request->guru_id);
+      $gu->mapel()->attach($request->mapel_id);
       return redirect()->route("admin.mapel")->with("sip","Sip Menambahkan Guru Ke Mapel");
     }
     public function Made(Request $request)
@@ -188,20 +187,53 @@ class AdminController
         "nama_mapel" => "required"]);
       Mapel::create($request->all());
       return redirect()->route("admin.mapel")->with("sip","Berhasil Menambah Mapel");
-    }public function ops(){
+    }
+    public function ops(){
+      $uji = Ujian::with("kelas","mapels")->get();
+      $sis = Siswa::all();
+      $kla = Kelas::all();
+      return view("admin-sp.index",compact("uji","sis","kla"));
+    }
+    public function SetUji($id)
+    {
+      $jad = Jadwal::with("ujian")->where("kelas_id",$id)->get();
+      $klas = Kelas::find($id);
       $uji = Ujian::all();
-      $klas = Kelas::all();
-      $map = Mapel::all();
-      return view("admin-sp.index",compact("uji","klas","map"));
-    }public function operateCreate(Request $request){
-      Jadwal::create([
+      $penh = Pengawas::with("user","guru")->get();
+      $gur = Guru::all();
+      return view("admin-sp.jadwal",compact("uji","klas","jad",'gur','penh'));
+      
+    }
+    public function operateCreate(Request $request){
+      $uji = Ujian::find($request->ujian_id);
+      
+// Cek dulu apakah sudah ada
+if (!$uji->kelas()->where('kelas_id', $request->kelas_id)->exists()) {
+    $uji->kelas()->attach($request->kelas_id);
+}
+
+      
+      $guru = Guru::find($request->guru_id);
+      $tag = \Carbon\Carbon::parse($request->tanggal);
+      $sele = $tag->copy()->addMinutes($uji->durasi);
+      $was = Pengawas::create([
+        "guru_id" => $request->guru_id,
+        "user_id" => $guru->user_id,
+        ]);
+        
+      $jads = Jadwal::create([
         "jam_mapel" => $request->jam_mapel,
         "tanggal" => $request->tanggal,
         "ujian_id" => $request->ujian_id,
-        "mapel_id" => $request->mapel_id,
+        "pengawas_id" => $was->id,
         "kelas_id" => $request->kelas_id,
+        "waktu_mulai" => $request->tanggal,
+          "waktu_selesai" => $sele,
         ]);
-      return redirect()->route("admin-sp.index");
+        $uji->update([
+        "jadwal_id" => $jads->id, 
+        ]);
+      return redirect()->route("admin-ops.set",["id" => $request->kelas_id]);
     }
     
 }

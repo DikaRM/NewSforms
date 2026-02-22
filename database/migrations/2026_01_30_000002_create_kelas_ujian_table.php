@@ -11,19 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('jawaban_siswa', function (Blueprint $table) {
+        Schema::create('kelas_ujian', function (Blueprint $table) {
             $table->id();
+            $table->string('kelas_id');
             $table->string('ujian_id');
-            $table->string('siswa_id');
-            $table->string('bank_id');
             
-            $table->string('jawaban')->nullable();
-            $table->boolean("benar");
             $table->timestamps();
-                
-            $table->foreign("siswa_id")->references("id_siswa")->on("siswa")->onDelete("cascade");
+            
+            $table->foreign("kelas_id")->references("id")->on("kelas")->onDelete("cascade");
+            
             $table->foreign("ujian_id")->references("id")->on("ujian")->onDelete("cascade");
-            $table->foreign("bank_id")->references("id")->on("bank")->onDelete("cascade");
+            
+            
         });
 
         
@@ -34,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('jawaban_siswa');
+        Schema::dropIfExists('kelas_ujian');
     }
 };

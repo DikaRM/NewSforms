@@ -8,8 +8,11 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Guru;
 use App\Models\User;
 use App\Models\Ujian;
+use App\Models\Jadwal;
 use App\Models\Kelas;
 use App\Models\Mapel;
+use App\Models\Nilai;
+use App\Models\Peserta_ujian;
 use App\Models\banksoal ;
 use App\Models\GuruMapel;
 use App\Models\Ujian_soals;
@@ -50,7 +53,7 @@ class GuruController
         "nama" => $request->username,
         "nip" => $request->nip,
         ]);
-      return redirect()->route("admin-guru.index")->with("succes","Berhasil Menambah Data");
+      return redirect()->route("admin.guru.index")->with("succes","Berhasil Menambah Data");
     }
 
     /**
@@ -93,17 +96,17 @@ class GuruController
      */
     public function destroy(string $id)
     {
-        $use = User::findOrFail($id);
+        
         $gu = Guru::findOrFail($id);
+        
          $gu->delete();
-        $use->delete();
-        return redirect()->route("admin-guru.index")->with("succes","Berhasil Dihapus");
+        return redirect()->route("admin.guru.index")->with("succes","Berhasil Dihapus");
     }
     public function TeachIndex()
     {
       $ire = Auth::user();
       $dt = Guru::where("nama",$ire->nama)->first();
-      $uji = Ujian::all();
+      $uji = Ujian::with("jadwal")->where("guru_id",$dt->id)->get();
       $klas = Kelas::all();
       $sd = Guru::all();
       $kop = GuruMapel::all();
@@ -115,12 +118,11 @@ class GuruController
       $es = Guru::where("nama",$request->nama)->first();
       Ujian::create([
         "mapel" => $request->mapel_id,
-        "kelas_id" => $request->kelas_id,
         "guru_id" => $es->id,
         "nama_ujian" => $request->nama_ujian,
-        "waktu_mulai" => $request->waktu_mulai,
-        "waktu_selesai" => $request->waktu_selesai,
         "durasi" => $request->durasi,
+        "grade" => $request->grade,
+        "catatan" => $request->catatan,
         "status" => "draft",
         ]);
         return redirect()->route("guru.index")->with("success","Berhasil Buat Ujian");
@@ -132,7 +134,7 @@ class GuruController
     }
     public function CreateSoal(Request $request,$id)
     {
-      $uji = Ujian::find($id);
+      $uji = Ujian::with("jadwal")->find($id);
       $fu = Ujian_soals::where("ujian_id",$uji->id)->get();
       $gurus = Guru::find($uji->guru_id);
       $mapel = Mapel::find($uji->mapel);
@@ -179,4 +181,28 @@ class GuruController
         "status" => "ready"]);
       return redirect()->route("guru.index");
     }
+    public function result(){
+      $data = Ujian::all();
+      $val = Peserta_ujian::with("siswa");
+      $ire = Auth::user();
+      return view("guru.hasil",compact("data","ire","val"));
+    }
+    public function hasil($id){
+      $data = Ujian::with("kelas")->where("id",$id)->get();
+      $val = Peserta_ujian::with("siswa")->whereHas("siswa")->get();
+      $ire = Auth::user();
+      return view("guru.result",compact("data","ire","val"));
+    }
+    public function riwayat(){
+      $data = Ujian::with("jadwal")->get();
+      $ire = Auth::user();
+      return view("guru.riwayat",compact("data","ire"));
+    }
+    public function jadwal(){
+      $data = Jadwal::with("kelas");
+      $ire = Auth::user();
+      return view("guru.jadwal",compact("data","ire"));
+    }
+    
+    
 }

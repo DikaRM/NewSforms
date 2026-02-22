@@ -1,33 +1,28 @@
 <?php
 
 namespace App\Models;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
 
-class Jadwal extends Authenticatable
+use Illuminate\Database\Eloquent\Model;
+
+class Jadwal extends Model
 {
-    use HasFactory, Notifiable;
     protected $table = "jadwal";
     protected $fillable = [
-        'jam_mapel',
-        'tanggal',
-        'ujian_id',
-        'mapel_id',
-        'kelas_id',
+        "jam_mapel",
+        "tanggal",
+        "pengawas_id",
+        "ujian_id",
+        "kelas_id",
+        "waktu_mulai",
+        "waktu_selesai",
     ];
-public function kelas()
-{
- return $this->belongsTo(Kelas::class);
-}
-public function ujian()
-{
- return $this->belongsTo(Ujian::class);
-}
-public function mapel()
-{
- return $this->belongsTo(Mapel::class);
-}
-
-
+    public function pengawas(){
+        return $this->belongsTo(Pengawas::class);
+    }
+    public function ujian(){
+        return $this->belongsTo(Ujian::class);
+    }
+    public function kelas(){
+        return $this->belongsTo(Kelas::class);
+    }
 }

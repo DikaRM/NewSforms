@@ -14,6 +14,8 @@ use App\Models\banksoal;
 use App\Models\Ujian_soals;
 use App\Models\Jawaban_Siswa;
 use App\Models\Peserta_ujian;
+use App\Models\Jadwal;
+use App\Models\Pelanggaran;
 class SiswaController
 {
     /**
@@ -58,7 +60,7 @@ class SiswaController
           $sis->kelas()->associate($kels);
           $sis->save();
         }
-        return redirect()->route("admin-siswa.index")->with("success","Berhasil Mantap!");
+        return redirect()->route("admin.siswa.index")->with("success","Berhasil Mantap!");
     }
 
     /**
@@ -98,7 +100,7 @@ class SiswaController
           $siswa->nama = $request->nama;
           $siswa->nisn = $request->nisn;
         $siswa->save();
-        return redirect()->route("admin-siswa.index");
+        return redirect()->route("admin.siswa.index");
     }
 
     /**
@@ -107,76 +109,179 @@ class SiswaController
     public function destroy(Siswa $admin_siswa)
     {
         $admin_siswa->delete();
-        return redirect()->route("admin-siswa.index");
+        return redirect()->route("admin.siswa.index");
     }
     public function Siswas()
     {
       $ire = Auth::user();
       $data = Siswa::with("kelas")->where("nama",$ire->nama)->first();
-      $uji = Ujian::where("kelas_id",$data->kelas->id)->get();
+      $kelasid = $data->kelas_id;
+      $uji = Ujian::with("kelas","jadwal")->whereHas("kelas",function($query) use ($kelasid){
+        $query->where("kelas_ujian.kelas_id",$kelasid);
+      })
+      ->get();
       $hasil = Peserta_ujian::where("siswa_id",$data->id_siswa)->get();
       return view("siswa.index",compact("ire","data","uji","hasil"));
     }
     public function Starts($id)
-    {
-      $ire = Auth::user();
-      $uji = Ujian::with("mapels")->where("id",$id)->first();
-      $ujians = Ujian_soals::where("ujian_id",$uji->id)->get();
-      $sis = Siswa::with("kelas")->where("nama",$ire->nama)->first();
-      $soal = banksoal::all();
-      return view("siswa.ujian",compact("uji","soal","ire","sis","ujians"));
-    }
-    public function Saved(Request $request){
-      $request->validate([
-        "jawaban" => "required|array"
-        ]);
-        $jawabanSiswa = $request->jawaban;
-        $soal_ids = array_keys($jawabanSiswa);
-        $soals = banksoal::whereIn("id",$soal_ids)->get()->keyBy("id");
-      $score = 0;
-      $total_soal = count($jawabanSiswa);
-      foreach($jawabanSiswa as $soal_id => $jawabans){
-        $soal = $soals[$soal_id] ?? null;
-        if (!$soal) continue;
-        $benar = 0;
-        if($soal->opsi_a != null){
-          $benar = strtoupper($jawabans) == strtoupper($soal->jawaban_benar);
-        }
-      else{
-          $jawaban_siswa = strtolower(trim($jawabans));
-          $soale = strtolower(trim($soal->jawaban_benar));
-          if(strpos($jawaban_siswa,$soale) !== false){
-            $benar = 1;
-          }else{
-          $benar = 0;
-          }
-      }
-        if($benar){
-          $score += 1;
-        }
-        Jawaban_Siswa::updateOrCreate([
-          "ujian_id" => $request->ujian_id,
-          "siswa_id" => $request->siswa_id,
-          "bank_id" => $soal->id,
-          ],
-          [
-            "jawaban" => $jawabans,
-            "benar" => $benar,
-            
-          ]);
-        
-      $nilai = ($total_soal > 0) ? ($score / $total_soal) *100 : 0;
-      Peserta_ujian::create([
-          "ujian_id" => $request->ujian_id,
-          "siswa_id" => $request->siswa_id,
-          "nilai" => $nilai,
-          "status" => "done",
-          
-          ]);
-          
-      return redirect()->route("siswa.index");
-      
-      }
+{
+    $ire = Auth::user();
+    $uji = Ujian::with("mapels","jadwal")->where("id", $id)->first();
+    
+
+    if(!$uji) {
+        return redirect()->back()->with('error', 'Ujian tidak ditemukan');
     }
     
+
+    $ujians = Ujian_soals::where("ujian_id", $uji->id)->pluck('bank_id')->toArray();
+    
+    // Ambil data siswa
+    $sis = Siswa::with("kelas")->where("nama", $ire->nama)->first();
+    
+
+    $soal = banksoal::whereIn('id', $ujians)->get();
+    
+
+    if($soal->isEmpty()) {
+        return redirect()->back()->with('error', 'Belum ada soal untuk ujian ini');
+    }
+    
+    return view("siswa.ujian", compact("uji", "soal", "ire", "sis", "ujians"));
+}
+    
+    public function Saved(Request $request)
+    {
+        $request->validate([
+            "jawaban" => "required|array"
+        ]);
+        
+        $jawabanSiswa = $request->jawaban;
+        $soal_ids = array_keys($jawabanSiswa);
+        $soals = banksoal::whereIn("id", $soal_ids)->get()->keyBy("id");
+        
+        $score = 0;
+        $total_soal = count($jawabanSiswa);
+        
+        foreach($jawabanSiswa as $soal_id => $jawabans) {
+            $soal = $soals[$soal_id] ?? null;
+            if (!$soal) continue;
+            
+            $benar = 0;
+            
+            if($soal->opsi_a != null) {
+                // SOAL PILIHAN GANDA
+                $benar = (strtoupper(trim($jawabans)) == strtoupper(trim($soal->jawaban_benar))) ? 1 : 0;
+            } else {
+                // SOAL ESSAY - panggil method terpisah
+                $nilai = $this->hitungNilaiEssay($jawabans, $soal->jawaban_benar);
+                $benar = ($nilai >= 80) ? 1 : 0; // Anggap benar jika nilai >= 80
+            }
+            
+            if($benar) {
+                $score += 1;
+            }
+            
+            Jawaban_Siswa::updateOrCreate([
+                "ujian_id" => $request->ujian_id,
+                "siswa_id" => $request->siswa_id,
+                "bank_id" => $soal->id,
+            ], [
+                "jawaban" => $jawabans,
+                "benar" => $benar,
+            ]);
+        }
+        
+        $nilai = ($total_soal > 0) ? ($score / $total_soal) * 100 : 0;
+        
+        Peserta_ujian::updateOrCreate([
+            "ujian_id" => $request->ujian_id,
+            "siswa_id" => $request->siswa_id,
+        ], [
+            "nilai" => $nilai,
+            "status" => "done",
+        ]);
+        
+        return redirect()->route("siswa.index")->with("success", "Ujian selesai!");
+    }
+    
+    /**
+     * Fungsi terpisah untuk menghitung nilai essay
+     */
+    private function hitungNilaiEssay($jawaban_siswa, $jawaban_benar)
+    {
+        $jawaban_siswa = strtolower(trim($jawaban_siswa));
+        $jawaban_benar = strtolower(trim($jawaban_benar));
+        
+        // 1. Cek exact match dulu
+        if ($jawaban_siswa === $jawaban_benar) {
+            return 100;
+        }
+        
+        // 2. Cek dengan menghapus tanda baca
+        $clean_siswa = preg_replace('/[^\w\s]/', '', $jawaban_siswa);
+        $clean_benar = preg_replace('/[^\w\s]/', '', $jawaban_benar);
+        $clean_siswa = preg_replace('/\s+/', ' ', $clean_siswa);
+        $clean_benar = preg_replace('/\s+/', ' ', $clean_benar);
+        
+        if ($clean_siswa === $clean_benar) {
+            return 95;
+        }
+        
+        // 3. Hitung similarity
+        similar_text($clean_siswa, $clean_benar, $percent);
+        
+        // 4. Hitung Levenshtein distance
+        $distance = levenshtein($clean_siswa, $clean_benar);
+        $max_distance = strlen($clean_benar) * 0.3;
+        
+        if ($distance <= $max_distance) {
+            return round($percent);
+        }
+        
+        // 5. Cek kata kunci
+        $kata_kunci = explode(' ', $jawaban_benar);
+        $kata_terpenuhi = 0;
+        
+        foreach ($kata_kunci as $kata) {
+            if (strlen($kata) > 3) {
+                if (strpos($jawaban_siswa, $kata) !== false) {
+                    $kata_terpenuhi++;
+                }
+            }
+        }
+        
+        if (count($kata_kunci) > 0) {
+            $nilai_kata_kunci = ($kata_terpenuhi / count($kata_kunci)) * 100;
+            return round($nilai_kata_kunci);
+        }
+        
+        return 0;
+    }
+
+    
+ public function Pelanggaran(Request $request)
+ {
+   Pelanggaran::create([
+     "ujian_id" => $request->ujian_id,
+     "siswa_id" => $request->siswa_id,
+     "jenis_pelanggaran" => $request->jenis_pelanggaran,
+     ]);
+     return response()->json([
+       "redirect" => route("siswa.index")
+       ]);
+ }
+ public function riwayat(){
+   $ire = Auth::user();
+   $sis = Siswa::with("kelas")->where("nama",$ire->nama)->first();
+   $data = Peserta_ujian::with("ujian","siswa")->where("siswa_id",$sis->id_siswa)->get();
+   return view("siswa.riwayat",compact("data","sis","ire"));
+ }
+ public function jadwal(){
+   $ire = Auth::user();
+   $sis = Siswa::with("kelas")->where("nama",$ire->nama)->first();
+   $data = Jadwal::with("ujian")->where("kelas_id",$sis->kelas_id)->get();
+   return view("siswa.jadwal",compact("data","sis","ire"));
+ }
+ 
 }

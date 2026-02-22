@@ -15,13 +15,14 @@ return new class extends Migration
             $table->id();
             $table->string('jam_mapel');
             $table->date('tanggal');
-            
-            $table->string('mapel_id');
+            $table->date("waktu_mulai")->nullable();
+            $table->date("waktu_selesai")->nullable();
+            $table->string('pengawas_id');
             $table->string('ujian_id');
             $table->string('kelas_id');
             
             $table->timestamps();
-            $table->foreign("mapel_id")->references("id")->on("mapel")->onDelete("cascade");
+            $table->foreign("pengawas_id")->references("id")->on("pengawas")->onDelete("cascade");
             $table->foreign("ujian_id")->references("id")->on("ujian")->onDelete("cascade");
             $table->foreign("kelas_id")->references("id")->on("kelas")->onDelete("cascade");
             

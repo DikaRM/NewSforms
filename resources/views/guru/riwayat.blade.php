@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Siswa</title>
+<title>Guru Teacher</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link rel="stylesheet" href="{{asset('bulma.min.css')}}">
@@ -227,7 +226,7 @@ body {
     </div>
 </div>
 <div class="button-container">
-  <a href="{{route('siswa.index')}}"class="buttond">
+  <a href="{{route('guru.index')}}"class="buttond">
     <svg
       class="icon"
       stroke="currentColor"
@@ -243,36 +242,44 @@ body {
       ></path>
     </svg>
   </a>
-  
-    <a href="{{route('siswa.riwayat')}}" class="buttond">
+   <a href="{{route('guru.result')}}" class="buttond">
+    <i class="icon fa fa-file"></i>
+  </a>
+    <a href="{{route('guru.riwayat')}}" class="buttond">
     <i class="icon fa fa-history"></i></a>
-  <a href="{{route('siswa.jadwal')}}" class="buttond">
+  <a href="{{route('guru.jadwal')}}" class="buttond">
     
     <i class="icon fa fa-calendar"></i>
   </a>
 
- 
+  <a href="{{route('pengawas.index')}}" class="buttond">
+              <i class="icon fa fa-person"></i>
+  </a>
 </div>
 <div class="container">
-     <div class="sidebar">
+    
+    <!-- Sidebar -->
+    <div class="sidebar">
         <ul>
-            <li>
-              <a href="{{route('siswa.index')}}" class="navbar-item">
-                <i class="fa fa-home"></i> Dashboard
+            <li><i class="fa fa-home"></i> Dashboard</li>
+            <li><a href="{{route('guru.jadwal')}}" class="has-text-light">
+              <i class="fa fa-calendar"></i> Jadwal Ujian
               </a>
-              </li>
+            </li>
             <li>
-              <a href="{{route('siswa.jadwal')}}" class="navbar-item">
-                              <i class="fa fa-calendar"></i> Jadwal Ujian
+              <a href="{{route('guru.riwayat')}}" class="has-text-light">
+                <i class="fa fa-history"></i> Riwayat Ujian
               </a>
-</li>
+            </li>
             <li>
-              <a href="{{route('siswa.riwayat')}}" class="navbar-item">
-                              <i class="fa fa-history"></i> Riwayat
-              </li>
+              <a href="{{route('guru.result')}}" class="has-text-light">
+                <i class="fa fa-file"></i> Hasil Ujian</li>
               </a>
-
-            
+              
+            <li><a href="{{route('pengawas.index')}}" class="has-text-light">
+              <i class="fa fa-person">Pengawas</i>
+            </a></li>
+        </ul>
 
         <div class="logout">
             <form action="{{ route('users.logout') }}" method="post">
@@ -285,31 +292,23 @@ body {
 
     <!-- Main Content -->
     <div class="main">
-      <form action="{{ route('users.logout') }}" method="post">
-                @csrf
-                <button type="submit"> <i class="fa fa-sign-out-alt"></i> Logout</button>
-            </form>
         <h1>Dashboard</h1>
-
-        <div class="section mt-2">
-          @foreach($data as $dt)
-          <div class="Card">
-            <div class="card-header">
-              {{\Carbon\Carbon::parse($dt->tanggal)->isoFormat("dddd")}}
+        <h5 class="title">Riwayat Ujian</h5>
+        @foreach($data as $dt )
+        <div class="card">
+          <div class="card-header">
+            <h5 class="title">{{$dt->nama_ujian}}</h5>
             </div>
-            <di class="card-content">
-              <h5 class="title">
-              {{$dt->jam_mapel}}.{{$dt->ujian->nama_ujian}}
-              </h5>
-                <p class="subtitle">
-                  {{\Carbon\Carbon::parse($dt->waktu_mulai)->format("H:i")}} WIB - {{\Carbon\Carbon::parse($dt->waktu_selesai)->format("H:i")}} WIB 
-                </p>
-            </di>
-          </div>
-          @endforeach
+            <div class="card-content">
+              <p class="subtitle">Selesai {{\Carbon\Carbon::parse($dt->waktu_selesai)->format("D H:i")}}</p>
+              
+              Status<span class="tag is-success is-medium">{{$dt->status}}</span>
+            </div>
+          
         </div>
-    </div>
-    
-
+        @endforeach
+        </div>
+        
+        
 </body>
 </html>

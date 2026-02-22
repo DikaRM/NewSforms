@@ -26,6 +26,8 @@ class UsersController
           switch ($user->role){
             case 'admin':
               return redirect("/admin");
+            case 'admin-ops':
+              return redirect("/admin-ops");
             case 'siswa':
               return redirect("/siswa");
             case 'guru':
@@ -33,12 +35,11 @@ class UsersController
             case 'pengawas':
               return redirect("/pengawas");
             default:
-              Auth::logout;
-              $request->session->invalidate();
-              $request->session->regenerateToken();
-              return redirect("/login");
+              Auth::logout();
+              return redirect()->route("login");
           }
         }
+        return redirect()->back()->with("error","Login gagal");
     }
     public function logout(Request $request){
       Auth::logout();

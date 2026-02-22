@@ -14,10 +14,9 @@ return new class extends Migration
         Schema::create('pengawas', function (Blueprint $table) {
             $table->id();
             $table->string('guru_id');
-            $table->string('nama');
-            $table->string('nip');
+            $table->string('user_id');
             $table->timestamps();
-            
+            $table->foreign("user_id")->references("id")->on("users")->onDelete("cascade");
             $table->foreign("guru_id")->references("id")->on("guru")->onDelete("cascade");
         });
 
