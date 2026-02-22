@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -292,19 +291,23 @@ body {
         <h1>Dashboard</h1>
 
         <div class="section mt-2">
-          @foreach($data as $dt)
-          <div class="Card">
+                    @foreach($data as $dt)
+          <div class="card">
             <div class="card-header">
-              {{\Carbon\Carbon::parse($dt->tanggal)->isoFormat("dddd")}}
+              {{$dt->siswa->nama}}
             </div>
-            <di class="card-content">
+            <div class="card-content">
               <h5 class="title">
-              {{$dt->jam_mapel}}.{{$dt->ujian->nama_ujian}}
+              {{$dt->ujian->nama_ujian}}
               </h5>
                 <p class="subtitle">
-                  {{\Carbon\Carbon::parse($dt->waktu_mulai)->format("H:i")}} WIB - {{\Carbon\Carbon::parse($dt->waktu_selesai)->format("H:i")}} WIB 
+                  Selesai {{\Carbon\Carbon::parse($dt->created_at)->format("H:i")}}
                 </p>
-            </di>
+                
+            </div>
+            <div class="card-footer">
+              <span class="card-footer-item tag is-info">Skor : {{$dt->nilai}}</span>
+            </div>
           </div>
           @endforeach
         </div>

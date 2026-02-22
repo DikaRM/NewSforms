@@ -10,7 +10,7 @@
       <h5 class="title">Popup Add Siswa</h5>
     </header>
     <section class="modal-card-body">
-      <form action="{{route('admin-siswa.store')}}" method="post">
+      <form action="{{route('admin.siswa.store')}}" method="post">
         @csrf
         <div class="field">
           <div class="control">
@@ -69,7 +69,7 @@
     <td>
       <div class="buttons">
         <button class="button is-warning" onclick="document.getElementById('mod{{$d->id}}').classList.add('is-active')">Edit</button>
-        <form action="{{route('admin-siswa.destroy',$d->id_siswa)}}" method="post">
+        <form action="{{route('admin.siswa.destroy',$d->id_siswa)}}" method="post">
           @csrf
           @method("DELETE")
         <button class="button is-danger" type="submit">Hapus</button>
@@ -84,7 +84,7 @@
       <h5 class="title">Popup Add Siswa</h5>
     </header>
     <section class="modal-card-body">
-      <form action="{{route('admin-siswa.update',$d->id_siswa)}}" method="post">
+      <form action="{{route('admin.siswa.update',$d->id_siswa)}}" method="post">
         @csrf
         @method("PUT")
         <div class="field">

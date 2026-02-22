@@ -15,17 +15,19 @@ return new class extends Migration
             $table->id();
             $table->string('guru_id');
             $table->string('mapel');
-            $table->string('kelas_id');
+            $table->integer("jadwal_id")->nullable();
             $table->string("nama_ujian");
-            $table->date("waktu_mulai");
-            $table->date("waktu_selesai");
             $table->date("durasi");
+            $table->string("grade");
+            $table->string("catatan");
             $table->string("status");
+            
             $table->timestamps();
             
             $table->foreign("guru_id")->references("id")->on("guru")->onDelete("cascade");
+            $table->foreign("jadwal_id")->references("id")->on("jadwal")->onDelete("cascade");
             $table->foreign("mapel")->references("id")->on("mapel")->onDelete("cascade");
-            $table->foreign("kelas_id")->references("id")->on("kelas")->onDelete("cascade");
+            
         });
 
         

@@ -28,12 +28,12 @@
     </div>
   </div>
     </div>
-    <div class="panel-tabs has-text-info">
-      <a href="" class="has-text-info">Users</a>
-      <a href="" class="panel-item">Ujian</a>
-      <a href="">Bank Soal</a>
-      <a href="">Laporan Hasil Ujian</a>
-      <a href="">Materi</a>
+        <div class="panel-tabs has-text-info">
+      <a href="{{route('admin.index')}}" class="has-text-info">Users</a>
+      <a href="{{route('admin.siswa.index')}}" class="panel-item">Siswa</a>
+      <a href="{{route('admin.guru.index')}}">Guru</a>
+      <a href="{{route('admin.kelas')}}"> Kelas</a>
+      <a href="{{route('admin.mapel')}}">Mapel</a>
       
     </div>
   </div>

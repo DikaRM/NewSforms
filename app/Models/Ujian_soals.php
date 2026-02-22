@@ -1,18 +1,15 @@
 <?php
 
 namespace App\Models;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
 
-class Ujian_soals extends Authenticatable
+use Illuminate\Database\Eloquent\Model;
+
+class Ujian_soals extends Model
 {
-    use HasFactory, Notifiable;
-    protected $table = "Ujian_soals";
+    protected $table = "ujian_soals";
     protected $fillable = [
-        'ujian_id',
-        'bank_id',
+        "ujian_id",
+        "bank_id",
     ];
-
-
+    
 }

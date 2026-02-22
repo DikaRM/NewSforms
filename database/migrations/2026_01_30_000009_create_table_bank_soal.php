@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('opsi_b')->nullable();
             $table->string('opsi_c')->nullable();
             $table->string('opsi_d')->nullable();
-            $table->timestamp('jawaban_benar')->nullable();
+            $table->string('jawaban_benar')->nullable();
             
             $table->timestamps();
             $table->foreign("mapel_id")->references("id")->on("mapel")->onDelete("cascade");

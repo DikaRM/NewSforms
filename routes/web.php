@@ -1,43 +1,74 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
-
-Route::get('/', function () {
-    return view('welcome');
-});
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\GuruController;
 use App\Http\Controllers\SiswaController;
+use App\Http\Controllers\UsersController;
+use App\Http\Controllers\PengawasController;
+
 Route::get('/', function () {
     return view('welcome');
 });
-Route::get("/login",[App\Http\Controllers\UsersController::class,"index"]);
-Route::resource("/admin",AdminController::class);
 
-Route::post("/login/load",[App\Http\Controllers\UsersController::class,"login"])->name("users.store");
-Route::resource("/admin-siswa",App\Http\Controllers\SiswaController::class);
-Route::get("/siswa",[App\Http\Controllers\SiswaController::class,"Siswas"])->name("siswa.index");
-Route::get("/siswa/{id}",[App\Http\Controllers\SiswaController::class,"Starts"])->name("siswa.shop");
-Route::post("/siswa/saved",[App\Http\Controllers\SiswaController::class,"Saved"])->name("siswa.save");
-Route::post("/logout",[App\Http\Controllers\UsersController::class,"logout"])->name("users.logout");
-Route::resource("admin/siswa",SiswaController::class);
+Route::get("/login", [UsersController::class, "index"])->name("login");
+Route::post("/login/load", [UsersController::class, "login"])->name("users.store");
+Route::post("/logout", [UsersController::class, "logout"])->name("users.logout");
 
-  Route::resource("/admin-guru",App\Http\Controllers\GuruController::class);
-  Route::resource("/admin-siswa",App\Http\Controllers\SiswaController::class);
-Route::get("/guru",[App\Http\Controllers\GuruController::class,"TeachIndex"])->name("guru.index");
-Route::post("/guru/create-soal",[App\Http\Controllers\GuruController::class,"rheina"])->name("soal.save");
-Route::delete("/guru/create-soal/pus/{id}",[App\Http\Controllers\GuruController::class,"bowl"])->name("soal.destroy");
-Route::post("/guru",[App\Http\Controllers\GuruController::class,"CreateUjian"])->name("guru.store");
-Route::get("/guru/create-soal/{id}",[App\Http\Controllers\GuruController::class,"CreateSoal"])->name("guru.create");
-Route::put("/guru/save/{id}",[App\Http\Controllers\GuruController::class,"def"])->name("ujian.sold");
-Route::get("/admin-kelas",[AdminController::class,"KelasIndex"])->name("admin.kelas");
-Route::post("/admin-kelas",[AdminController::class,"KelasCreate"])->name("admin.tambah");
-Route::put("/admin-kelas/{id}",[AdminController::class,"KelasUpdate"])->name("admin.date");
-Route::delete("/admin-kelas/{id}",[AdminController::class,"KelasDestroy"])->name("admin.let");
-Route::post("/admin-kelas/{id}",[AdminController::class,"AddSiswa"])->name("admin.ade");
-Route::get("/admin-mapel",[AdminController::class,"MapelIndex"])->name("admin.mapel");
-Route::post("/admin-mapel/buat",[AdminController::class,"Made"])->name("admin.made");
-Route::put("/admin-mapel/{id}",[AdminController::class,"MapelUpdate"])->name("admin.deat");
-Route::delete("/admin-mapel/{id}",[AdminController::class,"MapelDestroy"])->name("admin.letroy");
-Route::post("/admin-mapel",[AdminController::class,"AddGuru"])->name("admin.built");
-?>
+// ADMIN ROUTES
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    
+    Route::resource('/', AdminController::class);
+    Route::resource('/guru', GuruController::class);
+    Route::resource('/siswa', SiswaController::class);
+    
+    Route::get('/kelas', [AdminController::class, 'KelasIndex'])->name('kelas');
+    Route::post('/kelas', [AdminController::class, 'KelasCreate'])->name('tambah');
+    Route::put('/kelas/{id}', [AdminController::class, 'KelasUpdate'])->name('date');
+    Route::delete('/kelas/{id}', [AdminController::class, 'KelasDestroy'])->name('let');
+    Route::post('/kelas/{id}', [AdminController::class, 'AddSiswa'])->name('ade');
+    
+    Route::get('/mapel', [AdminController::class, 'MapelIndex'])->name('mapel');
+    Route::post('/mapel/buat', [AdminController::class, 'Made'])->name('made');
+    Route::put('/mapel/{id}', [AdminController::class, 'MapelUpdate'])->name('deat');
+    Route::delete('/mapel/{id}', [AdminController::class, 'MapelDestroy'])->name('letroy');
+    Route::post('/mapel', [AdminController::class, 'AddGuru'])->name('built');
+});
+
+// SISWA ROUTES
+Route::middleware(['auth', 'role:siswa'])->prefix('siswa')->name('siswa.')->group(function () {
+    Route::get('/', [SiswaController::class, 'Siswas'])->name('index');
+    Route::get('/riwayat', [SiswaController::class, 'riwayat'])->name('riwayat');
+    Route::get('/jadwal', [SiswaController::class, 'jadwal'])->name('jadwal');
+    Route::get('/{id}', [SiswaController::class, 'Starts'])->name('shop');
+    Route::post('/saved', [SiswaController::class, 'Saved'])->name('save');
+    
+});
+
+// GURU ROUTES
+Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(function () {
+    Route::get('/', [GuruController::class, 'TeachIndex'])->name('index');
+    Route::post('/create-soal', [GuruController::class, 'rheina'])->name('soal.save');
+    Route::delete('/create-soal/pus/{id}', [GuruController::class, 'bowl'])->name('soal.destroy');
+    Route::post('/', [GuruController::class, 'CreateUjian'])->name('store');
+    Route::get('/create-soal/{id}', [GuruController::class, 'CreateSoal'])->name('create');
+    Route::put('/save/{id}', [GuruController::class, 'def'])->name('ujian.sold');
+    Route::get('/jadwal', [GuruController::class, 'jadwal'])->name('jadwal');
+    Route::get('/result', [GuruController::class, 'result'])->name('result');
+    Route::get('/hasil/{id}', [GuruController::class, 'hasil'])->name('hasil');
+    Route::get('/riwayat', [GuruController::class, 'riwayat'])->name('riwayat');
+});
+
+// PENGAWAS ROUTES
+Route::middleware(['auth', 'role:pengawas'])->prefix('pengawas')->name('pengawas.')->group(function () {
+    Route::get('/', [PengawasController::class, 'index'])->name('index');
+    Route::post('/pelanggarans/penalty', [SiswaController::class, 'Pelanggaran'])->name('pelanggaran.pen');
+});
+
+// ADMIN-OPS ROUTES
+Route::middleware(['auth', 'role:admin-ops'])->prefix('admin-ops')->name('admin-ops.')->group(function () {
+    Route::get('/', [AdminController::class, 'ops'])->name('index');
+    Route::get('/{id}', [AdminController::class, 'SetUji'])->name('set');
+    Route::post('/create', [AdminController::class, 'operateCreate'])->name('sav');
+});
+Route::resource('/admin', AdminController::class);

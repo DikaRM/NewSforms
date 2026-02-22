@@ -1,25 +1,16 @@
 <?php
 
 namespace App\Models;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
 
-class Mapel extends Authenticatable
+use Illuminate\Database\Eloquent\Model;
+
+class Mapel extends Model
 {
-    use HasFactory, Notifiable;
     protected $table = "mapel";
-    public $timestamps = false;
     protected $fillable = [
-        'nama_mapel',
+        "nama_mapel",
     ];
-    public function guru()
-    {
-      return $this->HasMany(Guru::class);
+    public function guru(){
+        return $this->belongsToMany(Guru::class,"guru_mapel");
     }
-    public function ujian(){
-      return $this->HasMany(Ujian::class,"mapel","id");
-    }
-
-
 }

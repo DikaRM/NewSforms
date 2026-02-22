@@ -27,7 +27,7 @@
   </h5>
   <div class="card">
     <div class="card-head">
-      <h5>{{\Carbon\Carbon::parse($uji->waktu_mulai)->format('d F Y H:i')}} S.d {{\Carbon\Carbon::parse($uji->waktu_selesai)->format('D F Y H:i')}}</h5> 
+      <h5>{{$uji->jadwal ? \Carbon\Carbon::parse($uji->jadwal->waktu_mulai)->format('d F Y H:i') : "Belum Ditentukan"}} </h5> 
     </div>
     <div class="card-content">
       <h5 class="title"></h5>
@@ -61,7 +61,7 @@
              <td>{{$b->jawaban_benar}}</td>
              <td>
              <button class="button is-warning is-dark" >Edit </button>
-             <form action="{{route('soal.destroy',['id' => $b->id])}}" method="post">
+             <form action="{{route('guru.soal.destroy',['id' => $b->id])}}" method="post">
              @csrf
              @method("DELETE")
              <button type="submit" class="button is-danger is-dark">Hapus</button>
@@ -85,7 +85,7 @@
                <h5 class="title">Tambah Soal</h5>
              </header>
              <section class="modal-card-body">
-               <form action="{{route('soal.save')}}" method="post">
+               <form action="{{route('guru.soal.save')}}" method="post">
                  @csrf
                  
                  <input type="hidden" class="input" name="guru_id" value="{{$uji->guru_id}}" readonly placeholder="{{$uji->nama_ujian}}">
@@ -144,13 +144,15 @@
        opsi.style.display="none"
        
      </script>
-    
-     <form action="{{route('ujian.sold',$uji->id)}}" method="post">
+    @if($uji->status === "draft")
+     <form action="{{route('guru.ujian.sold',$uji->id)}}" method="post">
        @csrf
        @method("PUT")
        <button class="button is-info is-fullwidth is-shadow" onclick="confirm('Yakin di Publish')" type="submit">Publish</button>
      </form>
-     
+    @else
+      <h5 class="title">Rekap Ujian</h5>
+    @endif
      
 </body>
 </html>

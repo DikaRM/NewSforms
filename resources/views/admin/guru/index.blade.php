@@ -15,7 +15,7 @@
       <h5 class="title">Forms Create</h5>
     </header>
     <section class="modal-card-body">
-      <form action="{{route('admin-guru.store')}}" method="post">
+      <form action="{{route('admin.guru.store')}}" method="post">
         @csrf
         <div class="field">
           <div class="control">
@@ -62,7 +62,7 @@
       <td>{{$s->nip}}</td>
       <td>
         <button class="button is-warning" onclick="document.getElementById('modd{{$s->user_id}}').classList.add('is-active')">Edit</button>
-        <form action="{{route('admin-guru.destroy',$s->id)}}" method="post">
+        <form action="{{route('admin.guru.destroy',$s->id)}}" method="post">
           @csrf
           @method("DELETE")
         <button class="button is-danger" onclick="confirm('Yakin Hapus Ini?')">Delete</button>
@@ -82,7 +82,7 @@
           </div>
         </header>
         <section class="modal-card-body">
-          <form action="{{route('admin-guru.update',$s->id)}}" method="post">
+          <form action="{{route('admin.guru.update',$s->id)}}" method="post">
             @csrf
             @method("PUT")
             <div class="field">

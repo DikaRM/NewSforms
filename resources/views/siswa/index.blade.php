@@ -7,6 +7,7 @@
 <title>Dashboard Siswa</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{{asset('bulma.min.css')}}">
 
 <style>
 * {
@@ -159,8 +160,60 @@ body {
     background: #fff3cd;
 }
 
+.button-container{
+  display: none;
+}
+
+
 .blue {
     background: #cfe2ff;
+}
+@media(max-width:768px){
+  .sidebar{
+    display:none;
+  }
+  .button-container {
+    display: block;
+  margin:10px auto;
+  display: flex;
+  background-color: rgba(0, 73, 144);
+  width: 250px;
+  height: 40px;
+  align-items: center;
+  justify-content: space-around;
+  border-radius: 10px;
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 7px,
+    rgba(0, 73, 144, 0.5) 5px 8px 10px;
+  transition: all 0.5s;
+}
+.button-container:hover {
+  width: 300px;
+  transition: all 0.5s;
+}
+
+.buttond {
+  outline: 0 !important;
+  border: 0 !important;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: all ease-in-out 0.3s;
+  cursor: pointer;
+}
+
+.buttond:hover {
+  transform: translateY(-3px);
+}
+
+.icon {
+  font-size: 20px;
+}
+  
 }
 </style>
 </head>
@@ -173,17 +226,55 @@ body {
         {{$ire->nama}}<i class="fa fa-chevron-down"></i>
     </div>
 </div>
+<div class="button-container">
+  <a href="{{route('siswa.index')}}"class="buttond">
+    <svg
+      class="icon"
+      stroke="currentColor"
+      fill="currentColor"
+      stroke-width="0"
+      viewBox="0 0 1024 1024"
+      height="1em"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M946.5 505L560.1 118.8l-25.9-25.9a31.5 31.5 0 0 0-44.4 0L77.5 505a63.9 63.9 0 0 0-18.8 46c.4 35.2 29.7 63.3 64.9 63.3h42.5V940h691.8V614.3h43.4c17.1 0 33.2-6.7 45.3-18.8a63.6 63.6 0 0 0 18.7-45.3c0-17-6.7-33.1-18.8-45.2zM568 868H456V664h112v204zm217.9-325.7V868H632V640c0-22.1-17.9-40-40-40H432c-22.1 0-40 17.9-40 40v228H238.1V542.3h-96l370-369.7 23.1 23.1L882 542.3h-96.1z"
+      ></path>
+    </svg>
+  </a>
+  
+    <a href="{{route('siswa.riwayat')}}" class="buttond">
+    <i class="icon fa fa-history"></i></a>
+  <a href="{{route('siswa.jadwal')}}" class="buttond">
+    
+    <i class="icon fa fa-calendar"></i>
+  </a>
 
+ 
+</div>
 <div class="container">
     
     <!-- Sidebar -->
     <div class="sidebar">
         <ul>
-            <li><i class="fa fa-home"></i> Dashboard</li>
-            <li><i class="fa fa-calendar"></i> Jadwal Ujian</li>
-            <li><i class="fa fa-history"></i> Riwayat</li>
-            <li><i class="fa fa-file"></i> Hasil Ujian</li>
-        </ul>
+            <li>
+              <a href="{{route('siswa.index')}}" class="navbar-item">
+                <i class="fa fa-home"></i> Dashboard
+              </a>
+              </li>
+            <li>
+              <a href="{{route('siswa.jadwal')}}" class="navbar-item">
+                              <i class="fa fa-calendar"></i> Jadwal Ujian
+              </a>
+</li>
+            <li>
+              <a href="{{route('siswa.riwayat')}}" class="navbar-item">
+                              <i class="fa fa-history"></i> Riwayat
+              </li>
+              </a>
+
+            
 
         <div class="logout">
             <form action="{{ route('users.logout') }}" method="post">
@@ -196,17 +287,21 @@ body {
 
     <!-- Main Content -->
     <div class="main">
+      <form action="{{ route('users.logout') }}" method="post">
+                @csrf
+                <button type="submit"> <i class="fa fa-sign-out-alt"></i> Logout</button>
+            </form>
         <h1>Dashboard</h1>
 
         <div class="cards">
-            <a href="">
+            <a href="{{route('siswa.jadwal')}}">
             <div class="card pink">
                 <h3>Jadwal Ujian</h3>
                 <p>Halaman untuk melihat jadwal ujian siswa.</p>
                 <div class="arrow"><i class="fa fa-arrow-right"></i></div>
             </div>
             </a>
-    <a href="">
+    <a href="{{route('siswa.riwayat')}}">
             <div class="card yellow">
                 <h3>Riwayat</h3>
                 <p>Halaman untuk melihat riwayat ujian.</p>
@@ -224,13 +319,20 @@ body {
             <div class="exam">
               <div>
                 <strong>{{$uj->nama_ujian}}</strong><br>
-                <small>{{\Carbon\Carbon::parse($uj->waktu_mulai)->format('D F Y H:i')}}</small>
+                <small>{{\Carbon\Carbon::parse($uj->jadwal->waktu_mulai)->format('D F Y H:i')}}</small>
             </div>
           @if($uj->status === "ready")
-            <a href="{{route('siswa.shop',$uj->id)}}" class="badge open">{{$uj->status}}</a>
+            @if(session("success"))
+                <span class="tag is-primary is-medium">Done</span>
+                
+              @else
+                <a href="{{route('siswa.shop',$uj->id)}}" class="button is-primary">{{$uj->status}}</a>
             </div>
+                @endif
           @elseif($uj->status === "done")
-              <span class="badge">{{$uj->status}}</span>
+              
+                  
+              <span class="tag is-info">{{$uj->status}}</span>
           @else
            <h5 class="title">On Going</h5>
            

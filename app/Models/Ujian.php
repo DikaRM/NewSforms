@@ -1,43 +1,33 @@
 <?php
 
 namespace App\Models;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
 
-class Ujian extends Authenticatable
+use Illuminate\Database\Eloquent\Model;
+
+class Ujian extends Model
 {
-    use HasFactory, Notifiable;
     protected $table = "ujian";
     protected $fillable = [
-        'mapel',
-        'kelas_id',
-        'guru_id',
-        'nama_ujian',
-        'waktu_mulai',
-        'waktu_selesai',
-        'durasi',
-        'status',
-        
+        "mapel",
+        "guru_id",
+        "nama_ujian",
+        "grade",
+        "catatan",
+        "status",
+        "durasi",
+        "jadwal_id"
     ];
-    public function guru()
-    {
-      return $this->belongsTo(Guru::class);
+    public function mapels(){
+        return $this->belongsTo(Mapel::class,"mapel");
     }
-    
-    public function mapels()
-    {
-      return $this->belongsTo(Mapel::class,"mapel","id");
+    public function guru(){
+        return $this->belongsTo(Guru::class);
     }
-    public function kelas()
-    {
-      return $this->belongsTo(Kelas::class);
+    public function kelas (){
+      return $this->belongsToMany(Kelas::class,'kelas_ujian',"kelas_id","ujian_id");
     }
-    public function statusCheck($value){
-      if($this->waktu_selesai <= Carbon::now() && $value !== "done"){
-        \DB::table("ujian")->where('id',$this->id)->where("status","!==","done")->update(["status" => "done"]);
-        return "done";
-      }
-      return $value;
+    public function jadwal()
+    {
+      return $this->belongsTo(Jadwal::class);
     }
 }

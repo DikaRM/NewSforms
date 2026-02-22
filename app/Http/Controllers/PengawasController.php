@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
+use App\Models\Pengawas;
+use App\Models\Jadwal;
+use App\Models\Siswa;
+use App\Models\Kelas;
+use App\Models\Pelanggaran;
 class PengawasController
 {
     /**
@@ -11,7 +15,10 @@ class PengawasController
      */
     public function index()
     {
-        //
+      $data = Pengawas::with("user","guru")->first();
+      $jads = Jadwal::with("ujian")->where("pengawas_id",$data->id)->get();
+      $sis = Siswa::with("kelas")->get();
+        return view("pengawas.index",compact('data','jads','sis'));
     }
 
     /**
@@ -27,7 +34,20 @@ class PengawasController
      */
     public function store(Request $request)
     {
-        //
+      $js = Jadwal::find($request->ujian_id);
+        Berita::create([
+          "siswa_id" => $request->siswa_id,
+          "ujian_id" => $request->ujian_id,
+          "pengawas_id" => $js->pengawas_id,
+          "catatan" => $request->catatan,
+          
+          ]);
+        Pelanggaran::create([
+          "ujian_id" => $request->ujian_id,
+          "siswa_id" => $request->siswa_id,
+          "jenis_pelanggaran" => $request->catatan,
+          ]);
+          return redirect()->route("pengawas.show",["id" => $js->id]);
     }
 
     /**
@@ -35,7 +55,10 @@ class PengawasController
      */
     public function show(string $id)
     {
-        //
+      $jadk = Jadwal::find($id);
+      $data = Siswa::with("kelas")->where("kelas_id",$jadk->kelas_id)->get();
+      $pelan = Pelanggaran::with("siswa")->get();
+        return view("pengawas.main",compact("data","jadk","pelan"));
     }
 
     /**
