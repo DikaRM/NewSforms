@@ -301,7 +301,7 @@ body {
               {{$dt->ujian->nama_ujian}}
               </h5>
                 <p class="subtitle">
-                  Selesai {{\Carbon\Carbon::parse($dt->created_at)->format("H:i")}}
+                  Selesai {{\Carbon\Carbon::parse($dt->created_at)->format("d/m/y")}}
                 </p>
                 
             </div>

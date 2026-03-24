@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Guru;
 use App\Models\User;
 use App\Models\Ujian;
@@ -116,7 +118,7 @@ class GuruController
     public function CreateUjian(Request $request)
     {
       $es = Guru::where("nama",$request->nama)->first();
-      Ujian::create([
+      $noub = Ujian::create([
         "mapel" => $request->mapel_id,
         "guru_id" => $es->id,
         "nama_ujian" => $request->nama_ujian,
@@ -125,7 +127,7 @@ class GuruController
         "catatan" => $request->catatan,
         "status" => "draft",
         ]);
-        return redirect()->route("guru.index")->with("success","Berhasil Buat Ujian");
+        return redirect()->route("guru.create",["id" => $noub->id])->with("success","Berhasil Buat Ujian");
     }
     public function Uji()
     {
@@ -166,43 +168,238 @@ class GuruController
     public function bowl($id)
     {
       $ujian = Ujian::find($id);
-      #'$ju = Ujian_soals::find($id2); 
-      $ujian->delete();
-      #if($ju){
-      #$ju->delete();
-      #dd("Halo");
-      #}
+      $ju = Ujian_soals::find($id2); 
+      ujian->delete();
+      if($ju){
+      $ju->delete();
+     
+      }
       return redirect()->route("guru.create",['id' => $id]);
     }
-    public function def($id)
-    {
-      $ujia = Ujian::find($id);
-      $ujia->update([
-        "status" => "ready"]);
-      return redirect()->route("guru.index");
+    public function def(Request $request, $id)
+{
+    $request->validate([
+        'guru_id' => 'required|exists:guru,id',
+        'mapel_id' => 'required|exists:mapel,id',
+        'soal' => 'required|array|min:1',
+        'soal.*.soal' => 'required|string',
+        'soal.*.opsi_a' => 'required|string',
+        'soal.*.opsi_b' => 'required|string',
+        'soal.*.opsi_c' => 'required|string',
+        'soal.*.opsi_d' => 'required|string',
+        'soal.*.jawaban_benar' => 'required|in:a,b,c,d',
+        'soal.*.gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    ]);
+
+    try {
+        DB::beginTransaction();
+
+        // Cari ujian
+        $ujian = Ujian::findOrFail($id);
+        
+        // ============================================
+        // OPTIMASI 1: BATCH INSERT BANK SOAL
+        // ============================================
+        $bankData = [];
+        $gambarPaths = []; // Simpan path gambar untuk referensi
+        
+        // Loop untuk menyiapkan data batch
+        foreach ($request->soal as $index => $soalData) {
+            // Upload gambar jika ada
+            $gambarPath = null;
+            if (isset($soalData['gambar']) && $soalData['gambar']->isValid()) {
+                $gambarPath = $soalData['gambar']->store('soal_images', 'public');
+                $gambarPaths[$index] = $gambarPath;
+            }
+
+            // Siapkan data untuk batch insert
+            $bankData[] = [
+                'guru_id' => $request->guru_id,
+                'mapel_id' => $request->mapel_id,
+                'soal' => $soalData['soal'],
+                'gambar' => $gambarPath,
+                'opsi_a' => $soalData['opsi_a'],
+                'opsi_b' => $soalData['opsi_b'],
+                'opsi_c' => $soalData['opsi_c'],
+                'opsi_d' => $soalData['opsi_d'],
+                'jawaban_benar' => $soalData['jawaban_benar'],
+                'tipe' => 'pilihan_ganda',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        // BATCH INSERT - 1 QUERY untuk semua soal!
+        banksoal::insert($bankData);
+        
+        // ============================================
+        // OPTIMASI 2: Ambil ID yang baru diinsert
+        // ============================================
+        // Cara 1: Jika pakai auto increment, ambil ID terakhir
+        $lastId = banksoal::latest()->first()->id;
+        $totalSoal = count($bankData);
+        $newBankIds = range($lastId - $totalSoal + 1, $lastId);
+        
+        // Atau Cara 2: Lebih aman - query berdasarkan timestamp
+        // $newBankIds = banksoal::where('guru_id', $request->guru_id)
+        //                 ->where('created_at', '>=', now()->subSeconds(2))
+        //                 ->pluck('id')
+        //                 ->toArray();
+
+        // ============================================
+        // OPTIMASI 3: BATCH INSERT RELASI
+        // ============================================
+        $relasiData = [];
+        foreach ($newBankIds as $bankId) {
+            $relasiData[] = [
+                'ujian_id' => $ujian->id,
+                'bank_id' => $bankId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+        
+        // BATCH INSERT - 1 QUERY untuk semua relasi!
+        Ujian_soals::insert($relasiData);
+
+        // ============================================
+        // OPTIMASI 4: UPDATE STATUS (tetap 1 query)
+        // ============================================
+        $ujian->update(['status' => 'ready']);
+
+        DB::commit();
+
+        // Log untuk monitoring performa
+        \Log::info('Batch insert berhasil', [
+            'total_soal' => count($bankData),
+            'total_query' => 3 // Hanya 3 query! (insert bank, insert relasi, update)
+        ]);
+
+        return redirect()->route('guru.index')
+            ->with('success', "✅ Berhasil menyimpan " . count($bankData) . " soal dengan gambar (Hanya 3 query!)");
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        // Hapus gambar yang sudah terupload jika gagal
+        if (isset($gambarPaths)) {
+            foreach ($gambarPaths as $path) {
+                if ($path && Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+        }
+        
+        return redirect()->back()
+            ->with('error', '❌ Gagal menyimpan soal: ' . $e->getMessage())
+            ->withInput();
     }
+}
+    
+    // Method untuk update soal dengan gambar
+    public function updateSoal(Request $request, $id)
+    {
+        $request->validate([
+            'soal' => 'required|string',
+            'opsi_a' => 'required|string',
+            'opsi_b' => 'required|string',
+            'opsi_c' => 'required|string',
+            'opsi_d' => 'required|string',
+            'jawaban_benar' => 'required|in:a,b,c,d',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        try {
+            $bankSoal = banksoal::findOrFail($id);
+            
+            // Upload gambar baru jika ada
+            if ($request->hasFile('gambar')) {
+                // Hapus gambar lama
+                if ($bankSoal->gambar) {
+                    Storage::disk('public')->delete($bankSoal->gambar);
+                }
+                
+                $gambarPath = $request->file('gambar')->store('soal_images', 'public');
+                $bankSoal->gambar = $gambarPath;
+            }
+            
+            // Update data
+            $bankSoal->update([
+                'soal' => $request->soal,
+                'opsi_a' => $request->opsi_a,
+                'opsi_b' => $request->opsi_b,
+                'opsi_c' => $request->opsi_c,
+                'opsi_d' => $request->opsi_d,
+                'jawaban_benar' => $request->jawaban_benar,
+            ]);
+
+            return redirect()->back()->with('success', 'Soal berhasil diupdate');
+            
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal update soal: ' . $e->getMessage());
+        }
+    }
+    
+    // Method untuk hapus soal dengan gambar
+    public function hapus($id)
+    {
+        try {
+            $bankSoal = banksoal::findOrFail($id);
+            
+            // Hapus gambar dari storage
+            if ($bankSoal->gambar) {
+                Storage::disk('public')->delete($bankSoal->gambar);
+            }
+            
+            // Hapus relasi di ujian_soals
+            Ujian_soals::where('bank_id', $id)->delete();
+            
+            // Hapus soal
+            $bankSoal->delete();
+            
+            return redirect()->back()->with('success', 'Soal berhasil dihapus');
+            
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal hapus soal: ' . $e->getMessage());
+        }
+    }
+
     public function result(){
-      $data = Ujian::all();
+      $ire = Auth::user();
+      $dt = Guru::where("nama",$ire->nama)->first();
+      $data = Ujian::where("guru_id",$dt->id)->get();
       $val = Peserta_ujian::with("siswa");
       $ire = Auth::user();
-      return view("guru.hasil",compact("data","ire","val"));
+      $dt = Guru::where("nama",$ire->nama)->first();
+      return view("guru.hasil",compact("data","ire","val","dt"));
     }
-    public function hasil($id){
-      $data = Ujian::with("kelas")->where("id",$id)->get();
-      $val = Peserta_ujian::with("siswa")->whereHas("siswa")->get();
-      $ire = Auth::user();
-      return view("guru.result",compact("data","ire","val"));
-    }
+    public function hasil($id)
+{
+    // Ambil semua peserta ujian berdasarkan id ujian
+    $pesertaUjian = Peserta_ujian::with(['siswa', 'pelanggaran'])
+                    ->where('ujian_id', $id)
+                    ->get();
+
+    // Ambil data ujian (untuk judul, dll)
+    $ujian = Ujian::find($id);
+
+    return view('guru.result', compact('pesertaUjian', 'ujian'));
+}
     public function riwayat(){
-      $data = Ujian::with("jadwal")->get();
       $ire = Auth::user();
-      return view("guru.riwayat",compact("data","ire"));
+      $dt = Guru::where("nama",$ire->nama)->first();
+      $data = Ujian::with("jadwal")->where("guru_id",$dt->id)->get();
+      return view("guru.riwayat",compact("data","ire","dt"));
     }
     public function jadwal(){
       $data = Jadwal::with("kelas");
       $ire = Auth::user();
-      return view("guru.jadwal",compact("data","ire"));
+      $dt = Guru::where("nama",$ire->nama)->first();
+      return view("guru.jadwal",compact("data","ire","dt"));
     }
-    
+    public function sed(Request $request){
+      
+      return redirect()->route("guru.index");
+    }
     
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Pengawas;
 use App\Models\Jadwal;
+use App\Models\Berita;
 use App\Models\Siswa;
 use App\Models\Kelas;
 use App\Models\Pelanggaran;
@@ -13,12 +14,18 @@ class PengawasController
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index($id)
     {
-      $data = Pengawas::with("user","guru")->first();
-      $jads = Jadwal::with("ujian")->where("pengawas_id",$data->id)->get();
+      $id = $id;
+      $data = Pengawas::with("user","guru")->where("guru_id",$id)->get();
+      
+      if(!$data){
+        return redirect()->route("guru.index");
+      }
+      $datas = $data->pluck("id");
+      $jads = Jadwal::with("ujian")->whereIn("pengawas_id",$datas)->get();
       $sis = Siswa::with("kelas")->get();
-        return view("pengawas.index",compact('data','jads','sis'));
+        return view("pengawas.index",compact('data','jads','sis',"id"));
     }
 
     /**

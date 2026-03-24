@@ -24,10 +24,14 @@ class Ujian extends Model
         return $this->belongsTo(Guru::class);
     }
     public function kelas (){
-      return $this->belongsToMany(Kelas::class,'kelas_ujian',"kelas_id","ujian_id");
+      return $this->belongsToMany(Kelas::class,'kelas_ujian',"ujian_id","kelas_id");
     }
     public function jadwal()
     {
       return $this->belongsTo(Jadwal::class);
+    }
+    public function peserta()
+    {
+      return $this->hasMany(Peserta_ujian::class);
     }
 }

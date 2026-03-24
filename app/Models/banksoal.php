@@ -9,6 +9,7 @@ class banksoal extends Model
     protected $table = "bank";
     protected $fillable = [
         "soal",
+        "gambar",
         "guru_id",
         "mapel_id",
         "opsi_a",
@@ -16,6 +17,7 @@ class banksoal extends Model
         "opsi_c",
         "opsi_d",
         "jawaban_benar",
+        "tipe",
     ];
     public function mapel(){
         return $this->belongsTo(Mapel::class);

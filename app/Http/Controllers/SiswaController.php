@@ -113,15 +113,38 @@ class SiswaController
     }
     public function Siswas()
     {
-      $ire = Auth::user();
-      $data = Siswa::with("kelas")->where("nama",$ire->nama)->first();
-      $kelasid = $data->kelas_id;
-      $uji = Ujian::with("kelas","jadwal")->whereHas("kelas",function($query) use ($kelasid){
-        $query->where("kelas_ujian.kelas_id",$kelasid);
-      })
-      ->get();
-      $hasil = Peserta_ujian::where("siswa_id",$data->id_siswa)->get();
-      return view("siswa.index",compact("ire","data","uji","hasil"));
+      
+    $user = Auth::user();
+    
+    // Ambil data siswa dengan relasi
+    $siswa = Siswa::with('kelas')
+        ->where('nama', $user->nama)
+        ->firstOrFail(); // Gunakan firstOrFail untuk keamanan
+    
+    // Ambil semua ujian untuk kelas siswa beserta status peserta
+    $uji = Ujian::with(['kelas', 'jadwal'])
+        ->whereHas('kelas', function($query) use ($siswa) {
+            $query->where('kelas_ujian.kelas_id', $siswa->kelas_id);
+        })
+        ->with(['peserta' => function($query) use ($siswa) {
+            // Langsung filter peserta untuk siswa ini
+            $query->where('siswa_id', $siswa->id_siswa);
+        }])
+        ->get();
+    
+    // Transform data untuk memudahkan di view
+    foreach ($uji as $u) {
+        // Set status berdasarkan data peserta
+        $peserta = $u->peserta->first();
+        $u->status_ujian = $peserta ? $peserta->status : 'belum_mulai';
+        $u->nilai_siswa = $peserta ? $peserta->nilai : null;
+        
+        // Hapus data peserta dari relasi (sudah dipindah ke properti baru)
+        unset($u->peserta);
+    }
+    $ire = $user;
+    return view("siswa.index", compact("siswa", "uji","ire"));
+
     }
     public function Starts($id)
 {
