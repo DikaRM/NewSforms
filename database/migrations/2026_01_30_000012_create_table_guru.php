@@ -13,14 +13,22 @@ return new class extends Migration
     {
         Schema::create('guru', function (Blueprint $table) {
             $table->id();
-            $table->string('user_id');
-            $table->string('nama');
-            
-            $table->string("nip");
+            $table->string('user_id')->index();           // index untuk relasi ke user
+            $table->string('nama')->index();              // index untuk pencarian by nama
+            $table->string("nip")->unique()->index();     // unique + index untuk NIP
             $table->timestamps();
+            
+            // ============ TAMBAHAN INDEX OPTIMASI ============
+            
+            // Index untuk created_at (sorting/filter tanggal)
+            $table->index('created_at');
+            
+            // Composite index untuk pencarian kombinasi
+            $table->index(['nama', 'nip']);               // untuk pencarian by nama dan NIP
+            
+            // Foreign key ke tabel users (jika diperlukan)
+            // $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
-
-        
     }
 
     /**

@@ -13,19 +13,34 @@ return new class extends Migration
     {
         Schema::create('kelas_ujian', function (Blueprint $table) {
             $table->id();
-            $table->string('kelas_id');
-            $table->string('ujian_id');
+            
+            // Ubah tipe data menjadi foreignId untuk kecepatan dan efisiensi
+            $table->foreignId('kelas_id')->constrained('kelas')->onDelete('cascade');
+            $table->foreignId('ujian_id')->constrained('ujian')->onDelete('cascade');
             
             $table->timestamps();
             
-            $table->foreign("kelas_id")->references("id")->on("kelas")->onDelete("cascade");
+            // ============ INDEXING STRATEGI ============
             
-            $table->foreign("ujian_id")->references("id")->on("ujian")->onDelete("cascade");
+            // 1. Single column indexes (untuk query per tabel)
+            // Query: WHERE kelas_id = ?
+            $table->index('kelas_id');
             
+            // Query: WHERE ujian_id = ?
+            $table->index('ujian_id');
             
+            // 2. Composite unique index (mencegah duplikasi data)
+            // Mencegah kombinasi kelas_id dan ujian_id yang sama terdaftar dua kali
+            $table->unique(['kelas_id', 'ujian_id']);
+            
+            // 3. Composite index untuk query yang melibatkan kedua kolom
+            // Query: WHERE kelas_id = ? AND ujian_id = ?
+            // (sebenarnya sudah tercakup oleh unique index di atas)
+            // $table->index(['kelas_id', 'ujian_id']); // tidak perlu karena unique sudah mencakup
+            
+            // 4. Index untuk created_at jika sering filter berdasarkan waktu
+            $table->index('created_at');
         });
-
-        
     }
 
     /**

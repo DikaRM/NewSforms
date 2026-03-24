@@ -192,11 +192,12 @@ class AdminController
       $uji = Ujian::with("kelas","mapels")->get();
       $sis = Siswa::all();
       $kla = Kelas::all();
-      return view("admin-sp.index",compact("uji","sis","kla"));
+      $jad = Jadwal::with("pengawas","ujian","kelas")->get();
+      return view("admin-sp.index",compact("uji","sis","kla","jad"));
     }
     public function SetUji($id)
     {
-      $jad = Jadwal::with("ujian")->where("kelas_id",$id)->get();
+      $jad = Jadwal::with("ujian","pengawas")->where("kelas_id",$id)->get();
       $klas = Kelas::find($id);
       $uji = Ujian::all();
       $penh = Pengawas::with("user","guru")->get();
@@ -204,36 +205,49 @@ class AdminController
       return view("admin-sp.jadwal",compact("uji","klas","jad",'gur','penh'));
       
     }
-    public function operateCreate(Request $request){
-      $uji = Ujian::find($request->ujian_id);
-      
-// Cek dulu apakah sudah ada
-if (!$uji->kelas()->where('kelas_id', $request->kelas_id)->exists()) {
-    $uji->kelas()->attach($request->kelas_id);
-}
-
-      
-      $guru = Guru::find($request->guru_id);
-      $tag = \Carbon\Carbon::parse($request->tanggal);
-      $sele = $tag->copy()->addMinutes($uji->durasi);
-      $was = Pengawas::create([
-        "guru_id" => $request->guru_id,
-        "user_id" => $guru->user_id,
+    public function operateCreate(Request $request)
+{
+    $uji = Ujian::find($request->ujian_id);
+    
+    // Cek dulu apakah sudah ada
+    if (!$uji->kelas()->where('kelas_id', $request->kelas_id)->exists()) {
+        $uji->kelas()->attach($request->kelas_id);
+    }
+    
+    $guru = Guru::find($request->guru_id);
+    
+    // Gabungkan tanggal dan waktu
+    $waktuMulai = \Carbon\Carbon::parse($request->tanggal . ' ' . $request->waktu_mulai);
+    $waktuSelesai = $waktuMulai->copy()->addMinutes($uji->durasi);
+    
+    // ============ CEK APAKAH PENGAWAS SUDAH ADA ============
+    $pengawas = Pengawas::where('guru_id', $request->guru_id)
+        ->where('user_id', $guru->user_id)
+        ->first();
+    
+    if (!$pengawas) {
+        // Jika belum ada, buat baru
+        $pengawas = Pengawas::create([
+            "guru_id" => $request->guru_id,
+            "user_id" => $guru->user_id,
         ]);
-        
-      $jads = Jadwal::create([
+    }
+    
+    $jads = Jadwal::create([
         "jam_mapel" => $request->jam_mapel,
         "tanggal" => $request->tanggal,
         "ujian_id" => $request->ujian_id,
-        "pengawas_id" => $was->id,
+        "pengawas_id" => $pengawas->id,  // Pakai yang sudah ada atau baru
         "kelas_id" => $request->kelas_id,
-        "waktu_mulai" => $request->tanggal,
-          "waktu_selesai" => $sele,
-        ]);
-        $uji->update([
+        "waktu_mulai" => $waktuMulai,
+        "waktu_selesai" => $waktuSelesai,
+    ]);
+    
+    $uji->update([
         "jadwal_id" => $jads->id, 
-        ]);
-      return redirect()->route("admin-ops.set",["id" => $request->kelas_id]);
-    }
+    ]);
+    
+    return redirect()->route("admin-ops.set", ["id" => $request->kelas_id]);
+}
     
 }

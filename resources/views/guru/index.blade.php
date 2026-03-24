@@ -253,7 +253,7 @@ body {
     <i class="icon fa fa-calendar"></i>
   </a>
 
-  <a href="{{route('pengawas.index')}}" class="buttond">
+  <a href="{{route('pengawas.index',$dt->id)}}" class="buttond">
               <i class="icon fa fa-person"></i>
   </a>
 </div>
@@ -278,7 +278,7 @@ body {
                 <i class="fa fa-file"></i> Hasil Ujian</li>
               </a>
               
-            <li><a href="{{route('pengawas.index')}}" class="has-text-light">
+            <li><a href="{{route('pengawas.index',$dt->id)}}" class="has-text-light">
               <i class="fa fa-person">Pengawas</i>
             </a></li>
         </ul>
@@ -394,33 +394,32 @@ body {
     </div>
   </div>
   @foreach($uji as $uj)
-  <div class="message is-primary">
-    <div class="message-header">
-      <h5>{{$uj->nama_ujian}}</h5>
-      
-   </div>
+  <article class="message is-dark">
+    
     <div class="message-body">
       {{$uj->durasi}} <br>
       {{$uj->jadwal ? \Carbon\Carbon::parse($uj->jadwal->waktu_mulai)->format("D F Y H:i") : "Belum Ditentukan"}} - {{$uj->jadwal ? \Carbon\Carbon::parse($uj->jadwal->waktu_selesai)->format("D F Y H:i") : "-"}} <br>
       {{$uj->id}} <br>
       
     </div>
-    <div class="buttons">
-      <form action="" method="post">
+    @if($uj->status === "draft")
+    <div class="buttons is-centered">
+      <form action="{{route('guru.soal.destroy',$uj->id)}}" method="post">
         @csrf
         @method("DELETE")
         <button type="submit" class="button is-danger">DELETE</button>
       </form>
       
         <a class="button is-primary" href="{{route('guru.create',$uj->id)}}">Manage</a>
-        @if($uj->status === "draft")
+        
         <button class="button is-info">Done</button>
         @else
-        <h5 class="title">Tersedia</h5>
+        <span class="tag is-primary is-medium has-text-centered ">Tersedia</span>
         @endif
-    </div>
-  </div>
+    </article>
+ 
   @endforeach
+   </div>
   </div>
 </body>
 </html>

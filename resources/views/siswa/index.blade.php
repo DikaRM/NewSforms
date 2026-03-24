@@ -17,6 +17,158 @@
     font-family: 'Segoe UI', sans-serif;
 }
 
+    /* Container utama */
+    .exam-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    /* Card styling */
+    .exam-card {
+        margin-bottom: 20px;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+        transition: all 0.3s ease;
+        border: 1px solid #f0f0f0;
+    }
+    
+    .exam-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important;
+    }
+    
+    /* Header card */
+    .exam-card .media {
+        border-bottom: 2px solid #f5f5f5;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .exam-card .title.is-4 {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 5px !important;
+    }
+    
+    .exam-card .subtitle.is-6 {
+        color: #7f8c8d;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .exam-card .subtitle.is-6 .icon {
+        font-size: 0.9rem;
+        color: #3498db;
+    }
+    
+    /* Nilai container */
+    .nilai-container {
+        text-align: center;
+        padding: 20px 0;
+    }
+    
+    .nilai-container .title.is-3 {
+        font-size: 4rem !important;
+        font-weight: 800 !important;
+        color: #27ae60 !important;
+        margin: 10px 0 !important;
+        text-shadow: 2px 2px 4px rgba(39, 174, 96, 0.2);
+    }
+    
+    /* Button styling */
+    .exam-card .button.is-primary {
+        min-width: 200px;
+        height: 50px;
+        font-weight: 600;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+    }
+    
+    .exam-card .button.is-primary:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+    
+    /* Tags */
+    .exam-card .tag {
+        padding: 10px 20px;
+        font-size: 1rem;
+        font-weight: 500;
+        border-radius: 20px;
+    }
+    
+    .exam-card .tag.is-info {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+    }
+    
+    .exam-card .tag.is-primary {
+        background: linear-gradient(135deg, #27ae60, #229954);
+    }
+    
+    .exam-card .tag.is-warning {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+        color: white;
+    }
+    
+    /* Icon spacing */
+    .exam-card .icon {
+        margin-right: 5px;
+    }
+    
+    /* Notification styling */
+    .exam-card .notification {
+        border-radius: 10px;
+        text-align: center;
+        margin: 10px 0;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .exam-container {
+            padding: 10px;
+        }
+        
+        .exam-card .title.is-4 {
+            font-size: 1.2rem;
+        }
+        
+        .exam-card .button.is-primary {
+            min-width: 150px;
+            height: 40px;
+            font-size: 0.9rem;
+        }
+        
+        .nilai-container .title.is-3 {
+            font-size: 3rem !important;
+        }
+    }
+    
+    /* Animasi masuk */
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .exam-card {
+        animation: slideIn 0.5s ease forwards;
+    }
+    
+    /* Stagger animation */
+    .exam-card:nth-child(1) { animation-delay: 0.1s; }
+    .exam-card:nth-child(2) { animation-delay: 0.2s; }
+    .exam-card:nth-child(3) { animation-delay: 0.3s; }
+    .exam-card:nth-child(4) { animation-delay: 0.4s; }
+    .exam-card:nth-child(5) { animation-delay: 0.5s; }
+
+
 body {
     background: #f3f5f9;
 }
@@ -86,7 +238,6 @@ body {
 
 /* Exam list */
 .exam{
-    display:flex;
     justify-content:space-between;
     padding:12px;
     border-bottom:1px solid #e5e7eb;
@@ -313,38 +464,96 @@ body {
         <div class="section mt-2">
         <h4>Ujian Hari Ini {{\Carbon\Carbon::now()->format('d/m/Y')}}</h4>
         @foreach($uji as $uj)
-      
+          @php 
+           $peserta = $uj->peserta->first();
+          @endphp
         
           
             <div class="exam">
               <div>
                 <strong>{{$uj->nama_ujian}}</strong><br>
-                <small>{{\Carbon\Carbon::parse($uj->jadwal->waktu_mulai)->format('D F Y H:i')}}</small>
+                <small>{{$uj->jadwal ? \Carbon\Carbon::parse($uj->jadwal->waktu_mulai)->format('D F Y H:i'):"Waktu Belum ditentukan"}}</small>
             </div>
-          @if($uj->status === "ready")
-            @if(session("success"))
-                <span class="tag is-primary is-medium">Done</span>
-                
-              @else
-                <a href="{{route('siswa.shop',$uj->id)}}" class="button is-primary">{{$uj->status}}</a>
-            </div>
-                @endif
-          @elseif($uj->status === "done")
-              
-                  
-              <span class="tag is-info">{{$uj->status}}</span>
-          @else
-           <h5 class="title">On Going</h5>
-           
-           @endif
-       
-      @endforeach
-       @foreach($hasil as $sil)
         
-            <h5 class="title">{{$sil->status}}</h5>
-            <h5 class="title is-family-code">Nilai Kamu : {{$sil->nilai}}</h5>
-          
-        @endforeach
+    @php
+        $peserta = $uj->peserta->first();
+    @endphp
+    
+    <div class="card exam-card">
+        <div class="card-content">
+            {{-- Header Card --}}
+            <div class="media">
+                <div class="media-content">
+                    <p class="title is-4">{{ $uj->mapels->nama_mapel }}</p>
+                    <p class="subtitle is-6">
+                        <span class="icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </span>
+                        {{$uj->jadwal ? \Carbon\Carbon::parse($uj->jadwal->waktu_mulai)->format('D F Y H:i'):"Waktu Belum ditentukan"}}
+                    </p>
+                </div>
+            </div>
+
+            {{-- Body Card --}}
+            <div class="content">
+                @if($uj->status === "ready")
+                    @if(session("success"))
+                        <div class="has-text-centered">
+                            <span class="tag is-primary is-medium">
+                                <span class="icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </span>
+                                <span>Done</span>
+                            </span>
+                        </div>
+                    @else
+                        <div class="has-text-centered">
+                            <a href="{{ route('siswa.shop', $uj->id) }}" 
+                               class="button is-primary is-medium">
+                                <span class="icon">
+                                    <i class="fas fa-play"></i>
+                                </span>
+                                <span>Mulai Ujian</span>
+                            </a>
+                        </div>
+                    @endif
+                    
+                @elseif($uj->status === "done")
+                    <div class="nilai-container">
+                        @if($peserta && $peserta->nilai)
+                            <h5 class="title is-3 has-text-success has-text-centered">
+                                {{ $peserta->nilai }}
+                            </h5>
+                            <p class="has-text-centered">
+                                <span class="tag is-info is-medium">
+                                    <span class="icon">
+                                        <i class="fas fa-flag-checkered"></i>
+                                    </span>
+                                    <span>Selesai</span>
+                                </span>
+                            </p>
+                        @else
+                            <div class="notification is-warning is-light">
+                                Nilai belum tersedia
+                            </div>
+                        @endif
+                    </div>
+                    
+                @else
+                    <div class="has-text-centered">
+                        <span class="tag is-warning is-medium">
+                            <span class="icon">
+                                <i class="fas fa-hourglass-half"></i>
+                            </span>
+                            <span>On Going</span>
+                        </span>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+@endforeach
+       
         </div>
 
 </div>

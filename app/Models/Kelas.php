@@ -11,7 +11,7 @@ class Kelas extends Model
         "nama_kelas",
     ];
     public function ujian(){
-        return $this->belongsToMany(Ujian::class,"kelas_ujian");
+        return $this->belongsToMany(Ujian::class,"kelas_ujian","kelas_id","ujian_id");
     }
     public function siswa()
     {

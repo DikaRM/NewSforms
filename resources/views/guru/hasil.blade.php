@@ -104,6 +104,7 @@ body {
 
 /* ===== MAIN CONTENT ===== */
 .main {
+  height: 100vh;
     flex: 1;
     padding: 30px;
 }
@@ -252,7 +253,7 @@ body {
     <i class="icon fa fa-calendar"></i>
   </a>
 
-  <a href="{{route('pengawas.index')}}" class="buttond">
+  <a href="{{route('pengawas.index',$dt->id)}}" class="buttond">
               <i class="icon fa fa-person"></i>
   </a>
 </div>
@@ -276,7 +277,7 @@ body {
                 <i class="fa fa-file"></i> Hasil Ujian</li>
               </a>
               
-            <li><a href="{{route('pengawas.index')}}" class="has-text-light">
+            <li><a href="{{route('pengawas.index',$dt->id)}}" class="has-text-light">
               <i class="fa fa-person">Pengawas</i>
             </a></li>
         </ul>
@@ -300,8 +301,8 @@ body {
           </h5>
          <a href="{{route('guru.hasil',$dt->id)}}" class="button is-link is-outlined is-fullwidth mx-2">Lihat Rekap</a>
         </div>
-        </div>
         @endforeach
+        </div>
         
         
 </body>

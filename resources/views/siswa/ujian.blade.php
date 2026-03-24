@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta chars  et="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Ujian {{$uji->nama_ujian}}</title>
   <link rel="stylesheet" href="{{asset('bulma.min.css')}}">
@@ -38,6 +38,12 @@
       background: white;
       cursor: pointer;
       font-weight: bold;
+      transition: all 0.2s;
+    }
+    
+    .nav-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
     
     .nav-btn.answered {
@@ -52,9 +58,13 @@
       border-color: #3273dc;
     }
     
-    .nav-btn.warning {
-      background-color: #ffe08a;
-      border-color: #ffdd57;
+    .nav-btn.essay {
+      border: 2px solid #ffdd57;
+    }
+    
+    .nav-btn.essay.answered {
+      background-color: #ffdd57;
+      color: #333;
     }
     
     .nav-controls {
@@ -89,6 +99,167 @@
       height: 20px;
       border-radius: 3px;
     }
+    
+    /* Style untuk gambar soal */
+    .soal-gambar {
+      margin: 15px 0;
+      text-align: center;
+      border: 1px dashed #ddd;
+      padding: 10px;
+      border-radius: 5px;
+      background: #fafafa;
+    }
+    
+    .soal-gambar img {
+      max-width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+      border-radius: 5px;
+    }
+    
+    /* Style untuk opsi jawaban */
+    .opsi-container {
+      margin: 20px 0;
+    }
+    
+    .opsi-item {
+      margin-bottom: 12px;
+      padding: 10px;
+      border-radius: 5px;
+      transition: background 0.2s;
+    }
+    
+    .opsi-item:hover {
+      background: #f5f5f5;
+    }
+    
+    .opsi-label {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      line-height: 30px;
+      text-align: center;
+      background: #3273dc;
+      color: white;
+      border-radius: 50%;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    
+    .opsi-label.selected {
+      background: #48c774;
+    }
+    
+    .radio {
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    
+    .radio:hover {
+      background: #f0f0f0;
+    }
+    
+    .radio input[type="radio"] {
+      margin-right: 15px;
+      transform: scale(1.2);
+    }
+    
+    /* Style untuk soal essay */
+    .essay-container {
+      margin: 20px 0;
+    }
+    
+    .essay-label {
+      font-weight: bold;
+      color: #ffdd57;
+      background: #333;
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 3px;
+      margin-bottom: 10px;
+    }
+    
+    .essay-input {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #ffdd57;
+      border-radius: 5px;
+      font-size: 16px;
+      min-height: 120px;
+    }
+    
+    .essay-input:focus {
+      outline: none;
+      box-shadow: 0 0 5px rgba(255, 221, 87, 0.5);
+    }
+    
+    /* Style untuk card soal */
+    .soal-card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .soal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .soal-nomor {
+      background: #3273dc;
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+    }
+    
+    .soal-tipe {
+      background: #f0f0f0;
+      padding: 3px 10px;
+      border-radius: 15px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+    
+    .tipe-pg {
+      color: #3273dc;
+    }
+    
+    .tipe-essay {
+      color: #ffdd57;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .columns {
+        display: block;
+      }
+      
+      .column.is-3 {
+        width: 100%;
+      }
+      
+      .soal-navigator {
+        position: relative;
+        top: 0;
+        max-height: none;
+        margin-bottom: 20px;
+      }
+      
+      .nav-grid {
+        grid-template-columns: repeat(8, 1fr);
+      }
+    }
   </style>
 </head>
 <body>
@@ -105,19 +276,24 @@
             <p><strong>{{$ire->nama}}</strong></p>
             <p>Kelas: {{$sis->kelas->nama_kelas}}</p>
             <p>Mapel: {{$uji->mapels->nama_mapel}}</p>
-            <p>Waktu: <span id="display" class="has-text-weight-bold"></span></p>
+            <p>Waktu: <span id="display" class="has-text-weight-bold has-text-danger"></span></p>
           </div>
           
           {{-- Grid Nomor Soal --}}
           <div class="nav-grid" id="soalNavGrid">
             @foreach($soal as $index => $s)
               @php
-                $soalId = $s->id;
-                $isAnswered = false;
-                // Cek apakah soal ini sudah dijawab (akan diisi JavaScript)
+                $tipe = $s->tipe ?? 'pilihan_ganda';
+                $extraClass = $tipe == 'essay' ? 'essay' : '';
               @endphp
-              <button class="nav-btn" data-soal-id="{{$s->id}}" data-index="{{$index}}">
+              <button class="nav-btn {{$extraClass}}" 
+                      data-soal-id="{{$s->id}}" 
+                      data-index="{{$index}}"
+                      data-tipe="{{$tipe}}">
                 {{$index + 1}}
+                @if($tipe == 'essay')
+                  <span style="font-size: 8px; display: block;">✍️</span>
+                @endif
               </button>
             @endforeach
           </div>
@@ -135,6 +311,10 @@
             <div class="legend-item">
               <div class="legend-color" style="background: white; border: 1px solid #ddd;"></div>
               <span>Belum dijawab</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #ffdd57;"></div>
+              <span>Essay</span>
             </div>
           </div>
           
@@ -163,38 +343,94 @@
             {{-- Container Soal --}}
             <div id="soalContainer">
               @foreach($soal as $index => $s)
-                <div class="soal-container" data-soal-id="{{$s->id}}" data-index="{{$index}}">
-                  <h5 class="subtitle">{{$index + 1}}. {{$s->soal}}</h5>
-                  
-                  @if($s->opsi_a != null)
-                    <div class="control">
-                      <label class="radio">
-                        <input type="radio" name="jawaban[{{$s->id}}]" value="a" 
-                               class="jawaban-radio" data-soal-id="{{$s->id}}">
-                        {{$s->opsi_a}}
-                      </label>
-                      <label class="radio">
-                        <input type="radio" name="jawaban[{{$s->id}}]" value="b"
-                               class="jawaban-radio" data-soal-id="{{$s->id}}">
-                        {{$s->opsi_b}}
-                      </label>
-                      <label class="radio">
-                        <input type="radio" name="jawaban[{{$s->id}}]" value="c"
-                               class="jawaban-radio" data-soal-id="{{$s->id}}">
-                        {{$s->opsi_c}}
-                      </label>
-                      <label class="radio">
-                        <input type="radio" name="jawaban[{{$s->id}}]" value="d"
-                               class="jawaban-radio" data-soal-id="{{$s->id}}">
-                        {{$s->opsi_d}}
-                      </label>
+                @php
+                  $tipe = $s->tipe ?? 'pilihan_ganda';
+                @endphp
+                <div class="soal-container" data-soal-id="{{$s->id}}" data-index="{{$index}}" data-tipe="{{$tipe}}">
+                  <div class="soal-card">
+                    {{-- Header Soal --}}
+                    <div class="soal-header">
+                      <span class="soal-nomor">Soal {{$index + 1}}</span>
+                      <span class="soal-tipe {{$tipe == 'essay' ? 'tipe-essay' : 'tipe-pg'}}">
+                        @if($tipe == 'essay')
+                          <i class="fas fa-pencil-alt"></i> Essay
+                        @else
+                          <i class="fas fa-check-circle"></i> Pilihan Ganda
+                        @endif
+                      </span>
                     </div>
-                  @else
-                    <input type="text" class="input jawaban-text" 
-                           name="jawaban[{{$s->id}}]" 
-                           placeholder="Jawaban Kamu"
-                           data-soal-id="{{$s->id}}">
-                  @endif
+                    
+                    {{-- Pertanyaan --}}
+                    <h5 class="subtitle is-5">{{$s->soal}}</h5>
+                    
+                    {{-- Gambar Soal (jika ada) --}}
+                    @if($s->gambar)
+                      <div class="soal-gambar">
+                        <img src="{{ Storage::url($s->gambar) }}" 
+                             alt="Gambar soal {{$index + 1}}"
+                             onclick="showImageModal('{{ Storage::url($s->gambar) }}')"
+                             style="cursor: pointer;">
+                        <p class="is-size-7 has-text-grey mt-2">Klik gambar untuk memperbesar</p>
+                      </div>
+                    @endif
+                    
+                    {{-- Opsi Jawaban --}}
+                    @if($tipe == 'pilihan_ganda')
+                      <div class="opsi-container">
+                        <p class="has-text-weight-bold mb-3">Pilih jawaban yang benar:</p>
+                        
+                        {{-- Opsi A --}}
+                        <label class="radio opsi-item">
+                          <input type="radio" name="jawaban[{{$s->id}}]" value="a" 
+                                 class="jawaban-radio" data-soal-id="{{$s->id}}">
+                          <span class="opsi-label">A</span>
+                          <span>{{$s->opsi_a}}</span>
+                        </label>
+                        
+                        {{-- Opsi B --}}
+                        <label class="radio opsi-item">
+                          <input type="radio" name="jawaban[{{$s->id}}]" value="b"
+                                 class="jawaban-radio" data-soal-id="{{$s->id}}">
+                          <span class="opsi-label">B</span>
+                          <span>{{$s->opsi_b}}</span>
+                        </label>
+                        
+                        {{-- Opsi C --}}
+                        <label class="radio opsi-item">
+                          <input type="radio" name="jawaban[{{$s->id}}]" value="c"
+                                 class="jawaban-radio" data-soal-id="{{$s->id}}">
+                          <span class="opsi-label">C</span>
+                          <span>{{$s->opsi_c}}</span>
+                        </label>
+                        
+                        {{-- Opsi D --}}
+                        <label class="radio opsi-item">
+                          <input type="radio" name="jawaban[{{$s->id}}]" value="d"
+                                 class="jawaban-radio" data-soal-id="{{$s->id}}">
+                          <span class="opsi-label">D</span>
+                          <span>{{$s->opsi_d}}</span>
+                        </label>
+                      </div>
+                    @else
+                      {{-- Essay --}}
+                      <div class="essay-container">
+                        <p class="has-text-weight-bold mb-3">Tulis jawaban Anda:</p>
+                        <div class="essay-label">JAWABAN ESSAY</div>
+                        <textarea class="textarea essay-input jawaban-text" 
+                                  name="jawaban[{{$s->id}}]" 
+                                  placeholder="Tulis jawaban essay di sini..."
+                                  rows="5"
+                                  data-soal-id="{{$s->id}}">{{ old('jawaban.'.$s->id) }}</textarea>
+                      </div>
+                    @endif
+                    
+                    {{-- Hidden data peserta --}}
+                    <div style="display: none;" 
+                         data-peserta="{{$sis->id_siswa}}"
+                         data-ujian="{{$uji->id}}"
+                         data-soal-index="{{$index}}">
+                    </div>
+                  </div>
                 </div>
               @endforeach
             </div>
@@ -202,17 +438,17 @@
             {{-- Navigasi Previous/Next --}}
             <div class="nav-controls">
               <button type="button" class="button is-info" id="prevBtn" disabled>
-                Sebelumnya
+                <i class="fas fa-arrow-left"></i> Sebelumnya
               </button>
               <button type="button" class="button is-info" id="nextBtn">
-                Berikutnya
+                Berikutnya <i class="fas fa-arrow-right"></i>
               </button>
             </div>
             
             {{-- Tombol Submit --}}
-            <div class="has-text-centered">
+            <div class="has-text-centered mt-5">
               <button type="submit" class="button is-success is-large" id="submitBtn">
-                Submit Ujian
+                <i class="fas fa-check-circle"></i> Submit Ujian
               </button>
             </div>
           </form>
@@ -221,474 +457,356 @@
     </div>
   </div>
 
-<script>
-    // ENHANCED UJIAN SYSTEM WITH NAVIGATION
-(function() {
-    'use strict';
-    
-    // ========== KONFIGURASI ==========
-    let warn = 0;
-    const maxwarn = 3;
-    let timerInterval = null;
-    let waktuTersisa = 0;
-    let isSubmitting = false;
-    let isFullscreenForced = false;
-    let antiCheatInitialized = false;
-    let currentSoalIndex = 0;
-    const totalSoal = {{count($soal)}};
-    let jawabanState = {};
-    let isVisibilityCheckEnabled = true;
-    
-    // ========== ELEMEN DOM ==========
-    const soalContainers = document.querySelectorAll('.soal-container');
-    // PERBAIKAN 1: Selektor yang benar untuk tombol navigasi
-    const navButtons = document.querySelectorAll('#soalNavGrid .nav-btn');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const soalHeader = document.getElementById('soalHeader');
-    const progressBar = document.getElementById('progressBar');
-    const progressText = document.getElementById('progressText');
-    const form = document.getElementById("form");
-    
-    // ========== FUNGSI NAVIGASI ==========
-    
-    // Tampilkan soal berdasarkan index
-    function showSoal(index) {
-      // Validasi index
-      if(index < 0) index = 0;
-      if(index >= totalSoal) index = totalSoal - 1;
+  {{-- Modal untuk preview gambar --}}
+  <div class="modal" id="imageModal">
+    <div class="modal-background"></div>
+    <div class="modal-content">
+      <p class="image">
+        <img src="" alt="Preview Gambar" id="modalImage">
+      </p>
+    </div>
+    <button class="modal-close is-large" aria-label="close" onclick="closeImageModal()"></button>
+  </div>
+
+  {{-- Font Awesome --}}
+  <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+
+  <script>
+  // ========== UJIAN SYSTEM DENGAN PROTEKSI TOTAL ==========
+  (function() {
+      'use strict';
       
-      // Sembunyikan semua soal
-      soalContainers.forEach(container => {
-        container.classList.remove('active');
-      });
+      // ========== DETEKSI DEVICE ==========
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
       
-      // Tampilkan soal yang dipilih
-      if(soalContainers[index]) {
-        soalContainers[index].classList.add('active');
-      }
+      // ========== KONFIGURASI ==========
+      let warn = 0;
+      const maxwarn = isMobile ? 8 : 3;
+      let timerInterval = null;
+      let waktuTersisa = 0;
+      let isSubmitting = false;
+      let currentSoalIndex = 0;
+      const totalSoal = {{count($soal)}};
+      let jawabanState = {};
       
-      // Update header
-      if(soalHeader) soalHeader.innerText = `Soal ${index + 1} dari ${totalSoal}`;
+      // ========== ELEMEN DOM ==========
+      const soalContainers = document.querySelectorAll('.soal-container');
+      const navButtons = document.querySelectorAll('#soalNavGrid .nav-btn');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const soalHeader = document.getElementById('soalHeader');
+      const progressBar = document.getElementById('progressBar');
+      const progressText = document.getElementById('progressText');
+      const form = document.getElementById("form");
+      const displayTimer = document.getElementById("display");
       
-      // Update status tombol navigasi
-      if(prevBtn) prevBtn.disabled = (index === 0);
-      if(nextBtn) nextBtn.disabled = (index === totalSoal - 1);
-      
-      // Update highlight di grid navigasi
-      navButtons.forEach((btn, i) => {
-        btn.classList.remove('current');
-        if(i === index) {
-          btn.classList.add('current');
-        }
-      });
-      
-      currentSoalIndex = index;
-    }
-    
-    // Update status jawaban di grid
-    function updateJawabanStatus() {
-      let answeredCount = 0;
-      
-      // Reset status answered dan warning
-      navButtons.forEach(btn => {
-        btn.classList.remove('answered', 'warning');
-      });
-      
-      // Reset jawabanState
-      jawabanState = {};
-      
-      // Cek radio buttons
-      document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
-        const match = radio.name.match(/\[(\d+)\]/);
-        if(match) {
-          const soalId = match[1];
-          const navBtn = document.querySelector(`#soalNavGrid .nav-btn[data-soal-id="${soalId}"]`);
-          if(navBtn) {
-            navBtn.classList.add('answered');
-            jawabanState[soalId] = true;
+      // ========== FUNGSI PREVIEW GAMBAR ==========
+      window.showImageModal = function(imageUrl) {
+          const modal = document.getElementById('imageModal');
+          const modalImg = document.getElementById('modalImage');
+          if(modal && modalImg) {
+              modalImg.src = imageUrl;
+              modal.classList.add('is-active');
+              document.documentElement.classList.add('is-clipped');
           }
-        }
-      });
+      };
       
-      // Cek text inputs
-      document.querySelectorAll('input[type="text"]').forEach(input => {
-        if(input.value.trim() !== '') {
-          const match = input.name.match(/\[(\d+)\]/);
-          if(match) {
-            const soalId = match[1];
-            const navBtn = document.querySelector(`#soalNavGrid .nav-btn[data-soal-id="${soalId}"]`);
-            if(navBtn) {
-              navBtn.classList.add('answered');
-              jawabanState[soalId] = true;
-            }
+      window.closeImageModal = function() {
+          const modal = document.getElementById('imageModal');
+          if(modal) {
+              modal.classList.remove('is-active');
+              document.documentElement.classList.remove('is-clipped');
           }
-        }
-      });
+      };
       
-      // Hitung yang sudah dijawab
-      answeredCount = Object.keys(jawabanState).length;
-      
-      // Hitung persentase
-      const percentage = totalSoal > 0 ? (answeredCount / totalSoal) * 100 : 0;
-      
-      // Update progress bar
-      if(progressBar) progressBar.value = percentage;
-      if(progressText) progressText.innerText = `${answeredCount}/${totalSoal} soal terjawab`;
-      
-      return answeredCount;
-    }
-    
-    // Cek soal belum dijawab
-    function cekSoalBelumDijawab() {
-      updateJawabanStatus();
-      return totalSoal - Object.keys(jawabanState).length;
-    }
-    
-    // ========== TIMER SYSTEM ==========
-    function startTimer(durasi, display) {
-      if(timerInterval) clearInterval(timerInterval);
-      
-      waktuTersisa = parseInt(durasi) || 0;
-      
-      if(waktuTersisa <= 0) {
-        if(display) display.innerText = "00:00";
-        submitFormOtomatis();
-        return;
-      }
-      
-      timerInterval = setInterval(function() {
-        if(waktuTersisa <= 0) {
-          clearInterval(timerInterval);
-          submitFormOtomatis();
-          return;
-        }
-        
-        let menit = parseInt(waktuTersisa / 60, 10);
-        let detik = parseInt(waktuTersisa % 60, 10);
-        menit = menit < 10 ? "0" + menit : menit;
-        detik = detik < 10 ? "0" + detik : detik;
-        
-        if(display) display.innerText = menit + ":" + detik;
-        waktuTersisa--;
-        
-      }, 1000);
-    }
-    
-    function submitFormOtomatis() {
-      if(isSubmitting || !form) return;
-      
-      isSubmitting = true;
-      isVisibilityCheckEnabled = false;
-      
-      const unanswered = cekSoalBelumDijawab();
-      
-      if(unanswered > 0) {
-        if(confirm(`Waktu habis! Masih ada ${unanswered} soal belum dijawab. Submit sekarang?`)) {
-          localStorage.removeItem('ujian_' + {{$uji->id}});
-          form.submit();
-        } else {
-          isSubmitting = false;
-          isVisibilityCheckEnabled = true;
-          alert("Segera selesaikan ujian Anda!");
-        }
-      } else {
-        localStorage.removeItem('ujian_' + {{$uji->id}});
-        form.submit();
-      }
-    }
-    
-    // ========== FULLSCREEN SYSTEM ==========
-    async function forceFullscreen() {
-      if(isFullscreenForced) return;
-      isFullscreenForced = true;
-      
-      try {
-        await document.documentElement.requestFullscreen();
-      } catch(err) {
-        console.log('Fullscreen tidak diizinkan:', err);
-      }
-      
-      setTimeout(() => {
-        isFullscreenForced = false;
-      }, 1000);
-    }
-    
-    // ========== ANTI CHEAT SYSTEM ==========
-    function initAntiCheat() {
-      if(antiCheatInitialized) return;
-      antiCheatInitialized = true;
-      
-      let lastVisibilityTime = Date.now();
-      
-      document.addEventListener("visibilitychange", function() {
-        if(isSubmitting || !isVisibilityCheckEnabled) {
-          return;
-        }
-        
-        const now = Date.now();
-        
-        if(document.visibilityState === "hidden") {
-          if(now - lastVisibilityTime > 2000) {
-            warn++;
-            lastVisibilityTime = now;
-            
-            if(warn >= maxwarn) {
-              alert("Peringatan maksimum! Ujian akan disubmit.");
-              
-              const uj = document.getElementById("ujian_id")?.value;
-              const siswa = document.getElementById("siswa_id")?.value;
-              
-              if(uj && siswa) {
-                fetch("{{ route('pengawas.pelanggaran.pen') }}", {
-                  method: "POST",
-                  headers: {
-                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                    "Content-Type": "application/json"
-                  },
-                  body: JSON.stringify({
-                    "ujian_id": uj,
-                    "siswa_id": siswa,
-                    "jenis_pelanggaran": "keluar Dari tab"
-                  })
-                })
-                .then(res => res.json())
-                .then(data => {
-                  if(data.redirect && !isSubmitting) {
-                    window.location.href = data.redirect;
-                  }
-                })
-                .catch(err => console.error('Error:', err));
-              }
-              
-              if(!isSubmitting) {
-                submitFormOtomatis();
-              }
-            } else {
-              alert(`Peringatan ${warn}/${maxwarn}: Jangan keluar dari halaman ujian!`);
-            }
+      // Close modal with escape key
+      document.addEventListener('keydown', function(e) {
+          if(e.key === 'Escape') {
+              closeImageModal();
           }
-        }
       });
       
-      // Blok copy-paste
-      document.addEventListener("copy", e => { 
-        if(!isSubmitting) {
-          e.preventDefault(); 
-          alert("Tidak diperbolehkan menyalin!");
-        }
-      });
-      document.addEventListener("paste", e => { 
-        if(!isSubmitting) {
-          e.preventDefault(); 
-          alert("Tidak diperbolehkan menempel!");
-        }
-      });
-      document.addEventListener("cut", e => { 
-        if(!isSubmitting) {
-          e.preventDefault(); 
-          alert("Tidak diperbolehkan memotong!");
-        }
-      });
-      
-      // Blok klik kanan
-      document.addEventListener("contextmenu", e => { 
-        if(!isSubmitting) {
-          e.preventDefault(); 
-          alert("Klik kanan tidak diperbolehkan!");
-        }
-      });
-      
-      // Fullscreen handler
-      document.addEventListener("fullscreenchange", function() {
-        if(!document.fullscreenElement && !isFullscreenForced && !isSubmitting) {
-          forceFullscreen();
-        }
-      });
-      
-      // Cegah keyboard shortcuts
-      document.addEventListener("keydown", function(e) {
-        if(!isSubmitting) {
-          if(e.ctrlKey || e.metaKey) {
-            switch(e.key.toLowerCase()) {
-              case 'c': case 'v': case 'x': case 'p': case 's':
-                e.preventDefault();
-                break;
-            }
-          }
+      // ========== FUNGSI NAVIGASI ==========
+      function showSoal(index) {
+          if(index < 0) index = 0;
+          if(index >= totalSoal) index = totalSoal - 1;
           
-          if(e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
-            e.preventDefault();
-          }
-        }
-      });
-    }
-    
-    // ========== LOAD JAWABAN TERSIMPAN ==========
-    function loadJawabanTersimpan() {
-      const savedAnswers = localStorage.getItem('ujian_' + {{$uji->id}});
-      if(savedAnswers) {
-        try {
-          const answers = JSON.parse(savedAnswers);
-          Object.keys(answers).forEach(soalId => {
-            const input = document.querySelector(`[name="jawaban[${soalId}]"]`);
-            if(input) {
-              if(input.type === 'radio') {
-                const radio = document.querySelector(`[name="jawaban[${soalId}]"][value="${answers[soalId]}"]`);
-                if(radio) radio.checked = true;
-              } else {
-                input.value = answers[soalId];
-              }
-            }
+          soalContainers.forEach(container => {
+              container.classList.remove('active');
           });
-          updateJawabanStatus();
-        } catch(e) {
-          console.log('Error loading saved answers:', e);
-        }
-      }
-    }
-    
-    // ========== AUTO-SAVE JAWABAN ==========
-    function initAutoSave() {
-      document.addEventListener('change', function(e) {
-        if(e.target.matches('input[type="radio"], input[type="text"]')) {
-          saveJawaban();
-        }
-      });
-      
-      let timeout;
-      document.addEventListener('input', function(e) {
-        if(e.target.matches('input[type="text"]')) {
-          clearTimeout(timeout);
-          timeout = setTimeout(() => {
-            saveJawaban();
-          }, 500);
-        }
-      });
-    }
-    
-    function saveJawaban() {
-      const answers = {};
-      document.querySelectorAll('input[name^="jawaban"]').forEach(input => {
-        const match = input.name.match(/\[(\d+)\]/);
-        if(match) {
-          const soalId = match[1];
-          if(input.type === 'radio') {
-            if(input.checked) {
-              answers[soalId] = input.value;
-            }
-          } else if(input.type === 'text') {
-            if(input.value.trim() !== '') {
-              answers[soalId] = input.value;
-            }
-          }
-        }
-      });
-      localStorage.setItem('ujian_' + {{$uji->id}}, JSON.stringify(answers));
-      updateJawabanStatus();
-    }
-    
-    // ========== FORM SUBMIT HANDLER ==========
-    function initFormSubmit() {
-      if(!form) return;
-      
-      form.addEventListener("submit", function(e) {
-        if(isSubmitting) {
-          e.preventDefault();
-          return false;
-        }
-        
-        isSubmitting = true;
-        isVisibilityCheckEnabled = false;
-        
-        if(timerInterval) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-        }
-        
-        const unanswered = cekSoalBelumDijawab();
-        
-        if(unanswered > 0) {
-          const confirmSubmit = confirm(`Masih ada ${unanswered} soal belum dijawab. Yakin submit?`);
           
-          if(!confirmSubmit) {
-            e.preventDefault();
-            isSubmitting = false;
-            isVisibilityCheckEnabled = true;
-            return false;
+          if(soalContainers[index]) {
+              soalContainers[index].classList.add('active');
           }
-        }
-        
-        localStorage.removeItem('ujian_' + {{$uji->id}});
-        return true;
+          
+          if(soalHeader) soalHeader.innerText = `Soal ${index + 1} dari ${totalSoal}`;
+          
+          if(prevBtn) prevBtn.disabled = (index === 0);
+          if(nextBtn) nextBtn.disabled = (index === totalSoal - 1);
+          
+          navButtons.forEach((btn, i) => {
+              btn.classList.remove('current');
+              if(i === index) {
+                  btn.classList.add('current');
+              }
+          });
+          
+          currentSoalIndex = index;
+      }
+      
+      // ========== UPDATE STATUS JAWABAN ==========
+      function updateJawabanStatus() {
+          let answeredCount = 0;
+          
+          navButtons.forEach(btn => {
+              btn.classList.remove('answered');
+          });
+          
+          jawabanState = {};
+          
+          // Cek pilihan ganda
+          document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+              const match = radio.name.match(/\[(\d+)\]/);
+              if(match) {
+                  const soalId = match[1];
+                  const navBtn = document.querySelector(`#soalNavGrid .nav-btn[data-soal-id="${soalId}"]`);
+                  if(navBtn) {
+                      navBtn.classList.add('answered');
+                      jawabanState[soalId] = true;
+                  }
+              }
+          });
+          
+          // Cek essay
+          document.querySelectorAll('textarea.jawaban-text').forEach(textarea => {
+              if(textarea.value.trim() !== '') {
+                  const match = textarea.name.match(/\[(\d+)\]/);
+                  if(match) {
+                      const soalId = match[1];
+                      const navBtn = document.querySelector(`#soalNavGrid .nav-btn[data-soal-id="${soalId}"]`);
+                      if(navBtn) {
+                          navBtn.classList.add('answered');
+                          jawabanState[soalId] = true;
+                      }
+                  }
+              }
+          });
+          
+          answeredCount = Object.keys(jawabanState).length;
+          const percentage = totalSoal > 0 ? (answeredCount / totalSoal) * 100 : 0;
+          
+          if(progressBar) progressBar.value = percentage;
+          if(progressText) progressText.innerText = `${answeredCount}/${totalSoal} soal terjawab`;
+          
+          return answeredCount;
+      }
+      
+      // ========== TIMER SYSTEM ==========
+      function startTimer(durasi, display) {
+          if(timerInterval) clearInterval(timerInterval);
+          
+          waktuTersisa = parseInt(durasi) || 0;
+          
+          if(waktuTersisa <= 0) {
+              if(display) display.innerText = "00:00";
+              submitFormOtomatis();
+              return;
+          }
+          
+          timerInterval = setInterval(function() {
+              if(waktuTersisa <= 0) {
+                  clearInterval(timerInterval);
+                  submitFormOtomatis();
+                  return;
+              }
+              
+              let menit = parseInt(waktuTersisa / 60, 10);
+              let detik = parseInt(waktuTersisa % 60, 10);
+              menit = menit < 10 ? "0" + menit : menit;
+              detik = detik < 10 ? "0" + detik : detik;
+              
+              if(display) display.innerText = menit + ":" + detik;
+              waktuTersisa--;
+              
+          }, 1000);
+      }
+      
+      function submitFormOtomatis() {
+          if(isSubmitting || !form) return;
+          
+          isSubmitting = true;
+          
+          if(timerInterval) {
+              clearInterval(timerInterval);
+              timerInterval = null;
+          }
+          
+          const unanswered = totalSoal - Object.keys(jawabanState).length;
+          
+          if(unanswered > 0) {
+              if(confirm(`⏰ WAKTU HABIS!\n\nMasih ada ${unanswered} soal belum dijawab.\nSubmit sekarang?`)) {
+                  localStorage.removeItem('ujian_' + {{$uji->id}});
+                  localStorage.removeItem('ujian_active_' + {{$uji->id}});
+                  form.submit();
+              } else {
+                  isSubmitting = false;
+                  alert("Segera selesaikan ujian Anda!");
+              }
+          } else {
+              localStorage.removeItem('ujian_' + {{$uji->id}});
+              localStorage.removeItem('ujian_active_' + {{$uji->id}});
+              form.submit();
+          }
+      }
+      
+      // ========== CEK MULTI TAB ==========
+      (function checkMultiTab() {
+          const sessionKey = 'ujian_active_' + {{$uji->id}};
+          const sessionId = Math.random().toString(36).substring(2);
+          
+          if (localStorage.getItem(sessionKey)) {
+              alert('⚠️ Ujian sudah dibuka di tab lain!');
+              window.location.href = '/dashboard';
+              return;
+          }
+          
+          localStorage.setItem(sessionKey, sessionId);
+          
+          window.addEventListener('beforeunload', function() {
+              localStorage.removeItem(sessionKey);
+          });
+      })();
+      
+      // ========== PROTEKSI SEDERHANA ==========
+      document.addEventListener('contextmenu', e => e.preventDefault());
+      document.addEventListener('keydown', function(e) {
+          if(e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.shiftKey && e.key === 'J') || (e.ctrlKey && e.key === 'U')) {
+              e.preventDefault();
+              warn++;
+              alert(`⚠️ PERINGATAN ${warn}/${maxwarn}: Inspeksi elemen diblokir!`);
+          }
+          
+          if(e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+              e.preventDefault();
+              warn++;
+              alert(`⚠️ PERINGATAN ${warn}/${maxwarn}: Print tidak diizinkan!`);
+          }
       });
-    }
-    
-    // ========== INITIALIZATION ==========
-    window.addEventListener('DOMContentLoaded', function() {
-      // Timer
-      const display = document.getElementById("display");
-      if(display) {
-        const durasi = {{ $uji->durasi * 60 ?? 0 }};
-        startTimer(durasi, display);
-      }
       
-      // Load jawaban tersimpan
-      loadJawabanTersimpan();
-      
-      // Inisialisasi navigasi
-      if(soalContainers.length > 0) {
-        showSoal(0);
-        updateJawabanStatus();
-      }
-      
-      // Event listener untuk grid navigasi
-      navButtons.forEach((btn, index) => {
-        btn.addEventListener('click', function() {
-          if(!isSubmitting) {
-            showSoal(index);
+      // ========== INITIALIZATION ==========
+      window.addEventListener('DOMContentLoaded', function() {
+          // Timer
+          if(displayTimer) {
+              const durasi = {{ $uji->durasi * 60 ?? 0 }};
+              startTimer(durasi, displayTimer);
           }
-        });
+          
+          // Load jawaban tersimpan
+          const savedAnswers = localStorage.getItem('ujian_' + {{$uji->id}});
+          if(savedAnswers) {
+              try {
+                  const answers = JSON.parse(savedAnswers);
+                  Object.keys(answers).forEach(soalId => {
+                      const input = document.querySelector(`[name="jawaban[${soalId}]"]`);
+                      if(input) {
+                          if(input.type === 'radio') {
+                              const radio = document.querySelector(`[name="jawaban[${soalId}]"][value="${answers[soalId]}"]`);
+                              if(radio) radio.checked = true;
+                          } else {
+                              input.value = answers[soalId];
+                          }
+                      }
+                  });
+              } catch(e) {}
+          }
+          
+          // Inisialisasi navigasi
+          if(soalContainers.length > 0) {
+              showSoal(0);
+              updateJawabanStatus();
+          }
+          
+          // Event listener navigasi
+          navButtons.forEach((btn, index) => {
+              btn.addEventListener('click', function() {
+                  if(!isSubmitting) {
+                      showSoal(index);
+                  }
+              });
+          });
+          
+          if(prevBtn) {
+              prevBtn.addEventListener('click', function() {
+                  if(!isSubmitting) {
+                      showSoal(currentSoalIndex - 1);
+                  }
+              });
+          }
+          
+          if(nextBtn) {
+              nextBtn.addEventListener('click', function() {
+                  if(!isSubmitting) {
+                      showSoal(currentSoalIndex + 1);
+                  }
+              });
+          }
+          
+          // Auto-save
+          document.addEventListener('change', updateJawabanStatus);
+          document.addEventListener('input', function(e) {
+              if(e.target.matches('textarea.jawaban-text')) {
+                  updateJawabanStatus();
+                  
+                  // Auto-save ke localStorage
+                  const answers = {};
+                  document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+                      const match = radio.name.match(/\[(\d+)\]/);
+                      if(match) answers[match[1]] = radio.value;
+                  });
+                  document.querySelectorAll('textarea.jawaban-text').forEach(textarea => {
+                      if(textarea.value.trim() !== '') {
+                          const match = textarea.name.match(/\[(\d+)\]/);
+                          if(match) answers[match[1]] = textarea.value;
+                      }
+                  });
+                  localStorage.setItem('ujian_' + {{$uji->id}}, JSON.stringify(answers));
+              }
+          });
+          
+          // Form submit
+          if(form) {
+              form.addEventListener("submit", function(e) {
+                  if(isSubmitting) {
+                      e.preventDefault();
+                      return false;
+                  }
+                  
+                  const unanswered = totalSoal - Object.keys(jawabanState).length;
+                  
+                  if(unanswered > 0) {
+                      const confirmSubmit = confirm(`⚠️ Masih ada ${unanswered} soal belum dijawab.\n\nYakin submit?`);
+                      if(!confirmSubmit) {
+                          e.preventDefault();
+                          return false;
+                      }
+                  }
+                  
+                  isSubmitting = true;
+                  
+                  if(timerInterval) {
+                      clearInterval(timerInterval);
+                      timerInterval = null;
+                  }
+                  
+                  localStorage.removeItem('ujian_' + {{$uji->id}});
+                  localStorage.removeItem('ujian_active_' + {{$uji->id}});
+                  
+                  return true;
+              });
+          }
       });
       
-      // Event listener untuk tombol Previous/Next
-      if(prevBtn) {
-        prevBtn.addEventListener('click', function() {
-          if(!isSubmitting) {
-            showSoal(currentSoalIndex - 1);
-          }
-        });
-      }
-      
-      if(nextBtn) {
-        nextBtn.addEventListener('click', function() {
-          if(!isSubmitting) {
-            showSoal(currentSoalIndex + 1);
-          }
-        });
-      }
-      
-      // Auto-save
-      initAutoSave();
-      
-      // Anti cheat
-      initAntiCheat();
-      
-      // Form submit handler
-      initFormSubmit();
-      
-      // Fullscreen otomatis
-      setTimeout(() => {
-        forceFullscreen();
-      }, 500);
-    });
-    
-    // Cleanup
-    window.addEventListener('beforeunload', function() {
-      if(timerInterval) clearInterval(timerInterval);
-    });
-    
-})();
-</script>
+  })();
+  </script>
 </body>
 </html>

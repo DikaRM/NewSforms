@@ -24,13 +24,29 @@ return new class extends Migration
             
             $table->timestamps();
             
+            // Foreign keys (dipertahankan)
             $table->foreign("guru_id")->references("id")->on("guru")->onDelete("cascade");
             $table->foreign("jadwal_id")->references("id")->on("jadwal")->onDelete("cascade");
             $table->foreign("mapel")->references("id")->on("mapel")->onDelete("cascade");
             
+            // ============ TAMBAHAN INDEX (OPTIMASI) ============
+            
+            // Single column indexes
+            $table->index('guru_id');
+            $table->index('mapel');
+            $table->index('jadwal_id');
+            $table->index('nama_ujian');
+            $table->index('durasi');
+            $table->index('grade');
+            $table->index('status');
+            $table->index('created_at');
+            
+            // Composite indexes (untuk query yang sering pakai kombinasi)
+            $table->index(['guru_id', 'status']);
+            $table->index(['mapel', 'status']);
+            $table->index(['status', 'durasi']);
+            $table->index(['guru_id', 'durasi']);
         });
-
-        
     }
 
     /**

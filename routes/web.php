@@ -18,7 +18,7 @@ Route::post("/logout", [UsersController::class, "logout"])->name("users.logout")
 // ADMIN ROUTES
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     
-    Route::resource('/', AdminController::class);
+    
     Route::resource('/guru', GuruController::class);
     Route::resource('/siswa', SiswaController::class);
     
@@ -49,10 +49,13 @@ Route::middleware(['auth', 'role:siswa'])->prefix('siswa')->name('siswa.')->grou
 Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(function () {
     Route::get('/', [GuruController::class, 'TeachIndex'])->name('index');
     Route::post('/create-soal', [GuruController::class, 'rheina'])->name('soal.save');
+    Route::post('/create', [GuruController::class, 'sed'])->name('soal.sad');
     Route::delete('/create-soal/pus/{id}', [GuruController::class, 'bowl'])->name('soal.destroy');
+    Route::delete('/hapus-soal/{id}', [GuruController::class, 'hapus'])->name('hapus');
+    
     Route::post('/', [GuruController::class, 'CreateUjian'])->name('store');
     Route::get('/create-soal/{id}', [GuruController::class, 'CreateSoal'])->name('create');
-    Route::put('/save/{id}', [GuruController::class, 'def'])->name('ujian.sold');
+    Route::post('/save/{id}', [GuruController::class, 'def'])->name('ujian.sold');
     Route::get('/jadwal', [GuruController::class, 'jadwal'])->name('jadwal');
     Route::get('/result', [GuruController::class, 'result'])->name('result');
     Route::get('/hasil/{id}', [GuruController::class, 'hasil'])->name('hasil');
@@ -60,10 +63,11 @@ Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(f
 });
 
 // PENGAWAS ROUTES
-Route::middleware(['auth', 'role:pengawas'])->prefix('pengawas')->name('pengawas.')->group(function () {
-    Route::get('/', [PengawasController::class, 'index'])->name('index');
-    Route::post('/pelanggarans/penalty', [SiswaController::class, 'Pelanggaran'])->name('pelanggaran.pen');
-});
+
+    Route::get('/pengawas/{id}', [PengawasController::class, 'index'])->name('pengawas.index');
+    Route::post('/pengawas/attach', [PengawasController::class, 'store'])->name('pengawas.store');
+    Route::post('/pelanggarans/penalty', [SiswaController::class, 'Pelanggaran'])->name('pengawas.pelanggaran.pen');
+    Route::get('/pengawas/show/{id}', [PengawasController::class, 'show'])->name('pengawas.show');
 
 // ADMIN-OPS ROUTES
 Route::middleware(['auth', 'role:admin-ops'])->prefix('admin-ops')->name('admin-ops.')->group(function () {

@@ -13,20 +13,40 @@ return new class extends Migration
     {
         Schema::create('berita', function (Blueprint $table) {
             $table->id();
-            $table->string('siswa_id');
-            $table->string('ujian_id');
-            $table->string('pengawas_id');
-            $table->string('catatan');
+            
+            // ============ KARENA SISWA PAKAI id_siswa ============
+            $table->unsignedBigInteger('siswa_id');
+            $table->foreign('siswa_id')
+                  ->references('id_siswa')
+                  ->on('siswa')
+                  ->onDelete('cascade');
+            
+            // Ujian dan pengawas menggunakan id standar
+            $table->foreignId('ujian_id')
+                  ->constrained('ujian')
+                  ->onDelete('cascade')
+                  ->index();
+            
+            $table->foreignId('pengawas_id')
+                  ->constrained('pengawas')
+                  ->onDelete('cascade')
+                  ->index();
+            
+            // Kolom catatan
+            $table->text('catatan')->nullable();
+            
             $table->timestamps();
             
-            $table->foreign("siswa_id")->references("id_siswa")->on("siswa")->onDelete("cascade");
+            // ============ INDEXING ============
+            $table->index('siswa_id');
+            $table->index('ujian_id');
+            $table->index('pengawas_id');
             
-            $table->foreign("ujian_id")->references("id")->on("ujian")->onDelete("cascade");
-            
-            $table->foreign("pengawas_id")->references("id")->on("pengawas")->onDelete("cascade");
+            // Composite indexes
+            $table->index(['siswa_id', 'ujian_id']);
+            $table->index(['pengawas_id', 'ujian_id']);
+            $table->index('created_at');
         });
-
-        
     }
 
     /**

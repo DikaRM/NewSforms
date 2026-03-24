@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="has-navbar-fixed-top">
+<html lang="en" >
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -66,10 +66,10 @@
 }
 </style>
 <body>
-  <nav class="navbar is-fixed-top" role="navigation">
+  <nav class="navbar" role="navigation">
     <div class="navbar-brand">
           <a href="#" class="navbar-item has-text-dark has-text-weight-bold">
-      Pengawas {{$data->guru->nama}}
+      Pengawas
     </a>
     </div>
 
@@ -80,7 +80,9 @@
       </form>
     </div>
   </nav>
-<div class="button-container">
+
+  <div class="container">
+    <div class="button-container">
   <a href="{{route('guru.index')}}"class="buttond">
     <svg
       class="icon"
@@ -107,31 +109,37 @@
     <i class="icon fa fa-calendar"></i>
   </a>
 
-  <a href="{{route('pengawas.index')}}" class="buttond">
+  <a href="{{route('pengawas.index',$id)}}" class="buttond">
               <i class="icon fa fa-person"></i>
   </a>
 </div>
-  <div class="container">
-    @foreach($jads as $jd)
+@if($data->count() <= 0)
+   <h1 class="title has-text-centered">Belum Ditugaskan</h1>
+@endif
+@foreach($jads as $jd)
     <div class="card">
-      <div class="card-header">
-        <h5 class="title">{{$jd->ujian->nama_ujian }}</h5>
+        <div class="card-header">
+            <h5 class="title">{{$jd->ujian->nama_ujian }}</h5>
         </div>
         <div class="card-container">
-          <p class="subtitle">
-           Untuk Kelas : {{$jd->ujian->kelas->nama_kelas}}
-           <br>
-           {{$jd->ujian->durasi}} Menit
-          </p>
-          <p>Total Siswa :{{$jd->kelas->siswa->count()}}</p>
-      </div>
-      <div class="card-footer">
-        <div class="card-footer-item">
-          <a href="{{route('pengawas.show',$jd->id)}}" class="button">Awasi Sekarang !</a>
+            <p class="subtitle">
+                Durasi: {{$jd->ujian->durasi}} Menit
+            </p>
+            <p><strong>Kelas yang mengikuti:</strong></p>
+            @foreach($jd->ujian->kelas as $kelas)
+                <div style="margin-left: 20px; margin-bottom: 10px;">
+                    <p>- {{$kelas->nama_kelas}} 
+                       ({{$kelas->siswa->count()}} siswa)</p>
+                </div>
+            @endforeach
         </div>
-      </div>
+        <div class="card-footer">
+            <div class="card-footer-item">
+                <a href="{{route('pengawas.show',$jd->id)}}" class="button">Awasi Sekarang !</a>
+            </div>
+        </div>
     </div>
-    @endforeach
+@endforeach
     
   </div>
   <h5 class="text">Copyright 2026 sforms</h5>

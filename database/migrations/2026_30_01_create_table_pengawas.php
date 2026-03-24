@@ -13,14 +13,29 @@ return new class extends Migration
     {
         Schema::create('pengawas', function (Blueprint $table) {
             $table->id();
-            $table->string('guru_id');
-            $table->string('user_id');
+            $table->string('guru_id')->index();           // index untuk relasi ke guru
+            $table->string('user_id')->index();           // index untuk relasi ke user
             $table->timestamps();
+            
+            // Foreign keys (dipertahankan)
             $table->foreign("user_id")->references("id")->on("users")->onDelete("cascade");
             $table->foreign("guru_id")->references("id")->on("guru")->onDelete("cascade");
+            
+            // ============ TAMBAHAN INDEX OPTIMASI ============
+            
+            // Index untuk created_at (sorting/filter tanggal)
+            $table->index('created_at');
+            
+            // Composite unique index (mencegah guru menjadi pengawas dua kali)
+            $table->unique(['guru_id', 'user_id'], 'unique_pengawas');
+            
+            // Composite index untuk query kombinasi
+            $table->index(['guru_id', 'created_at']);
+            $table->index(['user_id', 'created_at']);
+            
+            // Index untuk soft deletes (opsional)
+            // $table->softDeletes()->index();
         });
-
-        
     }
 
     /**
