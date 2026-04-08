@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Imports\BankSoalImport;
+use App\Imports\BankSoalImportPreview;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Guru;
 use App\Models\User;
 use App\Models\Ujian;
@@ -18,6 +21,7 @@ use App\Models\Peserta_ujian;
 use App\Models\banksoal ;
 use App\Models\GuruMapel;
 use App\Models\Ujian_soals;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 class GuruController
 {
     /**
@@ -110,25 +114,46 @@ class GuruController
       $dt = Guru::where("nama",$ire->nama)->first();
       $uji = Ujian::with("jadwal")->where("guru_id",$dt->id)->get();
       $klas = Kelas::all();
-      $sd = Guru::all();
-      $kop = GuruMapel::all();
+      $sd = Guru::with("mapel")->where("id",$dt->id)->get();
+      $guruMapel = GuruMapel::with("mapel")->where("guru_id",$dt->id)->get();
       $map = Mapel::all();
-      return view("guru.index",compact("ire","uji","dt","klas","map"));
+      $kelasList = Kelas::all();
+      return view("guru.index",compact("ire","uji","dt","klas","kelasList","sd","guruMapel"));
     }
     public function CreateUjian(Request $request)
-    {
-      $es = Guru::where("nama",$request->nama)->first();
-      $noub = Ujian::create([
+{
+    // Validasi
+    $request->validate([
+        'mapel_id' => 'required|exists:mapel,id',
+        'nama' => 'required|exists:guru,nama',
+        'nama_ujian' => 'required|string',
+        'durasi' => 'required|integer|min:1',
+        'grade' => 'nullable|string', // grade tetap string/text
+        'kelas_id' => 'required|array', // tambahkan validasi untuk kelas_id
+        'kelas_id.*' => 'exists:kelas,id',
+        'catatan' => 'nullable|string'
+    ]);
+
+    $es = Guru::where("nama", $request->nama)->first();
+    
+    // Simpan data ujian
+    $noub = Ujian::create([
         "mapel" => $request->mapel_id,
         "guru_id" => $es->id,
         "nama_ujian" => $request->nama_ujian,
         "durasi" => $request->durasi,
-        "grade" => $request->grade,
+        "grade" => $request->grade, // grade tetap seperti semula
         "catatan" => $request->catatan,
         "status" => "draft",
-        ]);
-        return redirect()->route("guru.create",["id" => $noub->id])->with("success","Berhasil Buat Ujian");
+    ]);
+    
+    // Simpan relasi many-to-many dengan kelas
+    if ($request->has('kelas_id')) {
+        $noub->kelas()->attach($request->kelas_id);
     }
+    
+    return redirect()->route("guru.create", ["id" => $noub->id])->with("success", "Berhasil Buat Ujian");
+}
     public function Uji()
     {
       
@@ -223,7 +248,7 @@ class GuruController
                 'opsi_c' => $soalData['opsi_c'],
                 'opsi_d' => $soalData['opsi_d'],
                 'jawaban_benar' => $soalData['jawaban_benar'],
-                'tipe' => 'pilihan_ganda',
+                'tipe' => 'pg',
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -376,9 +401,9 @@ class GuruController
     public function hasil($id)
 {
     // Ambil semua peserta ujian berdasarkan id ujian
-    $pesertaUjian = Peserta_ujian::with(['siswa', 'pelanggaran'])
-                    ->where('ujian_id', $id)
-                    ->get();
+    $pesertaUjian = Peserta_ujian::with(['siswa' => function($query) {
+        $query->with('pelanggaran'); // Memuat pelanggaran melalui relasi siswa
+    }])->where('ujian_id', $id)->get();
 
     // Ambil data ujian (untuk judul, dll)
     $ujian = Ujian::find($id);
@@ -392,14 +417,238 @@ class GuruController
       return view("guru.riwayat",compact("data","ire","dt"));
     }
     public function jadwal(){
-      $data = Jadwal::with("kelas");
+      
       $ire = Auth::user();
       $dt = Guru::where("nama",$ire->nama)->first();
+      $data = Jadwal::with("kelas","ujian.mapels")->get();
       return view("guru.jadwal",compact("data","ire","dt"));
     }
     public function sed(Request $request){
       
       return redirect()->route("guru.index");
     }
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file_excel' => 'required|mimes:xlsx,xls,csv',
+            'mapel_id' => 'required|exists:mapel,id'
+        ]);
+
+        $guru_id = $request->guru_id; // sesuaikan dengan auth Anda
+
+        Excel::import(
+            new BankSoalImport($guru_id, $request->mapel_id),
+            $request->file('file_excel')
+        );
+
+        return redirect()->back()->with('success', 'Soal berhasil diimport!');
+    }
+    
+public function preview(Request $request)
+{
+    try {
+        \Log::info('=== PREVIEW START ===');
+        
+        $request->validate([
+            'file_excel' => 'required|mimes:xlsx,xls,csv',
+            'uji_id' => 'required'
+        ]);
+        
+        $file = $request->file('file_excel');
+        
+        // Baca file jadi array
+        $data = Excel::toArray([], $file);
+        
+        \Log::info('Total sheets: ' . count($data));
+        \Log::info('Sheet pertama jumlah baris: ' . count($data[0] ?? []));
+        
+        if (empty($data) || empty($data[0])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File kosong atau tidak dapat dibaca'
+            ]);
+        }
+        
+        $rows = $data[0];
+        
+        // LOG: Lihat 5 baris pertama (termasuk header)
+        \Log::info('5 Baris pertama Excel (termasuk header):', array_slice($rows, 0, 5));
+        
+        // Hapus header (baris pertama)
+        $header = array_shift($rows);
+        \Log::info('Header yang dihapus:', $header);
+        
+        $soalList = [];
+        foreach ($rows as $index => $row) {
+            if (empty(array_filter($row))) continue;
+            
+            $soal = [
+                'soal' => $row[0] ?? null,
+                'opsi_a' => $row[1] ?? null,
+                'opsi_b' => $row[2] ?? null,
+                'opsi_c' => $row[3] ?? null,
+                'opsi_d' => $row[4] ?? null,
+                'jawaban_benar' => $row[5] ?? null,
+                'tipe' => $row[6] ?? 'pg',
+            ];
+            
+            // LOG setiap soal
+            \Log::info("Soal baris " . ($index + 2) . ":", $soal);
+            
+            $soalList[] = $soal;
+        }
+        
+        // Filter soal kosong
+        $soalList = array_values(array_filter($soalList, fn($s) => !empty($s['soal'])));
+        
+        \Log::info('Total soal valid: ' . count($soalList));
+        
+        if (empty($soalList)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada data soal yang valid'
+            ]);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'rows' => $soalList,
+                'total' => count($soalList)
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Preview Error: ' . $e->getMessage());
+        \Log::error($e->getTraceAsString());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
+        ]);
+    }
+}
+
+public function confirm(Request $request)
+{
+    try {
+        \Log::info('=== CONFIRM START ===');
+        \Log::info('Data received:', $request->all());
+        
+        $request->validate([
+            'uji_id' => 'required|exists:ujian,id',
+            'mapel_id' => 'required|exists:mapel,id',
+            'guru_id' => 'required|exists:guru,id',
+            'soal_data' => 'required|array|min:1',
+        ]);
+        
+        // LOG: Cek isi soal_data
+        \Log::info('Total soal diterima: ' . count($request->soal_data));
+        \Log::info('Contoh soal pertama:', $request->soal_data[0] ?? []);
+        \Log::info('Opsi A dari soal pertama: ' . ($request->soal_data[0]['opsi_a'] ?? 'KOSONG'));
+        \Log::info('Opsi B dari soal pertama: ' . ($request->soal_data[0]['opsi_b'] ?? 'KOSONG'));
+        
+        DB::beginTransaction();
+        
+        // Cari ujian
+        $ujian = Ujian::findOrFail($request->uji_id);
+        
+        // ============================================
+        // BATCH INSERT BANK SOAL
+        // ============================================
+        $bankData = [];
+        $soalList = $request->soal_data;
+        
+        foreach ($soalList as $index => $soal) {
+            // Validasi per soal
+            if (empty($soal['soal'])) {
+                throw new \Exception('Soal nomor ' . ($index + 1) . ' tidak boleh kosong');
+            }
+            
+            // LOG: Data yang akan disimpan
+            \Log::info("Menyimpan soal ke-$index:", [
+                'opsi_a' => $soal['opsi_a'] ?? null,
+                'opsi_b' => $soal['opsi_b'] ?? null,
+                'opsi_c' => $soal['opsi_c'] ?? null,
+                'opsi_d' => $soal['opsi_d'] ?? null,
+            ]);
+            
+            $bankData[] = [
+                'guru_id' => $request->guru_id,
+                'mapel_id' => $request->mapel_id,
+                'soal' => $soal['soal'],
+                'gambar' => $soal['gambar'] ?? null,
+                'opsi_a' => $soal['opsi_a'] ?? null,
+                'opsi_b' => $soal['opsi_b'] ?? null,
+                'opsi_c' => $soal['opsi_c'] ?? null,
+                'opsi_d' => $soal['opsi_d'] ?? null,
+                'jawaban_benar' => strtoupper($soal['jawaban_benar'] ?? ''),
+                'tipe' => $soal['tipe'] ?? 'pg',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+        
+        // Batch insert ke tabel bank
+    foreach ($bankData as $data) {
+    DB::table('bank')->insert($data);
+}
+        
+        // ============================================
+        // Ambil ID bank yang baru diinsert
+        // ============================================
+        $lastId = banksoal::latest()->first()->id;
+        $totalSoal = count($bankData);
+        $newBankIds = range($lastId - $totalSoal + 1, $lastId);
+        
+        // ============================================
+        // BATCH INSERT KE PIVOT (ujian_soals)
+        // ============================================
+        $relasiData = [];
+        foreach ($newBankIds as $bankId) {
+            $relasiData[] = [
+                'ujian_id' => $ujian->id,
+                'bank_id' => $bankId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+        
+        // Insert ke tabel pivot
+        Ujian_soals::insert($relasiData);
+        
+        // ============================================
+        // Update status ujian
+        // ============================================
+        $ujian->update(['status' => 'ready']);
+        
+        DB::commit();
+        
+        // Log success
+        \Log::info('Import Excel berhasil', [
+            'total_soal' => $totalSoal,
+            'uji_id' => $request->uji_id,
+            'total_query' => 3
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'imported' => $totalSoal,
+            'message' => "✅ Berhasil mengimport {$totalSoal} soal ke ujian " . $ujian->nama_ujian,
+            'redirect_url' => route('guru.index')
+        ]);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        \Log::error('Confirm Error: ' . $e->getMessage());
+        \Log::error($e->getTraceAsString());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
+        ]);
+    }
+}
     
 }

@@ -2,217 +2,740 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Siswa</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>Riwayat Ujian - Dashboard Siswa</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="{{asset('bulma.min.css')}}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
 
 <style>
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', sans-serif;
+    font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
 body {
-    background: #f3f5f9;
+    background: linear-gradient(135deg, #f3f5f9 0%, #eef2f7 100%);
+    min-height: 100vh;
 }
 
 /* ===== HEADER ===== */
 .header {
-    background: #2e5b9a;
+    background: linear-gradient(135deg, #2e5b9a 0%, #1e3a6b 100%);
     color: white;
-    padding: 15px 25px;
+    padding: 16px 28px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
 .header h2 {
-    font-size: 18px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.header h2 i {
+    font-size: 1.3rem;
+}
+
+.user-info-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.15);
+    padding: 6px 16px 6px 12px;
+    border-radius: 40px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.user-info-header:hover {
+    background: rgba(255,255,255,0.25);
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2e5b9a;
+    font-weight: bold;
+}
+
+.user-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.user-name i {
+    font-size: 0.7rem;
+    margin-left: 6px;
 }
 
 /* ===== LAYOUT ===== */
-.container {
+.app-wrapper {
     display: flex;
+    min-height: calc(100vh - 70px);
 }
 
 /* ===== SIDEBAR ===== */
 .sidebar {
-    width: 230px;
-    background: #5c6fa6;
+    width: 280px;
+    background: linear-gradient(180deg, #5c6fa6 0%, #4a5a8a 100%);
     min-height: 100vh;
-    padding-top: 20px;
+    padding: 25px 0;
     color: white;
+    position: sticky;
+    top: 70px;
+    height: calc(100vh - 70px);
+    overflow-y: auto;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.08);
 }
 
 .sidebar ul {
     list-style: none;
+    padding: 0;
 }
 
 .sidebar ul li {
-    padding: 14px 25px;
-    cursor: pointer;
-    transition: 0.3s;
+    margin: 4px 16px;
 }
 
-.sidebar ul li:hover {
+.sidebar ul li a {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 18px;
+    color: white;
+    text-decoration: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.sidebar ul li a i {
+    width: 22px;
+    font-size: 1.1rem;
+}
+
+.sidebar ul li a:hover {
     background: rgba(255,255,255,0.2);
+    transform: translateX(5px);
 }
 
-.sidebar ul li i {
-    margin-right: 10px;
+.sidebar ul li a.active {
+    background: rgba(255,255,255,0.25);
+    border-left: 3px solid white;
 }
 
 .logout {
     position: absolute;
-    bottom: 20px;
-    left: 25px;
-}
-.section{
-    background:white;
-    padding:20px;
-    border-radius:10px;
-    margin-bottom:20px;
+    bottom: 25px;
+    left: 0;
+    right: 0;
+    padding: 0 20px;
 }
 
-.section h4{
-    margin-bottom:15px;
-    color:#0f172a;
+.logout form button {
+    width: 100%;
+    background: rgba(220, 53, 69, 0.9);
+    border: none;
+    color: white;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
-/* Exam list */
-.exam{
-    display:flex;
-    justify-content:space-between;
-    padding:12px;
-    border-bottom:1px solid #e5e7eb;
-}
-
-.exam:last-child{
-    border-bottom:none;
-}
-
-.badge{
-    padding:4px 10px;
-    border-radius:12px;
-    font-size:12px;
-    color:white;
+.logout form button:hover {
+    background: #dc3545;
+    transform: translateY(-2px);
 }
 
 /* ===== MAIN CONTENT ===== */
 .main {
     flex: 1;
-    padding: 30px;
+    padding: 30px 35px;
+    background: #f8fafc;
 }
 
-.main h1 {
+/* Page Header */
+.page-header {
     margin-bottom: 30px;
+}
+
+.page-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e2a3e;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.page-header h1 i {
+    color: #2e5b9a;
+    font-size: 1.8rem;
+}
+
+.page-header p {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+/* Stats Cards */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 35px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.03);
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.stat-icon {
+    width: 55px;
+    height: 55px;
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2e5b9a;
+    font-size: 1.5rem;
+}
+
+.stat-info h3 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #1e2a3e;
+    line-height: 1.2;
+}
+
+.stat-info p {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Filter Section */
+.filter-section {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.filter-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    color: #1e2a3e;
+}
+
+.filter-title i {
+    color: #2e5b9a;
+    font-size: 1.1rem;
+}
+
+.filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+.filter-btn {
+    background: #f1f5f9;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 40px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-btn i {
+    font-size: 0.8rem;
+}
+
+.filter-btn:hover {
+    background: #e2e8f0;
+    transform: translateY(-2px);
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #2e5b9a 0%, #5c6fa6 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(46, 91, 154, 0.3);
+}
+
+.filter-btn.all-btn {
+    background: #2e5b9a;
+    color: white;
+}
+
+/* Search Box */
+.search-box {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    background: #f1f5f9;
+    border-radius: 40px;
+    padding: 5px 15px;
+}
+
+.search-box i {
+    color: #94a3b8;
+}
+
+.search-box input {
+    border: none;
+    background: transparent;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    outline: none;
+    width: 200px;
+}
+
+.search-box input::placeholder {
+    color: #94a3b8;
+}
+
+/* Section Title */
+.section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.section-title h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1e2a3e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-title h2 i {
+    color: #2e5b9a;
+    font-size: 1.3rem;
+}
+
+.date-badge {
+    background: white;
+    padding: 8px 18px;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #2e5b9a;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Riwayat Grid */
+.riwayat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 24px;
+}
+
+/* Riwayat Card */
+.riwayat-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.03);
+    animation: fadeInUp 0.4s ease forwards;
+}
+
+.riwayat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+}
+
+.card-header-custom {
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-bottom: 1px solid #eef2f6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.student-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.student-avatar {
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, #2e5b9a 0%, #5c6fa6 100%);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.student-details h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e2a3e;
+    margin-bottom: 4px;
+}
+
+.student-details p {
+    font-size: 0.7rem;
+    color: #64748b;
+}
+
+.date-badge-custom {
+    background: #e8f0fe;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    color: #2e5b9a;
+    font-weight: 600;
+}
+
+.card-body-custom {
+    padding: 20px;
+}
+
+.exam-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e2a3e;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.exam-title i {
+    color: #2e5b9a;
+    font-size: 1rem;
+}
+
+.exam-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eef2f6;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: #5a6e8a;
+}
+
+.meta-item i {
+    color: #2e5b9a;
+    width: 14px;
+    font-size: 0.7rem;
+}
+
+.score-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.score-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.score-excellent {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+}
+
+.score-good {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+    color: #856404;
+}
+
+.score-average {
+    background: linear-gradient(135deg, #cfe2ff 0%, #b8d4ff 100%);
     color: #2e5b9a;
 }
 
-/* ===== CARDS ===== */
-.cards {
-    display: flex;
-    gap: 25px;
-    flex-wrap: wrap;
+.score-low {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    color: #721c24;
 }
 
-.card {
-    width: 300px;
-    padding: 25px;
-    border-radius: 15px;
-    color: #333;
-    position: relative;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-    transition: 0.3s;
+.score-value {
+    font-size: 1.3rem;
+    font-weight: 800;
 }
 
-.card:hover {
-    transform: translateY(-5px);
+.status-done {
+    background: #e8f0fe;
+    color: #2e5b9a;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
 }
 
-.card h3 {
-    margin-bottom: 10px;
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 24px;
+    grid-column: 1 / -1;
 }
 
-.card p {
-    font-size: 14px;
-    color: #555;
+.empty-state i {
+    font-size: 4rem;
+    color: #cbd5e1;
+    margin-bottom: 20px;
 }
 
-.card .arrow {
-    position: absolute;
-    right: 20px;
+.empty-state h3 {
+    font-size: 1.2rem;
+    color: #475569;
+    margin-bottom: 8px;
+}
+
+.empty-state p {
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+
+/* Mobile Menu Toggle */
+.mobile-toggle {
+    display: none;
+    position: fixed;
     bottom: 20px;
-    font-size: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: #2e5b9a;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border: none;
+    color: white;
 }
 
-/* Warna Card */
-.pink {
-    background: #f8d7da;
+.mobile-toggle i {
+    font-size: 22px;
 }
 
-.yellow {
-    background: #fff3cd;
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 98;
 }
 
-.button-container{
-  display: none;
+/* Animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
+/* Responsive */
+@media (max-width: 768px) {
+    .header {
+        padding: 12px 16px;
+    }
+    
+    .header h2 span {
+        display: none;
+    }
+    
+    .user-name span {
+        display: none;
+    }
+    
+    .sidebar {
+        position: fixed;
+        left: -280px;
+        top: 0;
+        z-index: 99;
+        transition: left 0.3s ease;
+        height: 100vh;
+    }
+    
+    .sidebar.open {
+        left: 0;
+    }
+    
+    .main {
+        padding: 20px;
+        margin-left: 0;
+    }
+    
+    .mobile-toggle {
+        display: flex;
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    
+    .stat-card {
+        padding: 14px;
+    }
+    
+    .stat-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2rem;
+    }
+    
+    .stat-info h3 {
+        font-size: 1.3rem;
+    }
+    
+    .riwayat-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .page-header h1 {
+        font-size: 1.4rem;
+    }
+    
+    .filter-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-box {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .search-box input {
+        width: 100%;
+    }
+    
+    .filter-btn {
+        justify-content: center;
+    }
+}
 
-.blue {
-    background: #cfe2ff;
-}
-@media(max-width:768px){
-  .sidebar{
-    display:none;
-  }
-  .button-container {
-    display: block;
-  margin:10px auto;
-  display: flex;
-  background-color: rgba(0, 73, 144);
-  width: 250px;
-  height: 40px;
-  align-items: center;
-  justify-content: space-around;
-  border-radius: 10px;
-  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 7px,
-    rgba(0, 73, 144, 0.5) 5px 8px 10px;
-  transition: all 0.5s;
-}
-.button-container:hover {
-  width: 300px;
-  transition: all 0.5s;
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .main {
+        padding: 16px;
+    }
+    
+    .card-header-custom {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
 
-.buttond {
-  outline: 0 !important;
-  border: 0 !important;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  transition: all ease-in-out 0.3s;
-  cursor: pointer;
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
 }
 
-.buttond:hover {
-  transform: translateY(-3px);
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
 }
 
-.icon {
-  font-size: 20px;
-}
-  
+::-webkit-scrollbar-thumb {
+    background: #5c6fa6;
+    border-radius: 3px;
 }
 </style>
 </head>
@@ -220,99 +743,362 @@ body {
 <body>
 
 <div class="header">
-    <h2>SMK NEGERI 1 CIOMAS</h2>
-    <div>
-        {{$ire->nama}}<i class="fa fa-chevron-down"></i>
+    <h2>
+        <i class="fas fa-graduation-cap"></i>
+        <span>SMK NEGERI 1 CIOMAS</span>
+    </h2>
+    <div class="user-info-header" id="userMenu">
+        <div class="user-avatar">
+            <i class="fas fa-user"></i>
+        </div>
+        <div class="user-name">
+            {{$ire->nama}} <i class="fas fa-chevron-down"></i>
+        </div>
     </div>
 </div>
-<div class="button-container">
-  <a href="{{route('siswa.index')}}"class="buttond">
-    <svg
-      class="icon"
-      stroke="currentColor"
-      fill="currentColor"
-      stroke-width="0"
-      viewBox="0 0 1024 1024"
-      height="1em"
-      width="1em"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M946.5 505L560.1 118.8l-25.9-25.9a31.5 31.5 0 0 0-44.4 0L77.5 505a63.9 63.9 0 0 0-18.8 46c.4 35.2 29.7 63.3 64.9 63.3h42.5V940h691.8V614.3h43.4c17.1 0 33.2-6.7 45.3-18.8a63.6 63.6 0 0 0 18.7-45.3c0-17-6.7-33.1-18.8-45.2zM568 868H456V664h112v204zm217.9-325.7V868H632V640c0-22.1-17.9-40-40-40H432c-22.1 0-40 17.9-40 40v228H238.1V542.3h-96l370-369.7 23.1 23.1L882 542.3h-96.1z"
-      ></path>
-    </svg>
-  </a>
-  
-    <a href="{{route('siswa.riwayat')}}" class="buttond">
-    <i class="icon fa fa-history"></i></a>
-  <a href="{{route('siswa.jadwal')}}" class="buttond">
-    
-    <i class="icon fa fa-calendar"></i>
-  </a>
 
- 
-</div>
-<div class="container">
-     <div class="sidebar">
+<!-- Mobile Menu Toggle -->
+<button class="mobile-toggle" id="mobileToggle">
+    <i class="fas fa-bars"></i>
+</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="app-wrapper">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
         <ul>
             <li>
-              <a href="{{route('siswa.index')}}" class="navbar-item">
-                <i class="fa fa-home"></i> Dashboard
-              </a>
-              </li>
+                <a href="{{route('siswa.index')}}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+            </li>
             <li>
-              <a href="{{route('siswa.jadwal')}}" class="navbar-item">
-                              <i class="fa fa-calendar"></i> Jadwal Ujian
-              </a>
-</li>
+                <a href="{{route('siswa.jadwal')}}">
+                    <i class="fas fa-calendar-alt"></i> Jadwal Ujian
+                </a>
+            </li>
             <li>
-              <a href="{{route('siswa.riwayat')}}" class="navbar-item">
-                              <i class="fa fa-history"></i> Riwayat
-              </li>
-              </a>
-
-            
+                <a href="{{route('siswa.riwayat')}}" class="active">
+                    <i class="fas fa-history"></i> Riwayat
+                </a>
+            </li>
+        </ul>
 
         <div class="logout">
             <form action="{{ route('users.logout') }}" method="post">
                 @csrf
-                <button type="submit"> <i class="fa fa-sign-out-alt"></i> Logout</button>
+                <button type="submit">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
             </form>
-           
         </div>
     </div>
 
     <!-- Main Content -->
     <div class="main">
-      <form action="{{ route('users.logout') }}" method="post">
-                @csrf
-                <button type="submit"> <i class="fa fa-sign-out-alt"></i> Logout</button>
-            </form>
-        <h1>Dashboard</h1>
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>
+                <i class="fas fa-history"></i>
+                Riwayat Ujian
+            </h1>
+            <p>Lihat riwayat ujian yang telah Anda kerjakan beserta nilai yang diperoleh</p>
+        </div>
 
-        <div class="section mt-2">
-                    @foreach($data as $dt)
-          <div class="card">
-            <div class="card-header">
-              {{$dt->siswa->nama}}
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalUjian">{{ $data->count() }}</h3>
+                    <p>Total Ujian</p>
+                </div>
             </div>
-            <div class="card-content">
-              <h5 class="title">
-              {{$dt->ujian->nama_ujian}}
-              </h5>
-                <p class="subtitle">
-                  Selesai {{\Carbon\Carbon::parse($dt->created_at)->format("d/m/y")}}
-                </p>
-                
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="stat-info">
+                    @php
+                        $avgNilai = $data->avg('nilai');
+                        $passedCount = $data->filter(function($item) {
+                            return $item->nilai >= 75;
+                        })->count();
+                    @endphp
+                    <h3>{{ number_format($avgNilai, 1) }}</h3>
+                    <p>Rata-rata Nilai</p>
+                </div>
             </div>
-            <div class="card-footer">
-              <span class="card-footer-item tag is-info">Skor : {{$dt->nilai}}</span>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="stat-info">
+                    @php
+                        $bestScore = $data->max('nilai');
+                    @endphp
+                    <h3>{{ $bestScore ?? 0 }}</h3>
+                    <p>Nilai Tertinggi</p>
+                </div>
             </div>
-          </div>
-          @endforeach
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ $passedCount }}</h3>
+                    <p>Ujian Lulus</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <div class="filter-title">
+                <i class="fas fa-filter"></i>
+                <span>Filter & Pencarian</span>
+            </div>
+            <div class="filter-group">
+                <button class="filter-btn all-btn active" data-filter="all">
+                    <i class="fas fa-list"></i> Semua
+                </button>
+                <button class="filter-btn" data-filter="excellent">
+                    <i class="fas fa-crown"></i> Istimewa (≥85)
+                </button>
+                <button class="filter-btn" data-filter="good">
+                    <i class="fas fa-smile"></i> Baik (75-84)
+                </button>
+                <button class="filter-btn" data-filter="average">
+                    <i class="fas fa-meh"></i> Cukup (60-74)
+                </button>
+                <button class="filter-btn" data-filter="low">
+                    <i class="fas fa-frown"></i> Kurang (<60)
+                </button>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Cari nama ujian...">
+                </div>
+            </div>
+        </div>
+
+        <!-- Riwayat Section -->
+        <div class="section-title">
+            <h2>
+                <i class="fas fa-list-ol"></i>
+                Daftar Riwayat Ujian
+            </h2>
+            <div class="date-badge">
+                <i class="fas fa-calendar-alt"></i> 
+                {{ \Carbon\Carbon::now()->isoFormat('dddd, D MMMM YYYY') }}
+            </div>
+        </div>
+
+        <div class="riwayat-grid" id="riwayatGrid">
+            @if(isset($data) && $data->count() > 0)
+                @foreach($data as $dt)
+                    @php
+                        $nilai = $dt->nilai;
+                        if ($nilai >= 85) {
+                            $scoreClass = 'score-excellent';
+                            $filterCategory = 'excellent';
+                        } elseif ($nilai >= 75) {
+                            $scoreClass = 'score-good';
+                            $filterCategory = 'good';
+                        } elseif ($nilai >= 60) {
+                            $scoreClass = 'score-average';
+                            $filterCategory = 'average';
+                        } else {
+                            $scoreClass = 'score-low';
+                            $filterCategory = 'low';
+                        }
+                    @endphp
+                    <div class="riwayat-card" data-filter="{{ $filterCategory }}" data-name="{{ strtolower($dt->ujian->nama_ujian ?? '') }}">
+                        <div class="card-header-custom">
+                            <div class="student-info">
+                                <div class="student-avatar">
+                                    <i class="fas fa-user-graduate"></i>
+                                </div>
+                                <div class="student-details">
+                                    <h4>{{ $dt->siswa->nama ?? $ire->nama }}</h4>
+                                    <p>{{ $dt->siswa->nisn ?? '-' }}</p>
+                                </div>
+                            </div>
+                            <div class="date-badge-custom">
+                                <i class="fas fa-calendar-check"></i>
+                                {{ \Carbon\Carbon::parse($dt->created_at)->format('d M Y') }}
+                            </div>
+                        </div>
+                        <div class="card-body-custom">
+                            <div class="exam-title">
+                                <i class="fas fa-file-alt"></i>
+                                <span>{{ $dt->ujian->nama_ujian ?? 'Ujian' }}</span>
+                            </div>
+                            <div class="exam-meta">
+                                <div class="meta-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span>Durasi: {{ $dt->ujian->durasi ?? '-' }} Menit</span>
+                                </div>
+                                <div class="meta-item">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>Dikerjakan: {{ \Carbon\Carbon::parse($dt->created_at)->format('H:i') }} WIB</span>
+                                </div>
+                            </div>
+                            <div class="score-container">
+                                <div class="score-badge {{ $scoreClass }}">
+                                    <i class="fas fa-star"></i>
+                                    <span class="score-value">{{ $nilai }}</span>
+                                    <span>/ 100</span>
+                                </div>
+                                <div class="status-done">
+                                    <i class="fas fa-check-circle"></i>
+                                    Selesai
+                                </div>
+                            </div>
+                            <a class="button is-info is-outlined block" href="{{route('siswa.detail',$dt->id)}}">Detail</a>
+                        </div>
+                    </div>
+                @endforeach
+            @else
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <h3>Belum Ada Riwayat Ujian</h3>
+                    <p>Anda belum mengerjakan ujian apapun. Silakan ikuti ujian yang tersedia.</p>
+                </div>
+            @endif
+        </div>
+        
+        <!-- Empty State untuk filter -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <i class="fas fa-search"></i>
+            <h3>Tidak Ditemukan</h3>
+            <p>Tidak ada riwayat ujian yang sesuai dengan filter yang dipilih</p>
         </div>
     </div>
-    
+</div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mobile Sidebar Toggle
+    const mobileToggle = document.getElementById('mobileToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    
+    function toggleSidebar() {
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('active');
+        const icon = mobileToggle.querySelector('i');
+        if (sidebar.classList.contains('open')) {
+            icon.classList.remove('fa-bars');
+            icon.classList.add('fa-times');
+        } else {
+            icon.classList.remove('fa-times');
+            icon.classList.add('fa-bars');
+        }
+    }
+    
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', toggleSidebar);
+    }
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+    }
+    
+    // Close sidebar on window resize
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('active');
+            if (mobileToggle) {
+                const icon = mobileToggle.querySelector('i');
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        }
+    });
+    
+    // Close sidebar after clicking link on mobile
+    const sidebarLinks = document.querySelectorAll('.sidebar a');
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+        });
+    });
+    
+    // ===== FILTER FUNCTIONALITY =====
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const riwayatCards = document.querySelectorAll('.riwayat-card');
+    const searchInput = document.getElementById('searchInput');
+    const emptyState = document.getElementById('emptyState');
+    const riwayatGrid = document.getElementById('riwayatGrid');
+    
+    let currentFilter = 'all';
+    let currentSearch = '';
+    
+    function updateDisplay() {
+        let visibleCount = 0;
+        
+        riwayatCards.forEach(card => {
+            const filterValue = card.getAttribute('data-filter');
+            const cardName = card.getAttribute('data-name') || '';
+            
+            let matchesFilter = (currentFilter === 'all' || filterValue === currentFilter);
+            let matchesSearch = (currentSearch === '' || cardName.includes(currentSearch.toLowerCase()));
+            
+            if (matchesFilter && matchesSearch) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        // Show/hide empty state
+        if (visibleCount === 0 && riwayatCards.length > 0) {
+            emptyState.style.display = 'block';
+            riwayatGrid.style.display = 'none';
+        } else {
+            emptyState.style.display = 'none';
+            riwayatGrid.style.display = 'grid';
+        }
+        
+        // Jika tidak ada card sama sekali (data kosong)
+        if (riwayatCards.length === 0) {
+            emptyState.style.display = 'block';
+            riwayatGrid.style.display = 'none';
+        }
+    }
+    
+    // Filter button click
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            currentFilter = this.getAttribute('data-filter');
+            updateDisplay();
+        });
+    });
+    
+    // Search input
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            currentSearch = this.value;
+            updateDisplay();
+        });
+    }
+    
+    // Update stats based on visible items if needed
+    function updateStats() {
+        let visibleCount = 0;
+        riwayatCards.forEach(card => {
+            if (card.style.display !== 'none') visibleCount++;
+        });
+        // Optional: update stats display
+    }
+});
+</script>
 </body>
 </html>

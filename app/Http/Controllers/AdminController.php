@@ -13,6 +13,8 @@ use App\Models\Ujian;
 use App\Models\Jadwal;
 use App\Models\GuruMapel;
 use App\Models\Mapel;
+use App\Models\Pelanggaran;
+use App\Models\banksoal;
 
 class AdminController
 {
@@ -20,17 +22,46 @@ class AdminController
      * Display a listing of the resource.
      */
     public function index(Request $request)
-    {
-      $use = User::query();
-      if($request->has("role") && $request->role != ''){
+{
+    $use = User::query();
+    if($request->has("role") && $request->role != ''){
         $use->where("role",$request->role);
-      }
-      $sort = $request->get("sort","name");
-      $order = $request->get("order","asc");
-      $data = $use->orderBy($sort,$order,)->get();
-      $ire = Auth::user();
-        return view("admin.index",compact("data","ire"));
     }
+    $sort = $request->get("sort","name");
+    $order = $request->get("order","asc");
+    $data = $use->orderBy($sort,$order,)->get();
+    $ire = Auth::user();
+    
+    // ========== TAMBAHKAN INI ==========
+    // Total counts
+    $totalSiswa = User::where('role', 'siswa')->count();
+    $totalGuru = User::where('role', 'guru')->count();
+    $totalKelas = Kelas::count();
+    $totalMapel = Mapel::count();
+    $totalPelanggaran = Pelanggaran::count();
+    $totalBankSoal = banksoal::count();
+    
+    // Status Ujian
+    $ujianReady = Ujian::where('status', 'ready')->count();  // Ujian siap
+    $ujianDraft = Ujian::where('status', 'draft')->count(); // Ujian draft
+    $ujianDone = Ujian::where('status', 'done')->count();    // Ujian selesai
+    // ==================================
+    
+    $user = User::all();
+    $kelas = Kelas::all();
+    $ujian = Ujian::all();
+    $bank = banksoal::all();
+    $pelanggaran = Pelanggaran::all();
+    $mapel = Mapel::all();
+    
+    return view("admin.index", compact(
+        "data", "ire", "kelas", "ujian", "bank", 
+        "pelanggaran", "mapel",
+        "totalSiswa", "totalGuru", "totalKelas", 
+        "totalMapel", "totalPelanggaran", "totalBankSoal",
+        "ujianReady", "ujianDraft", "ujianDone"
+    ));
+}
 
     /**
      * Show the form for creating a new resource.
@@ -209,7 +240,7 @@ class AdminController
 {
     $uji = Ujian::find($request->ujian_id);
     
-    // Cek dulu apakah sudah ada
+    // Cek dulu apakah ujian sudah memiliki kelas ini
     if (!$uji->kelas()->where('kelas_id', $request->kelas_id)->exists()) {
         $uji->kelas()->attach($request->kelas_id);
     }
@@ -220,24 +251,73 @@ class AdminController
     $waktuMulai = \Carbon\Carbon::parse($request->tanggal . ' ' . $request->waktu_mulai);
     $waktuSelesai = $waktuMulai->copy()->addMinutes($uji->durasi);
     
-    // ============ CEK APAKAH PENGAWAS SUDAH ADA ============
+    // ============ CEK APAKAH SUDAH ADA JADWAL ============
+    // Cek apakah sudah ada jadwal untuk kelas ini di tanggal dan jam yang sama
+    $existingJadwal = Jadwal::where('kelas_id', $request->kelas_id)
+        ->where('tanggal', $request->tanggal)
+        ->where('jam_mapel', $request->jam_mapel)
+        ->first();
+    
+    if ($existingJadwal) {
+        return redirect()->back()->withErrors([
+            'error' => "Kelas ini sudah memiliki jadwal ujian pada tanggal {$request->tanggal} jam ke-{$request->jam_mapel}"
+        ])->withInput();
+    }
+    
+    // ============ CEK BENTURAN WAKTU ============
+    // Cek apakah ada jadwal lain di kelas yang sama yang waktunya bentrok
+    $bentrok = Jadwal::where('kelas_id', $request->kelas_id)
+        ->where('tanggal', $request->tanggal)
+        ->where(function($query) use ($waktuMulai, $waktuSelesai) {
+            $query->whereBetween('waktu_mulai', [$waktuMulai, $waktuSelesai])
+                  ->orWhereBetween('waktu_selesai', [$waktuMulai, $waktuSelesai])
+                  ->orWhere(function($q) use ($waktuMulai, $waktuSelesai) {
+                      $q->where('waktu_mulai', '<=', $waktuMulai)
+                        ->where('waktu_selesai', '>=', $waktuSelesai);
+                  });
+        })
+        ->first();
+    
+    if ($bentrok) {
+        return redirect()->back()->withErrors([
+            'error' => "Waktu ujian bentrok dengan jadwal lain di kelas ini"
+        ])->withInput();
+    }
+    
+    // ============ CEK PENGAWAS ============
     $pengawas = Pengawas::where('guru_id', $request->guru_id)
         ->where('user_id', $guru->user_id)
         ->first();
     
     if (!$pengawas) {
-        // Jika belum ada, buat baru
         $pengawas = Pengawas::create([
             "guru_id" => $request->guru_id,
             "user_id" => $guru->user_id,
         ]);
     }
     
+    // ============ CEK JADWAL PENGAWAS ============
+    // Cek apakah pengawas sudah memiliki jadwal di waktu yang sama
+    $pengawasBentrok = Jadwal::where('pengawas_id', $pengawas->id)
+        ->where('tanggal', $request->tanggal)
+        ->where(function($query) use ($waktuMulai, $waktuSelesai) {
+            $query->whereBetween('waktu_mulai', [$waktuMulai, $waktuSelesai])
+                  ->orWhereBetween('waktu_selesai', [$waktuMulai, $waktuSelesai]);
+        })
+        ->first();
+    
+    if ($pengawasBentrok) {
+        return redirect()->back()->withErrors([
+            'error' => "Pengawas sudah memiliki jadwal ujian di waktu yang sama"
+        ])->withInput();
+    }
+    
+    // Buat jadwal baru
     $jads = Jadwal::create([
         "jam_mapel" => $request->jam_mapel,
         "tanggal" => $request->tanggal,
         "ujian_id" => $request->ujian_id,
-        "pengawas_id" => $pengawas->id,  // Pakai yang sudah ada atau baru
+        "pengawas_id" => $pengawas->id,
         "kelas_id" => $request->kelas_id,
         "waktu_mulai" => $waktuMulai,
         "waktu_selesai" => $waktuSelesai,
@@ -247,7 +327,8 @@ class AdminController
         "jadwal_id" => $jads->id, 
     ]);
     
-    return redirect()->route("admin-ops.set", ["id" => $request->kelas_id]);
+    return redirect()->route("admin-ops.set", ["id" => $request->kelas_id])
+                     ->with('success', 'Jadwal berhasil dibuat');
 }
     
 }

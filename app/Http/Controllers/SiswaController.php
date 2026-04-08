@@ -26,6 +26,7 @@ class SiswaController
       $data = Siswa::with("kelas")->get();
       $ire = Auth::user();
       $kelas = Kelas::all();
+      
       return view("admin.siswa.index",compact("data","ire","kelas"));
     }
 
@@ -41,28 +42,34 @@ class SiswaController
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-      $paa = Hash::make($request->password);
-      User::create([
+{
+    $request->validate([
+        'nama' => 'required',
+        'nisn' => 'required|unique:siswa',
+        'password' => 'required',
+        'kelas_id' => 'required'
+    ]);
+    
+
+    
+    
+
+    $user = User::create([
         "nama" => $request->nama,
-        "password" => $paa,
+        "password" => Hash::make($request->password),
         "role" => "siswa",
-        ]);
-        $us = User::where("nama",$request->nama)->first();
-      $sis = Siswa::create([
-        "user_id" => $us->id,
+    ]);
+    $katapertama = explode(' ',$request->nama)[0];
+    Siswa::create([
+        "user_id" => $user->id,
         "nama" => $request->nama,
         "nisn" => $request->nisn,
         'kelas_id' => $request->kelas_id,
-        ]);
-        if($request->has("kelas_id")){
-          $kels = Kelas::find($request->kelas_id);
-          $sis->kelas()->associate($kels);
-          $sis->save();
-        }
-        return redirect()->route("admin.siswa.index")->with("success","Berhasil Mantap!");
-    }
-
+        "username" => $katapertama, 
+    ]);
+    
+    return redirect()->route("admin.siswa.index")->with("success", "Berhasil!");
+}
     /**
      * Display the specified resource.
      */
@@ -83,94 +90,170 @@ class SiswaController
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
-    {
-      $siswa = Siswa::findOrFail($id);
-      $usd = User::findOrFail($siswa->user_id);
-      $usd->nama = $request->nama;
-      if($request->filled("password")){
-      $usd->password = Hash::make($request->password);
-      }
-      $usd->save();
-        $request->validate([
-          "nama" => "required",
-          "nisn" => "required",
-          "password" => "required",
-          
-          ]);
-          $siswa->nama = $request->nama;
-          $siswa->nisn = $request->nisn;
-        $siswa->save();
-        return redirect()->route("admin.siswa.index");
+{
+
+    $request->validate([
+        "nama" => "required",
+        "nisn" => "required",
+        // Hapus 'required' dari password
+        "password" => "nullable", // optional, dengan minimal 6 karakter
+    ]);
+    
+    // 2. Proses update data
+    $siswa = Siswa::findOrFail($id);
+    $usd = User::findOrFail($siswa->user_id);
+    
+    $usd->nama = $request->nama;
+    if($request->filled("password")) {
+        $usd->password = Hash::make($request->password);
     }
+    $usd->save();
+    
+    $siswa->nama = $request->nama;
+    $katapertama = explode(' ',$request->nama);
+    $siswa->username= $katapertama;
+    $siswa->nisn = $request->nisn;
+    $siswa->save();
+    
+    return redirect()->route("admin.siswa.index");
+}
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Siswa $admin_siswa)
-    {
-        $admin_siswa->delete();
-        return redirect()->route("admin.siswa.index");
+    public function destroy(Siswa $siswa)  // Parameter harus $siswa, bukan $admin_siswa
+{
+    // Hapus user terkait
+    if($siswa->user_id) {
+        User::destroy($siswa->user_id);
     }
+    
+    $siswa->delete();
+    return redirect()->route("admin.siswa.index")->with('success', 'Data berhasil dihapus');
+}
     public function Siswas()
-    {
-      
+{
     $user = Auth::user();
     
     // Ambil data siswa dengan relasi
     $siswa = Siswa::with('kelas')
         ->where('nama', $user->nama)
-        ->firstOrFail(); // Gunakan firstOrFail untuk keamanan
+        ->first();
     
-    // Ambil semua ujian untuk kelas siswa beserta status peserta
-    $uji = Ujian::with(['kelas', 'jadwal'])
+    if(!$siswa) {
+        return redirect()->route('login')->with('error', 'Data siswa tidak ditemukan');
+    }
+    
+    // Ambil ujian HARI INI saja (filter by jadwal)
+    $today = now()->format('Y-m-d');
+    
+    $uji = Ujian::with(['mapels', 'jadwal', 'kelas'])
+        ->whereHas('jadwal', function($query) use ($today) {
+            $query->whereDate('waktu_mulai', $today);
+        })
         ->whereHas('kelas', function($query) use ($siswa) {
             $query->where('kelas_ujian.kelas_id', $siswa->kelas_id);
         })
         ->with(['peserta' => function($query) use ($siswa) {
-            // Langsung filter peserta untuk siswa ini
             $query->where('siswa_id', $siswa->id_siswa);
         }])
         ->get();
     
     // Transform data untuk memudahkan di view
     foreach ($uji as $u) {
-        // Set status berdasarkan data peserta
         $peserta = $u->peserta->first();
-        $u->status_ujian = $peserta ? $peserta->status : 'belum_mulai';
-        $u->nilai_siswa = $peserta ? $peserta->nilai : null;
         
-        // Hapus data peserta dari relasi (sudah dipindah ke properti baru)
+        if(!$peserta) {
+            $u->status_ujian = 'belum';
+            $u->nilai_siswa = null;
+            $u->peserta_id = null;
+            $u->selesai_pada = null;
+        } else {
+            $u->status_ujian = $peserta->status;
+            $u->nilai_siswa = $peserta->nilai;
+            $u->peserta_id = $peserta->id;
+            $u->selesai_pada = $peserta->updated_at;
+        }
+        
         unset($u->peserta);
     }
+    
+    // Statistik untuk resume
+    $totalUjian = Peserta_ujian::where('siswa_id', $siswa->id_siswa)->count();
+    $ujianSelesai = Peserta_ujian::where('siswa_id', $siswa->id_siswa)
+        ->where('status', 'selesai')
+        ->count();
+    $rataNilai = Peserta_ujian::where('siswa_id', $siswa->id_siswa)
+        ->where('status', 'selesai')
+        ->avg('nilai') ?? 0;
+    
+    // Jadwal mendatang (3 hari ke depan)
+    $jadwalMendatang = Jadwal::with('ujian')
+        ->where('kelas_id', $siswa->kelas_id)
+        ->whereDate('waktu_mulai', '>', $today)
+        ->orderBy('waktu_mulai', 'asc')
+        ->limit(3)
+        ->get();
+    
     $ire = $user;
-    return view("siswa.index", compact("siswa", "uji","ire"));
-
-    }
+    
+    return view("siswa.index", compact(
+        "siswa", 
+        "uji", 
+        "ire", 
+        "totalUjian", 
+        "ujianSelesai", 
+        "rataNilai",
+        "jadwalMendatang",
+        "today"
+    ));
+}
     public function Starts($id)
 {
     $ire = Auth::user();
     $uji = Ujian::with("mapels","jadwal")->where("id", $id)->first();
     
-
     if(!$uji) {
         return redirect()->back()->with('error', 'Ujian tidak ditemukan');
     }
     
-
-    $ujians = Ujian_soals::where("ujian_id", $uji->id)->pluck('bank_id')->toArray();
-    
+    // ========== TAMBAHKAN VALIDASI INI ==========
     // Ambil data siswa
     $sis = Siswa::with("kelas")->where("nama", $ire->nama)->first();
     
-
+    if(!$sis) {
+        return redirect()->back()->with('error', 'Data siswa tidak ditemukan');
+    }
+    
+    // CEK STATUS DI TABEL PESERTA_UJIAN
+    $peserta = Peserta_ujian::where('ujian_id', $uji->id)
+        ->where('siswa_id', $sis->id_siswa)
+        ->first();
+    
+    // Jika sudah selesai, tolak akses
+    if($peserta && $peserta->status == 'selesai') {
+        return redirect()->route('siswa.index')->with('error', 'Anda sudah menyelesaikan ujian ini! Nilai: ' . $peserta->nilai);
+    }
+    
+    // Jika status 'mulai' (sedang mengerjakan), boleh lanjutkan
+    // Jika belum ada record (null), buat baru dengan status 'mulai'
+    if(!$peserta) {
+        $peserta = Peserta_ujian::create([
+            'siswa_id' => $sis->id_siswa,
+            'ujian_id' => $uji->id,
+            'status' => 'mulai',
+            'nilai'=> 0,
+        ]);
+    }
+    
+    $ujians = Ujian_soals::where("ujian_id", $uji->id)->pluck('bank_id')->toArray();
     $soal = banksoal::whereIn('id', $ujians)->get();
     
-
     if($soal->isEmpty()) {
         return redirect()->back()->with('error', 'Belum ada soal untuk ujian ini');
     }
     
-    return view("siswa.ujian", compact("uji", "soal", "ire", "sis", "ujians"));
+    return view("siswa.ujian", compact("uji", "soal", "ire", "sis", "ujians", "peserta"));
 }
     
     public function Saved(Request $request)
@@ -178,6 +261,7 @@ class SiswaController
         $request->validate([
             "jawaban" => "required|array"
         ]);
+        $sis = Siswa::findOrFail($request->siswa_id);
         
         $jawabanSiswa = $request->jawaban;
         $soal_ids = array_keys($jawabanSiswa);
@@ -222,7 +306,7 @@ class SiswaController
             "siswa_id" => $request->siswa_id,
         ], [
             "nilai" => $nilai,
-            "status" => "done",
+            "status" => "selesai",
         ]);
         
         return redirect()->route("siswa.index")->with("success", "Ujian selesai!");
@@ -298,6 +382,7 @@ class SiswaController
    $ire = Auth::user();
    $sis = Siswa::with("kelas")->where("nama",$ire->nama)->first();
    $data = Peserta_ujian::with("ujian","siswa")->where("siswa_id",$sis->id_siswa)->get();
+   
    return view("siswa.riwayat",compact("data","sis","ire"));
  }
  public function jadwal(){
@@ -306,5 +391,119 @@ class SiswaController
    $data = Jadwal::with("ujian")->where("kelas_id",$sis->kelas_id)->get();
    return view("siswa.jadwal",compact("data","sis","ire"));
  }
+ public function resume($id)
+{
+    $ire = Auth::user();
+    $sis = Siswa::where("nama", $ire->nama)->first();
+    
+    // Cek apakah ada ujian dengan status 'mulai'
+    $peserta = Peserta_ujian::where('ujian_id', $id)
+        ->where('siswa_id', $sis->id_siswa)
+        ->where('status', 'mulai')
+        ->first();
+    
+    if(!$peserta) {
+        return redirect()->route('siswa.index')->with('error', 'Tidak ada ujian yang sedang berjalan');
+    }
+    
+    $uji = Ujian::with("mapels","jadwal")->find($id);
+    $ujians = Ujian_soals::where("ujian_id", $uji->id)->pluck('bank_id')->toArray();
+    $soal = banksoal::whereIn('id', $ujians)->get();
+    
+    // Kirim data peserta (berisi status 'mulai')
+    return view("siswa.shop", compact("id","uji", "soal", "ire", "sis", "ujians", "peserta"));
+}
+ public function detail($id)
+{
+    $ire = Auth::user();
+    $siswa = Siswa::where('nama', $ire->nama)->first();
+    
+    // Ambil data peserta ujian beserta relasinya
+    $peserta = Peserta_ujian::with(['ujian.mapels', 'siswa'])
+        ->where('id', $id)
+        ->where('siswa_id', $siswa->id_siswa)
+        ->firstOrFail();
+    
+
+    $jawaban = Jawaban_Siswa::with(['bank', 'ujian'])
+        ->where('siswa_id', $siswa->id_siswa)
+        ->where('ujian_id', $peserta->ujian_id)
+        ->get();
+    
+    // Hitung statistik
+    $totalSoal = $jawaban->count();
+    $jawabanBenar = $jawaban->where('benar', true)->count();
+    $jawabanSalah = $totalSoal - $jawabanBenar;
+    
+    return view("siswa.detail", compact(
+        "jawaban", 
+        "peserta", 
+        "totalSoal", 
+        "jawabanBenar", 
+        "jawabanSalah",
+        "ire"
+    ));
+}
+ public function dashboard()
+{
+    $user = Auth::user();
+    
+    // Ambil data siswa dengan relasi
+    $siswa = Siswa::with('kelas')
+        ->where('nama', $user->nama)
+        ->first();
+    
+    if(!$siswa) {
+        return redirect()->route('login')->with('error', 'Data siswa tidak ditemukan');
+    }
+    
+    // Ambil ujian HARI INI saja untuk dashboard
+    $today = now()->format('Y-m-d');
+    
+    $uji = Ujian::with(['mapels', 'jadwal', 'kelas'])
+        ->whereHas('jadwal', function($query) use ($today) {
+            $query->whereDate('waktu_mulai', $today);
+        })
+        ->whereHas('kelas', function($query) use ($siswa) {
+            $query->where('kelas_ujian.kelas_id', $siswa->kelas_id);
+        })
+        ->with(['peserta' => function($query) use ($siswa) {
+            $query->where('siswa_id', $siswa->id_siswa);
+        }])
+        ->get();
+    
+    // Tambahan: Statistik untuk resume di dashboard
+    $totalUjian = Peserta_ujian::where('siswa_id', $siswa->id_siswa)->count();
+    $ujianSelesai = Peserta_ujian::where('siswa_id', $siswa->id_siswa)
+        ->where('status', 'selesai')
+        ->count();
+    
+    // Hitung rata-rata nilai
+    $rataNilai = Peserta_ujian::where('siswa_id', $siswa->id_siswa)
+        ->where('status', 'selesai')
+        ->avg('nilai') ?? 0;
+    
+    // Jadwal mendatang (3 hari ke depan)
+    $jadwalMendatang = Jadwal::with('ujian')
+        ->where('kelas_id', $siswa->kelas_id)
+        ->whereDate('waktu_mulai', '>', $today)
+        ->orderBy('waktu_mulai', 'asc')
+        ->limit(3)
+        ->get();
+    
+    $ire = $user;
+    
+    return view("siswa.dashboard", compact(
+        "siswa", 
+        "uji", 
+        "ire", 
+        "totalUjian", 
+        "ujianSelesai", 
+        "rataNilai",
+        "jadwalMendatang",
+        "today"
+    ));
+}
  
 }
+

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SmartSchool Exam - Login (mobile fix)</title>
-
+<title>Login SmartSchool Skenic</title>
+  <link rel="stylesheet" href="{{asset('bulma.min.css')}}">
 <style>
 *{
   box-sizing:border-box;
@@ -13,15 +13,17 @@
 
 body{
   margin:0;
-  background:#f3f6fb;
+  background:#1f4f8c;
 }
-
+.title{
+color:#1f4f8c;}
 /* ===== LAYOUT FLEX ===== */
 .login-page{
   display:flex;
   flex-direction: row;           /* desktop: kiri + kanan sejajar */
   min-height:100vh;
   width:100%;
+  
 }
 
 /* ===== BANNER KIRI ===== */
@@ -32,6 +34,7 @@ body{
   padding:50px;
   position:relative;
   overflow:hidden;
+  perspective:500px
 }
 
 .brand{
@@ -68,19 +71,37 @@ body{
 .photo-frame{
   padding:10px;
   border-radius:18px;
-  transform:skewY(-6deg) rotate(-3deg);
-  box-shadow:0 15px 30px rgba(0,0,0,.25);
+  transform:skewY(20deg) perspective(1000px) ;
+  
+  box-shadow:5px 5px 10px rgba(0,0,0,0.2);
 }
-
+.photo-frame-leutik{
+padding:10px;
+  border-radius:18px;
+  transform:perspective(600px) rotateX(-15deg) skewY(-4deg) rotate(5deg) ;
+  
+  box-shadow:0 15px 30px rgba(0,0,0,.25);}
 /* warna frame */
-.photo-frame.green{
+.photo-frame.green,.photo-frame-leutik.green{
   background:#2dd4a4;
 }
 
-.photo-frame.yellow{
+.photo-frame-yellow{
   background:#f6c343;
+  padding:10px;
+  border-radius:18px;
+  transform:skewY(20deg) perspective(1000px) translate(50%,-50%);
+  
+  box-shadow:5px 5px 10px rgba(0,0,0,0.2);
 }
-
+.photo-frame-yellow-leutik{
+background:#f6c343;
+  padding:10px;
+  border-radius:18px;
+  transform: rotateX(-10deg);
+  
+  box-shadow:5px 5px 10px rgba(0,0,0,0.2);
+}
 /* foto di dalam frame (dibalik transform agar lurus) */
 .photo-frame img{
   display:block;
@@ -88,7 +109,7 @@ body{
   height:115px;
   object-fit:cover;
   border-radius:14px;
-  transform:skewY(6deg) rotate(3deg);
+  transform:skewY(20deg) perspective(1000px);
 }
 
 /* ===== FORM KANAN ===== */
@@ -99,6 +120,7 @@ body{
   display:flex;
   flex-direction:column;
   justify-content:center;
+  border-radius:50px;
 }
 
 .login-form h2{
@@ -126,12 +148,13 @@ body{
   background:#d0ddeb;
 }
 
-input{
+.input{
   padding:12px 14px;
   margin-bottom:14px;
-  border-radius:8px;
-  border:1px solid #ccc;
+  border-radius:20px;
+  border:1px solid rgba(0,0,0,0.1);
   font-size:14px;
+  background:transparent;
 }
 
 input:focus{
@@ -139,7 +162,7 @@ input:focus{
   border-color:#4c6fa7;
 }
 
-.btn{
+.button{
   padding:12px;
   background:#4c6fa7;
   color:white;
@@ -149,22 +172,21 @@ input:focus{
   font-size:15px;
 }
 
-.btn:hover{
+.button:hover{
   opacity:.9;
 }
 
-/* ===== RESPONSIVE FIX ===== */
-/* saat layar lebarnya 768px atau lebih kecil: tumpuk vertikal */
+
 @media(max-width:768px){
   .login-page{
     flex-direction: column;       /* mobile: banner di atas, form di bawah */
   }
   .login-banner,
   .login-form{
-    width:100%;                   /* masing-masing lebar penuh */
+    width:100%;                 
   }
 
-  /* sedikit penyesuaian padding agar tidak terlalu rapat di hp */
+
   .login-banner {
     padding: 30px 20px;
   }
@@ -172,7 +194,7 @@ input:focus{
     padding: 40px 25px;
   }
 
-  /* gambar mungkin terlalu besar, perkecil sedikit */
+
   .photo-frame img{
     width: 130px;
     height: 90px;
@@ -185,7 +207,7 @@ input:focus{
   }
 }
 
-/* untuk layar sangat kecil (opsional) */
+
 @media(max-width:480px){
   .photo-frame img{
     width: 110px;
@@ -201,9 +223,7 @@ input:focus{
 <body>
 
 <div class="login-page">
-
-  <!-- ================= KIRI / BANNER ================= -->
-  <div class="login-banner">
+<div class="login-banner">
 
     <div class="brand">
       <div class="logo"></div>
@@ -220,23 +240,25 @@ input:focus{
 
       <!-- frame hijau -->
       <div class="photo-frame green">
-        <!-- menggunakan gambar dari picsum (tetap) -->
+
         <img src="https://picsum.photos/400/300?random=11" alt="student activity">
       </div>
+      <div class="photo-frame-leutik green" style="">
+       <h3 style="color:transparent;">hdhdhdhdhdh</h3>
+      </div>
 
-      <!-- frame kuning -->
-      <div class="photo-frame yellow">
-        <img src="https://picsum.photos/400/300?random=12" alt="classroom">
+      <div class="photo-frame-yellow">
+        <img src="bg.gif" alt="classroom">
       </div>
 
     </div>
 
   </div>
 
-  <!-- ================= KANAN / FORM ================= -->
-  <div class="login-form">
 
-    <h2>Login</h2>
+  <div class="login-form ">
+
+    <h2 class="title has-text-centered">Login</h2>
 
     <div class="roles">
       <button type="button">Guru</button>
@@ -247,10 +269,17 @@ input:focus{
     </div>
     <form action="{{route('users.store')}}" method="post">
       @csrf
-      <input type="text" placeholder="Pengguna" name="nama">
-    <input type="password" placeholder="Password" name="password">
+    <div class="field">
+      <label class="label">Pengguna</label>
+      <input type="text" placeholder="Pengguna" name="nama" class="input py-5">
+    </div>
+      <div class="field">
+      <label class="label">Password</label>
+       <input type="password" placeholder="Password" name="password" class="input py-5">
+    </div>
+   
 
-    <button class="btn" style="display:block;" type="submit">Masuk</button>
+    <button class="button is-fullwidth mt-5" style="display:block;" type="submit">Masuk</button>
     </form>
     
 

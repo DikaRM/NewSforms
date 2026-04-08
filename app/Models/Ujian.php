@@ -17,6 +17,7 @@ class Ujian extends Model
         "durasi",
         "jadwal_id"
     ];
+   
     public function mapels(){
         return $this->belongsTo(Mapel::class,"mapel");
     }
@@ -28,7 +29,7 @@ class Ujian extends Model
     }
     public function jadwal()
     {
-      return $this->belongsTo(Jadwal::class);
+      return $this->hasOne(Jadwal::class);
     }
     public function peserta()
     {

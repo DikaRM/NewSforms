@@ -27,7 +27,9 @@ class Siswa extends Model
         'user_id',
         'nama',
         'nisn',
-        'kelas_id'
+        'kelas_id',
+        'status',
+        'username',
     ];
     public function user()
     {
@@ -41,6 +43,11 @@ class Siswa extends Model
     {
         return $this->belongsTo(Kelas::class, 'kelas_id', 'id');
     }
+    public function pelanggaran()
+{
+    return $this->hasMany(Pelanggaran::class, 'siswa_id', 'id_siswa');
+ 
+}
 
     /**
      * Accessor untuk format nama

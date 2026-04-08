@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('user_id')->index();
             $table->string('nama')->index();
             $table->string("nisn")->unique()->index();
+            
             $table->string("kelas_id")->index();
             $table->timestamps();
             

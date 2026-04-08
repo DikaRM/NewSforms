@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\GuruController;
 use App\Http\Controllers\SiswaController;
@@ -8,10 +9,49 @@ use App\Http\Controllers\UsersController;
 use App\Http\Controllers\PengawasController;
 
 Route::get('/', function () {
+if (Auth::check()) {
+        $user = Auth::user();
+        switch ($user->role) {
+            case 'admin':
+                return redirect('/admin');
+            case 'admin-ops':
+                return redirect('/admin-ops');
+            case 'siswa':
+                return redirect('/siswa');
+            case 'guru':
+                return redirect('/guru');
+            case 'pengawas':
+                return redirect('/pengawas');
+            default:
+                Auth::logout();
+                return view('login');
+        }
+    }
     return view('welcome');
 });
+Route::get('/login', function () {
 
-Route::get("/login", [UsersController::class, "index"])->name("login");
+    if (Auth::check()) {
+        $user = Auth::user();
+        switch ($user->role) {
+            case 'admin':
+                return redirect('/admin');
+            case 'admin-ops':
+                return redirect('/admin-ops');
+            case 'siswa':
+                return redirect('/siswa');
+            case 'guru':
+                return redirect('/guru');
+            case 'pengawas':
+                return redirect('/pengawas');
+            default:
+                Auth::logout();
+                return view('login');
+        }
+    }
+    return view('login');
+})->name('login');
+
 Route::post("/login/load", [UsersController::class, "login"])->name("users.store");
 Route::post("/logout", [UsersController::class, "logout"])->name("users.logout");
 
@@ -37,11 +77,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
 // SISWA ROUTES
 Route::middleware(['auth', 'role:siswa'])->prefix('siswa')->name('siswa.')->group(function () {
-    Route::get('/', [SiswaController::class, 'Siswas'])->name('index');
+    Route::get('/uji', [SiswaController::class, 'Siswas'])->name('uji');
+    Route::get('/', [SiswaController::class, 'dashboard'])->name('index');
+    
     Route::get('/riwayat', [SiswaController::class, 'riwayat'])->name('riwayat');
     Route::get('/jadwal', [SiswaController::class, 'jadwal'])->name('jadwal');
     Route::get('/{id}', [SiswaController::class, 'Starts'])->name('shop');
+    Route::get('/detail/{id}', [SiswaController::class, 'detail'])->name('detail');
     Route::post('/saved', [SiswaController::class, 'Saved'])->name('save');
+    // Di web.php
+Route::get('/ujian/resume/{id}', [UjianController::class, 'resume'])->name('resume');
     
 });
 
@@ -76,3 +121,6 @@ Route::middleware(['auth', 'role:admin-ops'])->prefix('admin-ops')->name('admin-
     Route::post('/create', [AdminController::class, 'operateCreate'])->name('sav');
 });
 Route::resource('/admin', AdminController::class);
+Route::post('/import/soal', [GuruController::class, 'import'])->name('import.soal');
+Route::post('/import/preview', [GuruController::class, 'preview'])->name('import.preview');
+Route::post('/import/confirm', [GuruController::class, 'confirm'])->name('import.confirm');

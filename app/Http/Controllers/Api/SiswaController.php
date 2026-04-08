@@ -25,38 +25,40 @@ class SiswaController extends Controller
      * Get jadwal ujian siswa
      */
     public function jadwal(Request $request)
-    {
-        $user = $request->user();
-        $siswa = $this->getSiswaFromUser($user);
+{
+    $user = $request->user();
+    $siswa = $this->getSiswaFromUser($user);
 
-        $jadwal = Jadwal::with(['ujian.mapels'])
-            ->where('kelas_id', $siswa->kelas_id)
-            ->whereHas('ujian', function($q) {
-                $q->where('status', 'ready');
-            })
-            ->get()
-            ->map(function($item) use ($siswa) {
-                $peserta = Peserta_ujian::where('ujian_id', $item->ujian->id)
-                    ->where('siswa_id', $siswa->id_siswa)
-                    ->first();
-                
-                return [
-                    'id' => $item->id,
-                    'ujian_id' => $item->ujian->id,
-                    'nama_ujian' => $item->ujian->nama_ujian,
-                    'mapel' => $item->ujian->mapels->nama_mapel ?? 'Unknown',
-                    'tanggal' => $item->waktu_mulai,
-                    'durasi' => $item->ujian->durasi ?? 120,
-                    'status_peserta' => $peserta ? ($peserta->nilai ? 'selesai' : 'belum') : 'belum',
-                    'nilai' => $peserta ? $peserta->nilai : null,
-                ];
-            });
+    // ✅ Perbaikan: Gunakan left join dan subquery
+    $jadwal = Jadwal::with(['ujian.mapels'])
+        ->where('kelas_id', $siswa->kelas_id)
+        ->whereHas('ujian', function($q) {
+            $q->where('status', 'ready');
+        })
+        ->with(['pesertaUjian' => function($q) use ($siswa) {
+            $q->where('siswa_id', $siswa->id_siswa);
+        }])  // ✅ Eager loading peserta ujian!
+        ->get()
+        ->map(function($item) use ($siswa) {
+            $peserta = $item->pesertaUjian->first(); // ✅ Sudah tersedia, tidak query lagi
+            
+            return [
+                'id' => $item->id,
+                'ujian_id' => $item->ujian->id,
+                'nama_ujian' => $item->ujian->nama_ujian,
+                'mapel' => $item->ujian->mapels->nama_mapel ?? 'Unknown',
+                'tanggal' => $item->waktu_mulai,
+                'durasi' => $item->ujian->durasi ?? 120,
+                'status_peserta' => $peserta ? ($peserta->nilai ? 'selesai' : 'belum') : 'belum',
+                'nilai' => $peserta ? $peserta->nilai : null,
+            ];
+        });
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $jadwal
-        ], 200);
-    }
+    return response()->json([
+        'status' => 'success',
+        'data' => $jadwal
+    ], 200);
+}
 
     /**
      * Get riwayat ujian siswa
@@ -91,167 +93,168 @@ class SiswaController extends Controller
      * Mulai ujian
      */
     public function mulaiUjian(Request $request, $id)
-    {
-        $user = $request->user();
-        $siswa = $this->getSiswaFromUser($user);
+{
+    $user = $request->user();
+    $siswa = $this->getSiswaFromUser($user);
 
-        // Cek apakah ujian ada
-        $ujian = Ujian::with(['mapels', 'jadwal'])->where('id', $id)->first();
-        
-        if (!$ujian) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Ujian tidak ditemukan'
-            ], 404);
-        }
-
-        // Cek apakah siswa sudah mengikuti ujian ini
-        $existingPeserta = Peserta_ujian::where('ujian_id', $id)
-            ->where('siswa_id', $siswa->id_siswa)
-            ->first();
-
-        if ($existingPeserta && $existingPeserta->nilai) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Anda sudah mengerjakan ujian ini'
-            ], 400);
-        }
-
-        // Ambil soal-soal ujian
-        $soalIds = Ujian_soals::where('ujian_id', $id)->pluck('bank_id')->toArray();
-        $soal = banksoal::whereIn('id', $soalIds)->get();
-
-        if ($soal->isEmpty()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Belum ada soal untuk ujian ini'
-            ], 404);
-        }
-
-        // Buat atau update peserta ujian
-        $peserta = Peserta_ujian::updateOrCreate(
-            [
-                'ujian_id' => $id,
-                'siswa_id' => $siswa->id_siswa,
-            ],
-            [
-                'status' => 'ongoing',
-                'mulai_pengerjaan' => now(),
-            ]
-        );
-
-        // Format soal untuk dikirim ke Flutter
-        $soalList = $soal->map(function($item) use ($id, $siswa) {
-            // Cek jawaban sebelumnya jika ada
-            $jawabanSebelumnya = Jawaban_Siswa::where('ujian_id', $id)
-                ->where('siswa_id', $siswa->id_siswa)
-                ->where('bank_id', $item->id)
-                ->first();
-
-            return [
-                'id' => $item->id,
-                'pertanyaan' => $item->pertanyaan,
-                'tipe' => $item->opsi_a ? 'pilihan_ganda' : 'essay',
-                'opsi' => $item->opsi_a ? [
-                    'a' => $item->opsi_a,
-                    'b' => $item->opsi_b,
-                    'c' => $item->opsi_c,
-                    'd' => $item->opsi_d,
-                    'e' => $item->opsi_e,
-                ] : null,
-                'gambar' => $item->gambar,
-                'jawaban_sebelumnya' => $jawabanSebelumnya ? $jawabanSebelumnya->jawaban : null,
-            ];
-        });
-
+    $ujian = Ujian::with(['mapels', 'jadwal'])->where('id', $id)->first();
+    
+    if (!$ujian) {
         return response()->json([
-            'status' => 'success',
-            'data' => [
-                'ujian' => [
-                    'id' => $ujian->id,
-                    'nama_ujian' => $ujian->nama_ujian,
-                    'mapel' => $ujian->mapels->nama_mapel ?? 'Unknown',
-                    'durasi' => $ujian->durasi ?? 120,
-                    'waktu_mulai' => $ujian->jadwal ? $ujian->jadwal->waktu_mulai : null,
-                    'waktu_selesai' => $peserta->mulai_pengerjaan ? 
-                        now()->parse($peserta->mulai_pengerjaan)->addMinutes($ujian->durasi ?? 120) : null,
-                ],
-                'soal' => $soalList,
-                'total_soal' => count($soalList),
-            ]
-        ], 200);
+            'status' => 'error',
+            'message' => 'Ujian tidak ditemukan'
+        ], 404);
     }
+
+    $existingPeserta = Peserta_ujian::where('ujian_id', $id)
+        ->where('siswa_id', $siswa->id_siswa)
+        ->first();
+
+    if ($existingPeserta && $existingPeserta->nilai) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Anda sudah mengerjakan ujian ini'
+        ], 400);
+    }
+
+    // ✅ Perbaikan: Ambil soal dan jawaban sekaligus
+    $soalIds = Ujian_soals::where('ujian_id', $id)->pluck('bank_id');
+    $soal = banksoal::whereIn('id', $soalIds)->get();
+    
+    // ✅ Ambil semua jawaban sebelumnya dalam 1 query!
+    $jawabanSebelumnya = Jawaban_Siswa::where('ujian_id', $id)
+        ->where('siswa_id', $siswa->id_siswa)
+        ->whereIn('bank_id', $soalIds)
+        ->get()
+        ->keyBy('bank_id');  // Key by bank_id untuk akses cepat
+
+    if ($soal->isEmpty()) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Belum ada soal untuk ujian ini'
+        ], 404);
+    }
+
+    $peserta = Peserta_ujian::updateOrCreate(
+        [
+            'ujian_id' => $id,
+            'siswa_id' => $siswa->id_siswa,
+        ],
+        [
+            'status' => 'ongoing',
+            'mulai_pengerjaan' => now(),
+        ]
+    );
+
+    // ✅ Format soal tanpa query tambahan
+    $soalList = $soal->map(function($item) use ($jawabanSebelumnya) {
+        $jawaban = $jawabanSebelumnya->get($item->id);
+        
+        return [
+            'id' => $item->id,
+            'pertanyaan' => $item->pertanyaan,
+            'tipe' => $item->opsi_a ? 'pilihan_ganda' : 'essay',
+            'opsi' => $item->opsi_a ? [
+                'a' => $item->opsi_a,
+                'b' => $item->opsi_b,
+                'c' => $item->opsi_c,
+                'd' => $item->opsi_d,
+                'e' => $item->opsi_e,
+            ] : null,
+            'gambar' => $item->gambar,
+            'jawaban_sebelumnya' => $jawaban ? $jawaban->jawaban : null,
+        ];
+    });
+
+    return response()->json([
+        'status' => 'success',
+        'data' => [
+            'ujian' => [...],
+            'soal' => $soalList,
+            'total_soal' => count($soalList),
+        ]
+    ], 200);
+}
 
     /**
      * Simpan jawaban ujian
      */
     public function simpanJawaban(Request $request)
-    {
-        $request->validate([
-            'ujian_id' => 'required|integer',
-            'jawaban' => 'required|array',
-        ]);
+{
+    $request->validate([
+        'ujian_id' => 'required|integer',
+        'jawaban' => 'required|array',
+    ]);
 
-        $user = $request->user();
-        $siswa = $this->getSiswaFromUser($user);
+    $user = $request->user();
+    $siswa = $this->getSiswaFromUser($user);
 
-        $jawabanSiswa = $request->jawaban;
-        $soal_ids = array_keys($jawabanSiswa);
-        $soals = banksoal::whereIn("id", $soal_ids)->get()->keyBy("id");
+    $jawabanSiswa = $request->jawaban;
+    $soal_ids = array_keys($jawabanSiswa);
+    $soals = banksoal::whereIn("id", $soal_ids)->get()->keyBy("id");
+    
+    $score = 0;
+    $total_soal = count($jawabanSiswa);
+    
+    // ✅ Siapkan data untuk batch insert/update
+    $jawabanData = [];
+    
+    foreach($jawabanSiswa as $soal_id => $jawabans) {
+        $soal = $soals[$soal_id] ?? null;
+        if (!$soal) continue;
         
-        $score = 0;
-        $total_soal = count($jawabanSiswa);
+        $benar = 0;
         
-        foreach($jawabanSiswa as $soal_id => $jawabans) {
-            $soal = $soals[$soal_id] ?? null;
-            if (!$soal) continue;
-            
-            $benar = 0;
-            
-            if($soal->opsi_a != null) {
-                // SOAL PILIHAN GANDA
-                $benar = (strtoupper(trim($jawabans)) == strtoupper(trim($soal->jawaban_benar))) ? 1 : 0;
-            } else {
-                // SOAL ESSAY
-                $nilai = $this->hitungNilaiEssay($jawabans, $soal->jawaban_benar);
-                $benar = ($nilai >= 80) ? 1 : 0;
-            }
-            
-            if($benar) {
-                $score += 1;
-            }
-            
-            Jawaban_Siswa::updateOrCreate([
-                "ujian_id" => $request->ujian_id,
-                "siswa_id" => $siswa->id_siswa,
-                "bank_id" => $soal->id,
-            ], [
-                "jawaban" => $jawabans,
-                "benar" => $benar,
-            ]);
+        if($soal->opsi_a != null) {
+            $benar = (strtoupper(trim($jawabans)) == strtoupper(trim($soal->jawaban_benar))) ? 1 : 0;
+        } else {
+            $nilai = $this->hitungNilaiEssay($jawabans, $soal->jawaban_benar);
+            $benar = ($nilai >= 80) ? 1 : 0;
         }
         
-        $nilai = ($total_soal > 0) ? round(($score / $total_soal) * 100, 2) : 0;
+        if($benar) {
+            $score += 1;
+        }
         
-        Peserta_ujian::updateOrCreate([
+        $jawabanData[] = [
             "ujian_id" => $request->ujian_id,
             "siswa_id" => $siswa->id_siswa,
-        ], [
-            "nilai" => $nilai,
-            "status" => "done",
-            "selesai_pengerjaan" => now(),
-        ]);
-        
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Ujian selesai!',
-            'data' => [
-                'nilai' => $nilai,
-                'benar' => $score,
-                'total_soal' => $total_soal,
-            ]
-        ], 200);
+            "bank_id" => $soal->id,
+            "jawaban" => $jawabans,
+            "benar" => $benar,
+            "created_at" => now(),
+            "updated_at" => now(),
+        ];
     }
+    
+    // ✅ Batch insert/update (gunakan upsert)
+    Jawaban_Siswa::upsert(
+        $jawabanData,
+        ['ujian_id', 'siswa_id', 'bank_id'], // Unique constraint
+        ['jawaban', 'benar', 'updated_at']   // Fields to update
+    );
+    
+    $nilai = ($total_soal > 0) ? round(($score / $total_soal) * 100, 2) : 0;
+    
+    Peserta_ujian::updateOrCreate([
+        "ujian_id" => $request->ujian_id,
+        "siswa_id" => $siswa->id_siswa,
+    ], [
+        "nilai" => $nilai,
+        "status" => "done",
+        "selesai_pengerjaan" => now(),
+    ]);
+    
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Ujian selesai!',
+        'data' => [
+            'nilai' => $nilai,
+            'benar' => $score,
+            'total_soal' => $total_soal,
+        ]
+    ], 200);
+}
 
     /**
      * Hitung nilai essay

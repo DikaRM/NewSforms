@@ -2,218 +2,621 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Guru Teacher</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>Dashboard Guru - Sistem Ujian</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="{{asset('bulma.min.css')}}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
 
 <style>
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', sans-serif;
+    font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
 body {
-    background: #f3f5f9;
+    background: linear-gradient(135deg, #f3f5f9 0%, #eef2f7 100%);
+    min-height: 100vh;
 }
 
 /* ===== HEADER ===== */
 .header {
-    background: #2e5b9a;
+    background: linear-gradient(135deg, #2e5b9a 0%, #1e3a6b 100%);
     color: white;
-    padding: 15px 25px;
+    padding: 16px 28px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
 .header h2 {
-    font-size: 18px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.header h2 i {
+    font-size: 1.3rem;
+}
+
+.user-info-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.15);
+    padding: 6px 16px 6px 12px;
+    border-radius: 40px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.user-info-header:hover {
+    background: rgba(255,255,255,0.25);
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2e5b9a;
+    font-weight: bold;
+}
+
+.user-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.user-name i {
+    font-size: 0.7rem;
+    margin-left: 6px;
 }
 
 /* ===== LAYOUT ===== */
-.container {
+.app-wrapper {
     display: flex;
+    min-height: calc(100vh - 70px);
 }
 
 /* ===== SIDEBAR ===== */
 .sidebar {
-    width: 230px;
-    background: #5c6fa6;
+    width: 280px;
+    background: linear-gradient(180deg, #5c6fa6 0%, #4a5a8a 100%);
     min-height: 100vh;
-    padding-top: 20px;
+    padding: 25px 0;
     color: white;
+    position: sticky;
+    top: 70px;
+    height: calc(100vh - 70px);
+    overflow-y: auto;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.08);
 }
 
 .sidebar ul {
     list-style: none;
+    padding: 0;
 }
 
 .sidebar ul li {
-    padding: 14px 25px;
+    margin: 4px 16px;
+}
+
+.sidebar ul li a, .sidebar ul li .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 18px;
+    color: white;
+    text-decoration: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    font-weight: 500;
     cursor: pointer;
-    transition: 0.3s;
 }
 
-.sidebar ul li:hover {
+.sidebar ul li a i, .sidebar ul li .menu-item i {
+    width: 22px;
+    font-size: 1.1rem;
+}
+
+.sidebar ul li a:hover, .sidebar ul li .menu-item:hover {
     background: rgba(255,255,255,0.2);
+    transform: translateX(5px);
 }
 
-.sidebar ul li i {
-    margin-right: 10px;
+.sidebar ul li a.active, .sidebar ul li .menu-item.active {
+    background: rgba(255,255,255,0.25);
+    border-left: 3px solid white;
 }
 
 .logout {
     position: absolute;
-    bottom: 20px;
-    left: 25px;
-}
-.section{
-    background:white;
-    padding:20px;
-    border-radius:10px;
-    margin-bottom:20px;
+    bottom: 25px;
+    left: 0;
+    right: 0;
+    padding: 0 20px;
 }
 
-.section h4{
-    margin-bottom:15px;
-    color:#0f172a;
+.logout form button {
+    width: 100%;
+    background: rgba(220, 53, 69, 0.9);
+    border: none;
+    color: white;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
-/* Exam list */
-.exam{
-    display:flex;
-    justify-content:space-between;
-    padding:12px;
-    border-bottom:1px solid #e5e7eb;
-}
-
-.exam:last-child{
-    border-bottom:none;
-}
-
-.badge{
-    padding:4px 10px;
-    border-radius:12px;
-    font-size:12px;
-    color:white;
+.logout form button:hover {
+    background: #dc3545;
+    transform: translateY(-2px);
 }
 
 /* ===== MAIN CONTENT ===== */
 .main {
-  height: 100vh;
     flex: 1;
-    padding: 30px;
+    padding: 30px 35px;
+    background: #f8fafc;
 }
 
-.main h1 {
+/* Page Header */
+.page-header {
     margin-bottom: 30px;
+}
+
+.page-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e2a3e;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.page-header h1 i {
+    color: #2e5b9a;
+    font-size: 1.8rem;
+}
+
+.page-header p {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+/* Stats Cards */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 35px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.03);
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.stat-icon {
+    width: 55px;
+    height: 55px;
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2e5b9a;
+    font-size: 1.5rem;
+}
+
+.stat-info h3 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #1e2a3e;
+    line-height: 1.2;
+}
+
+.stat-info p {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Section Title */
+.section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.section-title h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1e2a3e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-title h2 i {
+    color: #2e5b9a;
+    font-size: 1.3rem;
+}
+
+.date-badge {
+    background: white;
+    padding: 8px 18px;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #2e5b9a;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Exam Grid */
+.exam-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 24px;
+}
+
+/* Exam Card */
+.exam-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.03);
+    animation: fadeInUp 0.4s ease forwards;
+}
+
+.exam-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+}
+
+.card-header-custom {
+    background: linear-gradient(135deg, #2e5b9a 0%, #5c6fa6 100%);
+    padding: 18px 20px;
+    color: white;
+}
+
+.card-header-custom h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.card-header-custom h3 i {
+    font-size: 1.1rem;
+}
+
+.card-body-custom {
+    padding: 20px;
+}
+
+.exam-detail {
+    margin-bottom: 16px;
+}
+
+.exam-detail p {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.exam-detail i {
+    width: 20px;
     color: #2e5b9a;
 }
 
-/* ===== CARDS ===== */
-.cards {
+.exam-stats {
     display: flex;
-    gap: 25px;
+    gap: 16px;
+    padding: 12px 0;
+    border-top: 1px solid #eef2f6;
+    border-bottom: 1px solid #eef2f6;
+    margin: 12px 0;
+}
+
+.stat-item-small {
+    flex: 1;
+    text-align: center;
+}
+
+.stat-item-small .stat-value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #2e5b9a;
+}
+
+.stat-item-small .stat-label {
+    font-size: 0.7rem;
+    color: #64748b;
+}
+
+.btn-rekap {
+    background: #2e5b9a;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    text-decoration: none;
+}
+
+.btn-rekap:hover {
+    background: #1e3a6b;
+    transform: translateY(-2px);
+    color: white;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 24px;
+    grid-column: 1 / -1;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: #cbd5e1;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    font-size: 1.2rem;
+    color: #475569;
+    margin-bottom: 8px;
+}
+
+.empty-state p {
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+
+/* Quick Actions */
+.quick-actions {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.quick-actions h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e2a3e;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 16px;
     flex-wrap: wrap;
 }
 
-.card {
-    width: 300px;
-    padding: 25px;
-    border-radius: 15px;
-    color: #333;
-    position: relative;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-    transition: 0.3s;
+.action-btn {
+    background: white;
+    padding: 12px 24px;
+    border-radius: 40px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    color: #2e5b9a;
+    border: 1px solid #e2e8f0;
 }
 
-.card:hover {
-    transform: translateY(-5px);
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    background: #2e5b9a;
+    color: white;
 }
 
-.card h3 {
-    margin-bottom: 10px;
-}
-
-.card p {
-    font-size: 14px;
-    color: #555;
-}
-
-.card .arrow {
-    position: absolute;
-    right: 20px;
+/* Mobile Menu Toggle */
+.mobile-toggle {
+    display: none;
+    position: fixed;
     bottom: 20px;
-    font-size: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: #2e5b9a;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border: none;
+    color: white;
 }
 
-/* Warna Card */
-.pink {
-    background: #f8d7da;
+.mobile-toggle i {
+    font-size: 22px;
 }
 
-.yellow {
-    background: #fff3cd;
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 98;
 }
 
-.button-container{
-  display: none;
+/* Animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
+/* Responsive */
+@media (max-width: 768px) {
+    .header {
+        padding: 12px 16px;
+    }
+    
+    .header h2 span {
+        display: none;
+    }
+    
+    .user-name span {
+        display: none;
+    }
+    
+    .sidebar {
+        position: fixed;
+        left: -280px;
+        top: 0;
+        z-index: 99;
+        transition: left 0.3s ease;
+        height: 100vh;
+    }
+    
+    .sidebar.open {
+        left: 0;
+    }
+    
+    .main {
+        padding: 20px;
+        margin-left: 0;
+    }
+    
+    .mobile-toggle {
+        display: flex;
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    
+    .stat-card {
+        padding: 14px;
+    }
+    
+    .stat-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2rem;
+    }
+    
+    .stat-info h3 {
+        font-size: 1.3rem;
+    }
+    
+    .exam-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .page-header h1 {
+        font-size: 1.4rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-btn {
+        justify-content: center;
+    }
+}
 
-.blue {
-    background: #cfe2ff;
-}
-@media(max-width:768px){
-  .sidebar{
-    display:none;
-  }
-  .button-container {
-    display: block;
-  margin:10px auto;
-  display: flex;
-  background-color: rgba(0, 73, 144);
-  width: 250px;
-  height: 40px;
-  align-items: center;
-  justify-content: space-around;
-  border-radius: 10px;
-  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 7px,
-    rgba(0, 73, 144, 0.5) 5px 8px 10px;
-  transition: all 0.5s;
-}
-.button-container:hover {
-  width: 300px;
-  transition: all 0.5s;
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .main {
+        padding: 16px;
+    }
 }
 
-.buttond {
-  outline: 0 !important;
-  border: 0 !important;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  transition: all ease-in-out 0.3s;
-  cursor: pointer;
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
 }
 
-.buttond:hover {
-  transform: translateY(-3px);
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
 }
 
-.icon {
-  font-size: 20px;
-}
-  
+::-webkit-scrollbar-thumb {
+    background: #5c6fa6;
+    border-radius: 3px;
 }
 </style>
 </head>
@@ -221,89 +624,362 @@ body {
 <body>
 
 <div class="header">
-    <h2>SMK NEGERI 1 CIOMAS</h2>
-    <div>
-        {{$ire->nama}}<i class="fa fa-chevron-down"></i>
+    <h2>
+        <i class="fas fa-chalkboard-user"></i>
+        <span>SMK NEGERI 1 CIOMAS</span>
+    </h2>
+    <div class="user-info-header" id="userMenu">
+        <div class="user-avatar">
+            <i class="fas fa-user"></i>
+        </div>
+        <div class="user-name">
+            {{$ire->nama}} <i class="fas fa-chevron-down"></i>
+        </div>
     </div>
 </div>
-<div class="button-container">
-  <a href="{{route('guru.index')}}"class="buttond">
-    <svg
-      class="icon"
-      stroke="currentColor"
-      fill="currentColor"
-      stroke-width="0"
-      viewBox="0 0 1024 1024"
-      height="1em"
-      width="1em"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M946.5 505L560.1 118.8l-25.9-25.9a31.5 31.5 0 0 0-44.4 0L77.5 505a63.9 63.9 0 0 0-18.8 46c.4 35.2 29.7 63.3 64.9 63.3h42.5V940h691.8V614.3h43.4c17.1 0 33.2-6.7 45.3-18.8a63.6 63.6 0 0 0 18.7-45.3c0-17-6.7-33.1-18.8-45.2zM568 868H456V664h112v204zm217.9-325.7V868H632V640c0-22.1-17.9-40-40-40H432c-22.1 0-40 17.9-40 40v228H238.1V542.3h-96l370-369.7 23.1 23.1L882 542.3h-96.1z"
-      ></path>
-    </svg>
-  </a>
-   <a href="{{route('guru.result')}}" class="buttond">
-    <i class="icon fa fa-file"></i>
-  </a>
-    <a href="{{route('guru.riwayat')}}" class="buttond">
-    <i class="icon fa fa-history"></i></a>
-  <a href="{{route('guru.jadwal')}}" class="buttond">
-    
-    <i class="icon fa fa-calendar"></i>
-  </a>
 
-  <a href="{{route('pengawas.index',$dt->id)}}" class="buttond">
-              <i class="icon fa fa-person"></i>
-  </a>
-</div>
-<div class="container">
-    
+<!-- Mobile Menu Toggle -->
+<button class="mobile-toggle" id="mobileToggle">
+    <i class="fas fa-bars"></i>
+</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="app-wrapper">
     <!-- Sidebar -->
-    <div class="sidebar">
-       <ul>
-            <li><i class="fa fa-home"></i> Dashboard</li>
-            <li><a href="{{route('guru.jadwal')}}" class="has-text-light">
-              <i class="fa fa-calendar"></i> Jadwal Ujian
-              </a>
+    <div class="sidebar" id="sidebar">
+        <ul>
+            <li>
+                <a href="{{route('guru.index')}}" class="active">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
             </li>
             <li>
-              <a href="{{route('guru.riwayat')}}">
-                <i class="fa fa-history"></i> Riwayat Ujian
-              </a>
+                <a href="{{route('guru.jadwal')}}">
+                    <i class="fas fa-calendar-alt"></i> Jadwal Ujian
+                </a>
             </li>
             <li>
-              <a href="{{route('guru.result')}}">
-                <i class="fa fa-file"></i> Hasil Ujian</li>
-              </a>
-              
-            <li><a href="{{route('pengawas.index',$dt->id)}}" class="has-text-light">
-              <i class="fa fa-person">Pengawas</i>
-            </a></li>
+                <a href="{{route('guru.riwayat')}}">
+                    <i class="fas fa-history"></i> Riwayat Ujian
+                </a>
+            </li>
+            <li>
+                <a href="{{route('guru.result')}}">
+                    <i class="fas fa-chart-line"></i> Hasil Ujian
+                </a>
+            </li>
+            <li>
+                <a href="{{route('pengawas.index', isset($dt) ? $dt->id : '')}}">
+                    <i class="fas fa-user-check"></i> Pengawas
+                </a>
+            </li>
         </ul>
 
         <div class="logout">
             <form action="{{ route('users.logout') }}" method="post">
                 @csrf
-                <button type="submit"> <i class="fa fa-sign-out-alt"></i> Logout</button>
+                <button type="submit">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
             </form>
-           
         </div>
     </div>
 
     <!-- Main Content -->
     <div class="main">
-        <h1>Dashboard</h1>
-        @foreach($data as $dt)
-        <div class="box">
-          <h5 class="title">
-            Ujian {{$dt->nama_ujian}}
-          </h5>
-         <a href="{{route('guru.hasil',$dt->id)}}" class="button is-link is-outlined is-fullwidth mx-2">Lihat Rekap</a>
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>
+                <i class="fas fa-chalkboard-user"></i>
+                Dashboard Guru
+            </h1>
+            <p>Selamat datang, {{$ire->nama}}! Kelola ujian dan pantau hasil belajar siswa</p>
         </div>
-        @endforeach
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>{{ $data->count() }}</h3>
+                    <p>Total Ujian</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    @php
+                        $totalSiswa = 0;
+                        foreach($data as $ujian) {
+                            $totalSiswa += $ujian->peserta->count() ?? 0;
+                        }
+                    @endphp
+                    <h3>{{ $totalSiswa }}</h3>
+                    <p>Total Peserta</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="stat-info">
+                    @php
+                        $aktifCount = $data->filter(function($item) {
+                            return $item->status === 'ready' || $item->status === 'ongoing';
+                        })->count();
+                    @endphp
+                    <h3>{{ $aktifCount }}</h3>
+                    <p>Ujian Aktif</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="stat-info">
+                    @php
+                        $avgNilai = 0;
+                        $totalNilai = 0;
+                        $countNilai = 0;
+                        foreach($data as $ujian) {
+                            foreach($ujian->peserta as $peserta) {
+                                if($peserta->nilai) {
+                                    $totalNilai += $peserta->nilai;
+                                    $countNilai++;
+                                }
+                            }
+                        }
+                        $avgNilai = $countNilai > 0 ? round($totalNilai / $countNilai, 1) : 0;
+                    @endphp
+                    <h3>{{ $avgNilai }}</h3>
+                    <p>Rata-rata Nilai</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daftar Ujian Section -->
+        <div class="section-title">
+            <h2>
+                <i class="fas fa-list-ol"></i>
+                Daftar Ujian
+            </h2>
+            <div class="date-badge">
+                <i class="fas fa-calendar-alt"></i> 
+                {{ \Carbon\Carbon::now()->isoFormat('dddd, D MMMM YYYY') }}
+            </div>
+        </div>
+
+        <div class="exam-grid">
+            @if(isset($data) && $data->count() > 0)
+                @foreach($data as $dt)
+                    @php
+                        $pesertaCount = $dt->peserta->count() ?? 0;
+                        $sudahUjian = $dt->peserta->filter(function($p) {
+                            return $p->nilai !== null;
+                        })->count() ?? 0;
+                        $belumUjian = $pesertaCount - $sudahUjian;
+                        
+                        $statusBadge = '';
+                        $statusColor = '';
+                        if($dt->status === 'draft') {
+                            $statusBadge = 'Draft';
+                            $statusColor = '#94a3b8';
+                        } elseif($dt->status === 'ready') {
+                            $statusBadge = 'Siap';
+                            $statusColor = '#28a745';
+                        } elseif($dt->status === 'ongoing') {
+                            $statusBadge = 'Berlangsung';
+                            $statusColor = '#ffc107';
+                        } elseif($dt->status === 'done') {
+                            $statusBadge = 'Selesai';
+                            $statusColor = '#6c757d';
+                        } else {
+                            $statusBadge = $dt->status;
+                            $statusColor = '#2e5b9a';
+                        }
+                    @endphp
+                    <div class="exam-card">
+                        <div class="card-header-custom">
+                            <h3>
+                                <i class="fas fa-file-alt"></i>
+                                {{ $dt->nama_ujian ?? 'Ujian' }}
+                            </h3>
+                        </div>
+                        <div class="card-body-custom">
+                            <div class="exam-detail">
+                                <p>
+                                    <i class="fas fa-clock"></i>
+                                    Durasi: {{ $dt->durasi ?? '-' }} Menit
+                                </p>
+                                <p>
+                                    <i class="fas fa-tag"></i>
+                                    Status: 
+                                    <span style="color: {{ $statusColor }}; font-weight: 600;">{{ $statusBadge }}</span>
+                                </p>
+                                @if(isset($dt->jadwal))
+                                <p>
+                                    <i class="fas fa-calendar-alt"></i>
+                                    {{ \Carbon\Carbon::parse($dt->jadwal->waktu_mulai)->format('d F Y H:i') }}
+                                </p>
+                                @endif
+                            </div>
+                            <div class="exam-stats">
+                                <div class="stat-item-small">
+                                    <div class="stat-value">{{ $pesertaCount }}</div>
+                                    <div class="stat-label">Total Siswa</div>
+                                </div>
+                                <div class="stat-item-small">
+                                    <div class="stat-value">{{ $sudahUjian }}</div>
+                                    <div class="stat-label">Sudah Ujian</div>
+                                </div>
+                                <div class="stat-item-small">
+                                    <div class="stat-value">{{ $belumUjian }}</div>
+                                    <div class="stat-label">Belum Ujian</div>
+                                </div>
+                            </div>
+                            <a href="{{ route('guru.hasil', $dt->id) }}" class="btn-rekap">
+                                <i class="fas fa-chart-simple"></i>
+                                Lihat Rekap Nilai
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                @endforeach
+            @else
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>Belum Ada Ujian</h3>
+                    <p>Anda belum membuat ujian apapun. Klik tombol "Buat Ujian Baru" untuk memulai</p>
+                </div>
+            @endif
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <h3>
+                <i class="fas fa-bolt"></i>
+                Akses Cepat
+            </h3>
+            <div class="action-buttons">
+                <a href="#" class="action-btn" onclick="document.getElementById('cret').classList.add('is-active')">
+                    <i class="fas fa-plus-circle"></i> Buat Ujian Baru
+                </a>
+                <a href="{{ route('guru.jadwal') }}" class="action-btn">
+                    <i class="fas fa-calendar-alt"></i> Atur Jadwal
+                </a>
+                <a href="{{ route('guru.result') }}" class="action-btn">
+                    <i class="fas fa-chart-line"></i> Lihat Hasil Ujian
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Buat Ujian -->
+<div class="modal" id="cret" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
+    <div class="modal-card" style="background: white; border-radius: 20px; max-width: 500px; width: 90%; overflow: hidden;">
+        <div class="modal-card-head" style="background: #2e5b9a; color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+            <span class="title" style="color: white; font-size: 1.1rem; margin: 0;">
+                <i class="fas fa-plus-circle"></i> Buat Ujian Baru
+            </span>
+            <button class="modal-close" onclick="document.getElementById('cret').style.display='none'" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
         
-        
+        <form action="{{ route('guru.store') }}" method="post">
+            @csrf
+            <div class="modal-card-body" style="padding: 20px;">
+                <div class="field" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #2c3e50; margin-bottom: 6px;">Nama Ujian</label>
+                    <input type="text" name="nama_ujian" class="input" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px;" placeholder="Contoh: Ujian Akhir Semester" required>
+                </div>
+                
+                <div class="field" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #2c3e50; margin-bottom: 6px;">Durasi (Menit)</label>
+                    <input type="number" name="durasi" class="input" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px;" placeholder="90" required>
+                </div>
+                
+                <div class="field" style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #2c3e50; margin-bottom: 6px;">Catatan (Opsional)</label>
+                    <textarea name="catatan" class="textarea" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; resize: vertical; min-height: 80px;" placeholder="Tambahkan catatan untuk ujian ini"></textarea>
+                </div>
+            </div>
+            
+            <div class="modal-card-foot" style="padding: 16px 20px; background: #f8f9fc; display: flex; justify-content: flex-end; gap: 12px;">
+                <button type="button" class="button" onclick="document.getElementById('cret').style.display='none'" style="background: #6c757d; color: white; border: none; padding: 8px 20px; border-radius: 20px;">Batal</button>
+                <button type="submit" class="button" style="background: #2e5b9a; color: white; border: none; padding: 8px 20px; border-radius: 20px;">
+                    <i class="fas fa-save"></i> Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mobile Sidebar Toggle
+    const mobileToggle = document.getElementById('mobileToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    
+    function toggleSidebar() {
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('active');
+        const icon = mobileToggle.querySelector('i');
+        if (sidebar.classList.contains('open')) {
+            icon.classList.remove('fa-bars');
+            icon.classList.add('fa-times');
+        } else {
+            icon.classList.remove('fa-times');
+            icon.classList.add('fa-bars');
+        }
+    }
+    
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', toggleSidebar);
+    }
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+    }
+    
+    // Close sidebar on window resize
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('active');
+            if (mobileToggle) {
+                const icon = mobileToggle.querySelector('i');
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        }
+    });
+    
+    // Close sidebar after clicking link on mobile
+    const sidebarLinks = document.querySelectorAll('.sidebar a');
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+        });
+    });
+    
+    // Close modal when clicking outside
+    const modal = document.getElementById('cret');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+            }
+        });
+    }
+});
+</script>
 </body>
 </html>
