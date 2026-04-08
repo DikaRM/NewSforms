@@ -19,7 +19,5 @@ class Peserta_ujian extends Model
     public function ujian(){
         return $this->belongsTo(Ujian::class);
     }
-    public function pelanggaran(){
-      return $this->belongsTo(Pelanggaran::class);
-    }
+    
 }

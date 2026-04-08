@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
 use App\Models\Jadwal;
 use App\Models\Ujian;
 use Carbon\Carbon;
@@ -17,7 +19,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-    if (Schema::hasTable('jadwal') && Schema::hasTable('ujian')) {
+        // Define rate limiter untuk API
+        RateLimiter::for('api', function ($job) {
+            return Limit::perMinute(60)->by($job->user()?->id ?: $job->ip());
+        });
+
+        if (Schema::hasTable('jadwal') && Schema::hasTable('ujian')) {
             $this->updateUjianStatus();
         }
     }

@@ -1,302 +1,857 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Guru Teacher</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Jadwal Ujian - Guru | Sistem Ujian</title>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="{{asset('bulma.min.css')}}">
+        body {
+            background: #f3f5f9;
+            overflow-x: hidden;
+        }
 
-<style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', sans-serif;
-}
+        /* ===== HEADER ===== */
+        .header {
+            background: #2e5b9a;
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
 
-body {
-    background: #f3f5f9;
-}
+        .header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-/* ===== HEADER ===== */
-.header {
-    background: #2e5b9a;
-    color: white;
-    padding: 15px 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+        .header h2 i {
+            font-size: 1.2rem;
+        }
 
-.header h2 {
-    font-size: 18px;
-}
+        /* User Dropdown */
+        .user-dropdown {
+            position: relative;
+            cursor: pointer;
+        }
 
-/* ===== LAYOUT ===== */
-.container {
-    display: flex;
-}
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+        }
 
-/* ===== SIDEBAR ===== */
-.sidebar {
-    width: 230px;
-    background: #5c6fa6;
-    min-height: 100vh;
-    padding-top: 20px;
-    color: white;
-}
+        .user-info:hover {
+            background: rgba(255,255,255,0.15);
+        }
 
-.sidebar ul {
-    list-style: none;
-}
+        .user-avatar {
+            width: 34px;
+            height: 34px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2e5b9a;
+            font-weight: bold;
+        }
 
-.sidebar ul li {
-    padding: 14px 25px;
-    cursor: pointer;
-    transition: 0.3s;
-}
+        .user-name {
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
 
-.sidebar ul li:hover {
-    background: rgba(255,255,255,0.2);
-}
+        .user-name i {
+            font-size: 0.7rem;
+            margin-left: 5px;
+        }
 
-.sidebar ul li i {
-    margin-right: 10px;
-}
+        /* Dropdown Menu */
+        .dropdown-menu-custom {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            min-width: 180px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
 
-.logout {
-    position: absolute;
-    bottom: 20px;
-    left: 25px;
-}
-.section{
-    background:white;
-    padding:20px;
-    border-radius:10px;
-    margin-bottom:20px;
-}
+        .user-dropdown.active .dropdown-menu-custom {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
 
-.section h4{
-    margin-bottom:15px;
-    color:#0f172a;
-}
+        .dropdown-item-custom {
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #333;
+            text-decoration: none;
+            transition: background 0.2s ease;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+        }
 
-/* Exam list */
-.exam{
-    display:flex;
-    justify-content:space-between;
-    padding:12px;
-    border-bottom:1px solid #e5e7eb;
-}
+        .dropdown-item-custom:last-child {
+            border-bottom: none;
+        }
 
-.exam:last-child{
-    border-bottom:none;
-}
+        .dropdown-item-custom:hover {
+            background: #f5f5f5;
+        }
 
-.badge{
-    padding:4px 10px;
-    border-radius:12px;
-    font-size:12px;
-    color:white;
-}
+        .dropdown-item-custom i {
+            width: 18px;
+            color: #2e5b9a;
+        }
 
-/* ===== MAIN CONTENT ===== */
-.main {
-    flex: 1;
-    padding: 30px;
-}
+        .dropdown-divider {
+            height: 1px;
+            background: #eee;
+            margin: 4px 0;
+        }
 
-.main h1 {
-    margin-bottom: 30px;
-    color: #2e5b9a;
-}
+        .logout-btn {
+            color: #dc3545;
+        }
 
-/* ===== CARDS ===== */
-.cards {
-    display: flex;
-    gap: 25px;
-    flex-wrap: wrap;
-}
+        .logout-btn i {
+            color: #dc3545;
+        }
 
-.card {
-    width: 300px;
-    padding: 25px;
-    border-radius: 15px;
-    color: #333;
-    position: relative;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-    transition: 0.3s;
-}
+        /* ===== LAYOUT ===== */
+        .app-wrapper {
+            display: flex;
+            margin-top: 56px;
+            min-height: calc(100vh - 56px);
+        }
 
-.card:hover {
-    transform: translateY(-5px);
-}
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 260px;
+            background: #5c6fa6;
+            position: fixed;
+            left: 0;
+            top: 56px;
+            bottom: 0;
+            z-index: 99;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
 
-.card h3 {
-    margin-bottom: 10px;
-}
+        .sidebar-menu {
+            padding: 20px 0;
+        }
 
-.card p {
-    font-size: 14px;
-    color: #555;
-}
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            margin: 4px 12px;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
 
-.card .arrow {
-    position: absolute;
-    right: 20px;
-    bottom: 20px;
-    font-size: 20px;
-}
+        .sidebar-item i {
+            width: 22px;
+            font-size: 1rem;
+        }
 
-/* Warna Card */
-.pink {
-    background: #f8d7da;
-}
+        .sidebar-item span {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
 
-.yellow {
-    background: #fff3cd;
-}
+        .sidebar-item:hover {
+            background: rgba(255,255,255,0.2);
+        }
 
-.button-container{
-  display: none;
-}
+        .sidebar-item.active {
+            background: rgba(255,255,255,0.25);
+            border-left: 3px solid white;
+        }
 
+        .sidebar-logout {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            padding: 0 12px;
+        }
 
-.blue {
-    background: #cfe2ff;
-}
-@media(max-width:768px){
-  .sidebar{
-    display:none;
-  }
-  .button-container {
-    display: block;
-  margin:10px auto;
-  display: flex;
-  background-color: rgba(0, 73, 144);
-  width: 250px;
-  height: 40px;
-  align-items: center;
-  justify-content: space-around;
-  border-radius: 10px;
-  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 7px,
-    rgba(0, 73, 144, 0.5) 5px 8px 10px;
-  transition: all 0.5s;
-}
-.button-container:hover {
-  width: 300px;
-  transition: all 0.5s;
-}
+        .sidebar-logout .sidebar-item {
+            color: white;
+        }
 
-.buttond {
-  outline: 0 !important;
-  border: 0 !important;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  transition: all ease-in-out 0.3s;
-  cursor: pointer;
-}
+        .sidebar-logout .sidebar-item:hover {
+            background: #dc3545;
+        }
 
-.buttond:hover {
-  transform: translateY(-3px);
-}
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 24px;
+            transition: margin-left 0.3s ease;
+            width: calc(100% - 260px);
+        }
 
-.icon {
-  font-size: 20px;
-}
-  
-}
-</style>
+        /* Mobile Menu Toggle */
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: #2e5b9a;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: none;
+            color: white;
+        }
+
+        .mobile-toggle i {
+            font-size: 22px;
+        }
+
+        /* Overlay untuk mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 56px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 98;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* ===== CARD STYLES ===== */
+        .table-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+            border: 1px solid #eef2f6;
+        }
+
+        .table-card .card-header {
+            background: white;
+            border-bottom: 2px solid #f0f2f5;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .table-card .card-header-title {
+            font-weight: 600;
+            color: #2e5b9a;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-card .card-content {
+            padding: 0;
+        }
+
+        .table {
+            width: 100%;
+            margin-bottom: 0;
+        }
+
+        .table thead th {
+            background: #f8f9fc;
+            color: #495057;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-bottom: 2px solid #e9ecef;
+            padding: 12px 16px;
+        }
+
+        .table tbody td {
+            padding: 12px 16px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.85rem;
+        }
+
+        .table tbody tr:hover {
+            background: #fafbfe;
+        }
+
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Tag Styles */
+        .tag-status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .tag-scheduled {
+            background: #cfe2ff;
+            color: #2e5b9a;
+        }
+
+        .tag-ongoing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .tag-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .tag-draft {
+            background: #e9ecef;
+            color: #6c757d;
+        }
+
+        /* Button Custom */
+        .btn-primary {
+            background: #2e5b9a;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            background: #1e3a6b;
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #2e5b9a;
+            color: #2e5b9a;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-outline:hover {
+            background: #2e5b9a;
+            color: white;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: #adb5bd;
+            margin-bottom: 16px;
+        }
+
+        /* Breadcrumb */
+        .breadcrumb-custom {
+            margin-bottom: 20px;
+        }
+
+        .breadcrumb-custom ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .breadcrumb-custom li {
+            display: flex;
+            align-items: center;
+        }
+
+        .breadcrumb-custom li:not(:last-child):after {
+            content: "/";
+            margin-left: 8px;
+            color: #adb5bd;
+        }
+
+        .breadcrumb-custom a {
+            color: #5c6fa6;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .breadcrumb-custom a:hover {
+            color: #2e5b9a;
+        }
+
+        .breadcrumb-custom .is-active a {
+            color: #2e5b9a;
+            font-weight: 600;
+        }
+
+        /* Badge */
+        .badge-count {
+            background: #eef2ff;
+            color: #2e5b9a;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .filter-tab {
+            padding: 8px 20px;
+            border-radius: 30px;
+            background: white;
+            color: #5c6fa6;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .filter-tab:hover {
+            border-color: #2e5b9a;
+            color: #2e5b9a;
+        }
+
+        .filter-tab.active {
+            background: #2e5b9a;
+            color: white;
+            border-color: #2e5b9a;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h2 span {
+                display: none;
+            }
+            
+            .user-name span {
+                display: none;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding: 16px;
+            }
+            
+            .mobile-toggle {
+                display: flex;
+            }
+            
+            .table thead th,
+            .table tbody td {
+                padding: 8px 12px;
+                font-size: 0.75rem;
+            }
+            
+            .filter-tabs {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                padding-bottom: 8px;
+            }
+            
+            .filter-tab {
+                white-space: nowrap;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #5c6fa6;
+            border-radius: 3px;
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="header">
-    <h2>SMK NEGERI 1 CIOMAS</h2>
-    <div>
-        {{$ire->nama}}<i class="fa fa-chevron-down"></i>
-    </div>
-</div>
-    <div class="button-container">
-  <a href="{{route('guru.index')}}"class="buttond">
-    <svg
-      class="icon"
-      stroke="currentColor"
-      fill="currentColor"
-      stroke-width="0"
-      viewBox="0 0 1024 1024"
-      height="1em"
-      width="1em"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M946.5 505L560.1 118.8l-25.9-25.9a31.5 31.5 0 0 0-44.4 0L77.5 505a63.9 63.9 0 0 0-18.8 46c.4 35.2 29.7 63.3 64.9 63.3h42.5V940h691.8V614.3h43.4c17.1 0 33.2-6.7 45.3-18.8a63.6 63.6 0 0 0 18.7-45.3c0-17-6.7-33.1-18.8-45.2zM568 868H456V664h112v204zm217.9-325.7V868H632V640c0-22.1-17.9-40-40-40H432c-22.1 0-40 17.9-40 40v228H238.1V542.3h-96l370-369.7 23.1 23.1L882 542.3h-96.1z"
-      ></path>
-    </svg>
-  </a>
-   <a href="{{route('guru.result')}}" class="buttond">
-    <i class="icon fa fa-file"></i>
-  </a>
-    <a href="{{route('guru.riwayat')}}" class="buttond">
-    <i class="icon fa fa-history"></i></a>
-  <a href="{{route('guru.jadwal')}}" class="buttond">
+<!-- Header -->
+<header class="header">
+    <h2>
+        <i class="fas fa-chalkboard-user"></i>
+        <span>SMK NEGERI 1 CIOMAS</span>
+    </h2>
     
-    <i class="icon fa fa-calendar"></i>
-  </a>
-
-  <a href="{{route('pengawas.index',$dt->id)}}" class="buttond">
-              <i class="icon fa fa-person"></i>
-  </a>
-</div>
-<div class="container">
-
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <ul>
-            <li><i class="fa fa-home"></i> Dashboard</li>
-            <li><a href="{{route('guru.jadwal')}}" class="has-text-light">
-              <i class="fa fa-calendar"></i> Jadwal Ujian
-              </a>
-            </li>
-            <li>
-              <a href="{{route('guru.riwayat')}}">
-                <i class="fa fa-history"></i> Riwayat Ujian
-              </a>
-            </li>
-            <li>
-              <a href="{{route('guru.result')}}">
-                <i class="fa fa-file"></i> Hasil Ujian</li>
-              </a>
-              
-            <li><a href="{{route('pengawas.index',$dt->id)}}" class="has-text-light">
-              <i class="fa fa-person">Pengawas</i>
-            </a></li>
-        </ul>
-
-        <div class="logout">
+    <div class="user-dropdown" id="userDropdown">
+        <div class="user-info">
+            <div class="user-avatar">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="user-name">
+                @if(isset($ire))
+                    <span>{{ $ire->nama }}</span>
+                @else
+                    <span>Guru</span>
+                @endif
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </div>
+        
+        <div class="dropdown-menu-custom">
+            <div class="dropdown-item-custom">
+                <i class="fas fa-user-circle"></i>
+                <span>Profil Saya</span>
+            </div>
+            <div class="dropdown-divider"></div>
             <form action="{{ route('users.logout') }}" method="post">
                 @csrf
-                <button type="submit"> <i class="fa fa-sign-out-alt"></i> Logout</button>
+                <button type="submit" class="dropdown-item-custom logout-btn" style="width: 100%; background: none; border: none; cursor: pointer;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
             </form>
-           
         </div>
     </div>
+</header>
 
+<!-- Mobile Menu Toggle -->
+<button class="mobile-toggle" id="mobileToggle">
+    <i class="fas fa-bars"></i>
+</button>
 
-    <div class="main">
-        <h1>Dashboard</h1>
-        <h5 class="title">jadwal Ujian </h5>
+<!-- Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-menu">
+            <a href="{{ route('guru.index') }}" class="sidebar-item">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ route('guru.jadwal') }}" class="sidebar-item active">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Jadwal Ujian</span>
+            </a>
+            <a href="{{ route('guru.riwayat') }}" class="sidebar-item">
+                <i class="fas fa-history"></i>
+                <span>Riwayat Ujian</span>
+            </a>
+            <a href="{{ route('guru.result') }}" class="sidebar-item">
+                <i class="fas fa-file-alt"></i>
+                <span>Hasil Ujian</span>
+            </a>
+            <a href="{{ route('pengawas.index', isset($dt) ? $dt->id : '') }}" class="sidebar-item">
+                <i class="fas fa-users"></i>
+                <span>Pengawas</span>
+            </a>
         </div>
         
+        <div class="sidebar-logout">
+            <form action="{{ route('users.logout') }}" method="post">
+                @csrf
+                <button type="submit" class="sidebar-item" style="width: 100%; background: none; border: none; cursor: pointer;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb-custom">
+            <ul>
+                <li><a href="{{ route('guru.index') }}"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li class="is-active"><a href="#">Jadwal Ujian</a></li>
+            </ul>
+        </div>
         
+        <!-- Header -->
+        <div class="level is-mobile" style="margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+            <div class="level-left">
+                <div>
+                    <h1 style="color: #2e5b9a; font-size: 1.5rem; font-weight: 600; margin-bottom: 4px;">
+                        <i class="fas fa-calendar-alt"></i> Jadwal Ujian
+                    </h1>
+                    <p style="color: #6c757d; font-size: 0.85rem;">
+                        Lihat jadwal pelaksanaan ujian
+                    </p>
+                </div>
+            </div>
+            <div class="level-right">
+                <a href="{{ route('guru.index') }}" class="btn-primary">
+                    <i class="fas fa-plus-circle"></i> Buat Ujian Baru
+                </a>
+            </div>
+        </div>
         
+        <!-- Filter Tabs -->
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">Semua</button>
+            <button class="filter-tab" data-filter="scheduled">Terjadwal</button>
+            <button class="filter-tab" data-filter="ongoing">Berlangsung</button>
+            <button class="filter-tab" data-filter="completed">Selesai</button>
+            <button class="filter-tab" data-filter="draft">Draft</button>
+        </div>
+        
+        <!-- Tabel Jadwal Ujian -->
+        <div class="table-card">
+            <div class="card-header">
+                <div class="card-header-title">
+                    <i class="fas fa-list-ul"></i> Daftar Jadwal Ujian
+                    <span class="badge-count">{{ $data->count() ?? 0 }}</span>
+                </div>
+            </div>
+            <div class="card-content">
+                <div style="overflow-x: auto;">
+                    <table class="table is-striped is-hoverable is-fullwidth" id="jadwalTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">No</th>
+                                <th>Nama Ujian</th>
+                                <th>Mata Pelajaran</th>
+                                <th>Kelas</th>
+                                <th>Tanggal & Waktu</th>
+                                <th>Durasi</th>
+                                <th>Status</th>
+                                <th style="width: 120px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach($data as $d)
+                        <tr style="background:white; ">
+                        <td style="color:#2e5b9a;">{{$d->id}}
+            <td style="color:#2e5b9a;">{{$d->ujian->nama_ujian}}</td>
+            <td style="color:#2e5b9a;">{{$d->ujian->mapels->nama_mapel}}</td>
+            <td style="color:#2e5b9a;">{{$d->kelas->nama_kelas}}</td>
+           <td style="color:#2e5b9a;">{{\Carbon\Carbon::parse($d->ujian->tanggal)->format("D, d F Y H:i")}}</td>
+           <td style="color:#2e5b9a;">{{$d->ujian->durasi}} Menit</td>
+           <td style="color:#2e5b9a;">{{$d->ujian->status}}</td>
+           <td style="color:#2e5b9a;">
+           <a href="{{route('guru.hasil',$d->ujian->id)}}"  class="button is-link is-outlined">
+           Lihat Hasil Nya</a></td>
+                        </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // User Dropdown Toggle
+    const userDropdown = document.getElementById('userDropdown');
+    if (userDropdown) {
+        userDropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userDropdown.classList.toggle('active');
+        });
+    }
+    
+    document.addEventListener('click', function() {
+        if (userDropdown) userDropdown.classList.remove('active');
+    });
+    
+    // Mobile Sidebar Toggle
+    const mobileToggle = document.getElementById('mobileToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    
+    function toggleSidebar() {
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('active');
+        const icon = mobileToggle.querySelector('i');
+        if (sidebar.classList.contains('open')) {
+            icon.classList.remove('fa-bars');
+            icon.classList.add('fa-times');
+        } else {
+            icon.classList.remove('fa-times');
+            icon.classList.add('fa-bars');
+        }
+    }
+    
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', toggleSidebar);
+    }
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+    }
+    
+    // Filter Tabs Functionality
+    const filterTabs = document.querySelectorAll('.filter-tab');
+    const tableRows = document.querySelectorAll('#jadwalTable tbody tr');
+    
+    filterTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Update active class
+            filterTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            const filterValue = this.getAttribute('data-filter');
+            
+            tableRows.forEach(row => {
+                // Skip empty state row
+                if (row.querySelector('.empty-state')) return;
+                
+                const status = row.getAttribute('data-status');
+                
+                if (filterValue === 'all') {
+                    row.style.display = '';
+                } else if (status && status.toLowerCase() === filterValue) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Show empty message if no rows visible
+            const visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none' && !row.querySelector('.empty-state'));
+            const emptyRow = document.querySelector('#jadwalTable tbody tr:last-child');
+            
+            if (visibleRows.length === 0 && emptyRow && emptyRow.querySelector('.empty-state')) {
+                emptyRow.style.display = '';
+            } else if (visibleRows.length === 0 && (!emptyRow || !emptyRow.querySelector('.empty-state'))) {
+                // Create empty row if needed
+                const tbody = document.querySelector('#jadwalTable tbody');
+                const newEmptyRow = document.createElement('tr');
+                const cols = document.querySelector('#jadwalTable thead th').length;
+                newEmptyRow.innerHTML = `
+                    <td colspan="${cols}">
+                        <div class="empty-state">
+                            <i class="fas fa-filter"></i>
+                            <p>Tidak ada ujian dengan filter ini</p>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(newEmptyRow);
+            }
+        });
+    });
+    
+    // Handle window resize
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('open');
+                if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+                const icon = mobileToggle.querySelector('i');
+                if (icon) {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
+            }
+        }, 250);
+    });
+    
+    // Close sidebar on mobile after clicking link
+    const sidebarItems = document.querySelectorAll('.sidebar-item');
+    for (let i = 0; i < sidebarItems.length; i++) {
+        sidebarItems[i].addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                setTimeout(function() {
+                    if (sidebar.classList.contains('open')) toggleSidebar();
+                }, 150);
+            }
+        });
+    }
+});
+</script>
+
 </body>
 </html>

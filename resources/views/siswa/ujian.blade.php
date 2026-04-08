@@ -283,7 +283,7 @@
           <div class="nav-grid" id="soalNavGrid">
             @foreach($soal as $index => $s)
               @php
-                $tipe = $s->tipe ?? 'pilihan_ganda';
+                $tipe = $s->tipe ?? 'pg';
                 $extraClass = $tipe == 'essay' ? 'essay' : '';
               @endphp
               <button class="nav-btn {{$extraClass}}" 
@@ -344,7 +344,7 @@
             <div id="soalContainer">
               @foreach($soal as $index => $s)
                 @php
-                  $tipe = $s->tipe ?? 'pilihan_ganda';
+                  $tipe = $s->tipe ?? 'pg';
                 @endphp
                 <div class="soal-container" data-soal-id="{{$s->id}}" data-index="{{$index}}" data-tipe="{{$tipe}}">
                   <div class="soal-card">
@@ -363,19 +363,21 @@
                     {{-- Pertanyaan --}}
                     <h5 class="subtitle is-5">{{$s->soal}}</h5>
                     
-                    {{-- Gambar Soal (jika ada) --}}
-                    @if($s->gambar)
-                      <div class="soal-gambar">
-                        <img src="{{ Storage::url($s->gambar) }}" 
-                             alt="Gambar soal {{$index + 1}}"
-                             onclick="showImageModal('{{ Storage::url($s->gambar) }}')"
-                             style="cursor: pointer;">
-                        <p class="is-size-7 has-text-grey mt-2">Klik gambar untuk memperbesar</p>
-                      </div>
-                    @endif
+{{-- Gambar Soal (jika ada) --}}
+@if($s->gambar)
+    <div class="soal-gambar">
+        <img src="{{ Storage::url($s->gambar) }}" 
+             alt="Gambar soal {{$index + 1}}"
+             onclick="showImageModal('{{ Storage::url($s->gambar) }}')"
+             style="cursor: pointer; max-width: 100%;"
+             onerror="this.style.display='none'; this.nextSibling.style.display='block';">
+        <p class="is-size-7 has-text-grey mt-2" style="display: none;">Gambar tidak dapat dimuat</p>
+        <p class="is-size-7 has-text-grey mt-2">Klik gambar untuk memperbesar</p>
+    </div>
+@endif
                     
                     {{-- Opsi Jawaban --}}
-                    @if($tipe == 'pilihan_ganda')
+                    @if($tipe == 'pg')
                       <div class="opsi-container">
                         <p class="has-text-weight-bold mb-3">Pilih jawaban yang benar:</p>
                         
@@ -470,343 +472,634 @@
 
   {{-- Font Awesome --}}
   <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
-
-  <script>
-  // ========== UJIAN SYSTEM DENGAN PROTEKSI TOTAL ==========
-  (function() {
-      'use strict';
-      
-      // ========== DETEKSI DEVICE ==========
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-      
-      // ========== KONFIGURASI ==========
-      let warn = 0;
-      const maxwarn = isMobile ? 8 : 3;
-      let timerInterval = null;
-      let waktuTersisa = 0;
-      let isSubmitting = false;
-      let currentSoalIndex = 0;
-      const totalSoal = {{count($soal)}};
-      let jawabanState = {};
-      
-      // ========== ELEMEN DOM ==========
-      const soalContainers = document.querySelectorAll('.soal-container');
-      const navButtons = document.querySelectorAll('#soalNavGrid .nav-btn');
-      const prevBtn = document.getElementById('prevBtn');
-      const nextBtn = document.getElementById('nextBtn');
-      const soalHeader = document.getElementById('soalHeader');
-      const progressBar = document.getElementById('progressBar');
-      const progressText = document.getElementById('progressText');
-      const form = document.getElementById("form");
-      const displayTimer = document.getElementById("display");
-      
-      // ========== FUNGSI PREVIEW GAMBAR ==========
-      window.showImageModal = function(imageUrl) {
-          const modal = document.getElementById('imageModal');
-          const modalImg = document.getElementById('modalImage');
-          if(modal && modalImg) {
-              modalImg.src = imageUrl;
-              modal.classList.add('is-active');
-              document.documentElement.classList.add('is-clipped');
-          }
-      };
-      
-      window.closeImageModal = function() {
-          const modal = document.getElementById('imageModal');
-          if(modal) {
-              modal.classList.remove('is-active');
-              document.documentElement.classList.remove('is-clipped');
-          }
-      };
-      
-      // Close modal with escape key
-      document.addEventListener('keydown', function(e) {
-          if(e.key === 'Escape') {
-              closeImageModal();
-          }
-      });
-      
-      // ========== FUNGSI NAVIGASI ==========
-      function showSoal(index) {
-          if(index < 0) index = 0;
-          if(index >= totalSoal) index = totalSoal - 1;
-          
-          soalContainers.forEach(container => {
-              container.classList.remove('active');
-          });
-          
-          if(soalContainers[index]) {
-              soalContainers[index].classList.add('active');
-          }
-          
-          if(soalHeader) soalHeader.innerText = `Soal ${index + 1} dari ${totalSoal}`;
-          
-          if(prevBtn) prevBtn.disabled = (index === 0);
-          if(nextBtn) nextBtn.disabled = (index === totalSoal - 1);
-          
-          navButtons.forEach((btn, i) => {
-              btn.classList.remove('current');
-              if(i === index) {
-                  btn.classList.add('current');
-              }
-          });
-          
-          currentSoalIndex = index;
-      }
-      
-      // ========== UPDATE STATUS JAWABAN ==========
-      function updateJawabanStatus() {
-          let answeredCount = 0;
-          
-          navButtons.forEach(btn => {
-              btn.classList.remove('answered');
-          });
-          
-          jawabanState = {};
-          
-          // Cek pilihan ganda
-          document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
-              const match = radio.name.match(/\[(\d+)\]/);
-              if(match) {
-                  const soalId = match[1];
-                  const navBtn = document.querySelector(`#soalNavGrid .nav-btn[data-soal-id="${soalId}"]`);
-                  if(navBtn) {
-                      navBtn.classList.add('answered');
-                      jawabanState[soalId] = true;
-                  }
-              }
-          });
-          
-          // Cek essay
-          document.querySelectorAll('textarea.jawaban-text').forEach(textarea => {
-              if(textarea.value.trim() !== '') {
-                  const match = textarea.name.match(/\[(\d+)\]/);
-                  if(match) {
-                      const soalId = match[1];
-                      const navBtn = document.querySelector(`#soalNavGrid .nav-btn[data-soal-id="${soalId}"]`);
-                      if(navBtn) {
-                          navBtn.classList.add('answered');
-                          jawabanState[soalId] = true;
-                      }
-                  }
-              }
-          });
-          
-          answeredCount = Object.keys(jawabanState).length;
-          const percentage = totalSoal > 0 ? (answeredCount / totalSoal) * 100 : 0;
-          
-          if(progressBar) progressBar.value = percentage;
-          if(progressText) progressText.innerText = `${answeredCount}/${totalSoal} soal terjawab`;
-          
-          return answeredCount;
-      }
-      
-      // ========== TIMER SYSTEM ==========
-      function startTimer(durasi, display) {
-          if(timerInterval) clearInterval(timerInterval);
-          
-          waktuTersisa = parseInt(durasi) || 0;
-          
-          if(waktuTersisa <= 0) {
-              if(display) display.innerText = "00:00";
-              submitFormOtomatis();
-              return;
-          }
-          
-          timerInterval = setInterval(function() {
-              if(waktuTersisa <= 0) {
-                  clearInterval(timerInterval);
-                  submitFormOtomatis();
-                  return;
-              }
-              
-              let menit = parseInt(waktuTersisa / 60, 10);
-              let detik = parseInt(waktuTersisa % 60, 10);
-              menit = menit < 10 ? "0" + menit : menit;
-              detik = detik < 10 ? "0" + detik : detik;
-              
-              if(display) display.innerText = menit + ":" + detik;
-              waktuTersisa--;
-              
-          }, 1000);
-      }
-      
-      function submitFormOtomatis() {
-          if(isSubmitting || !form) return;
-          
-          isSubmitting = true;
-          
-          if(timerInterval) {
-              clearInterval(timerInterval);
-              timerInterval = null;
-          }
-          
-          const unanswered = totalSoal - Object.keys(jawabanState).length;
-          
-          if(unanswered > 0) {
-              if(confirm(`⏰ WAKTU HABIS!\n\nMasih ada ${unanswered} soal belum dijawab.\nSubmit sekarang?`)) {
-                  localStorage.removeItem('ujian_' + {{$uji->id}});
-                  localStorage.removeItem('ujian_active_' + {{$uji->id}});
-                  form.submit();
-              } else {
-                  isSubmitting = false;
-                  alert("Segera selesaikan ujian Anda!");
-              }
-          } else {
-              localStorage.removeItem('ujian_' + {{$uji->id}});
-              localStorage.removeItem('ujian_active_' + {{$uji->id}});
-              form.submit();
-          }
-      }
-      
-      // ========== CEK MULTI TAB ==========
-      (function checkMultiTab() {
-          const sessionKey = 'ujian_active_' + {{$uji->id}};
-          const sessionId = Math.random().toString(36).substring(2);
-          
-          if (localStorage.getItem(sessionKey)) {
-              alert('⚠️ Ujian sudah dibuka di tab lain!');
-              window.location.href = '/dashboard';
-              return;
-          }
-          
-          localStorage.setItem(sessionKey, sessionId);
-          
-          window.addEventListener('beforeunload', function() {
-              localStorage.removeItem(sessionKey);
-          });
-      })();
-      
-      // ========== PROTEKSI SEDERHANA ==========
-      document.addEventListener('contextmenu', e => e.preventDefault());
-      document.addEventListener('keydown', function(e) {
-          if(e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.shiftKey && e.key === 'J') || (e.ctrlKey && e.key === 'U')) {
-              e.preventDefault();
-              warn++;
-              alert(`⚠️ PERINGATAN ${warn}/${maxwarn}: Inspeksi elemen diblokir!`);
-          }
-          
-          if(e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
-              e.preventDefault();
-              warn++;
-              alert(`⚠️ PERINGATAN ${warn}/${maxwarn}: Print tidak diizinkan!`);
-          }
-      });
-      
-      // ========== INITIALIZATION ==========
-      window.addEventListener('DOMContentLoaded', function() {
-          // Timer
-          if(displayTimer) {
-              const durasi = {{ $uji->durasi * 60 ?? 0 }};
-              startTimer(durasi, displayTimer);
-          }
-          
-          // Load jawaban tersimpan
-          const savedAnswers = localStorage.getItem('ujian_' + {{$uji->id}});
-          if(savedAnswers) {
-              try {
-                  const answers = JSON.parse(savedAnswers);
-                  Object.keys(answers).forEach(soalId => {
-                      const input = document.querySelector(`[name="jawaban[${soalId}]"]`);
-                      if(input) {
-                          if(input.type === 'radio') {
-                              const radio = document.querySelector(`[name="jawaban[${soalId}]"][value="${answers[soalId]}"]`);
-                              if(radio) radio.checked = true;
-                          } else {
-                              input.value = answers[soalId];
-                          }
-                      }
-                  });
-              } catch(e) {}
-          }
-          
-          // Inisialisasi navigasi
-          if(soalContainers.length > 0) {
-              showSoal(0);
-              updateJawabanStatus();
-          }
-          
-          // Event listener navigasi
-          navButtons.forEach((btn, index) => {
-              btn.addEventListener('click', function() {
-                  if(!isSubmitting) {
-                      showSoal(index);
-                  }
-              });
-          });
-          
-          if(prevBtn) {
-              prevBtn.addEventListener('click', function() {
-                  if(!isSubmitting) {
-                      showSoal(currentSoalIndex - 1);
-                  }
-              });
-          }
-          
-          if(nextBtn) {
-              nextBtn.addEventListener('click', function() {
-                  if(!isSubmitting) {
-                      showSoal(currentSoalIndex + 1);
-                  }
-              });
-          }
-          
-          // Auto-save
-          document.addEventListener('change', updateJawabanStatus);
-          document.addEventListener('input', function(e) {
-              if(e.target.matches('textarea.jawaban-text')) {
-                  updateJawabanStatus();
-                  
-                  // Auto-save ke localStorage
-                  const answers = {};
-                  document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
-                      const match = radio.name.match(/\[(\d+)\]/);
-                      if(match) answers[match[1]] = radio.value;
-                  });
-                  document.querySelectorAll('textarea.jawaban-text').forEach(textarea => {
-                      if(textarea.value.trim() !== '') {
-                          const match = textarea.name.match(/\[(\d+)\]/);
-                          if(match) answers[match[1]] = textarea.value;
-                      }
-                  });
-                  localStorage.setItem('ujian_' + {{$uji->id}}, JSON.stringify(answers));
-              }
-          });
-          
-          // Form submit
-          if(form) {
-              form.addEventListener("submit", function(e) {
-                  if(isSubmitting) {
-                      e.preventDefault();
-                      return false;
-                  }
-                  
-                  const unanswered = totalSoal - Object.keys(jawabanState).length;
-                  
-                  if(unanswered > 0) {
-                      const confirmSubmit = confirm(`⚠️ Masih ada ${unanswered} soal belum dijawab.\n\nYakin submit?`);
-                      if(!confirmSubmit) {
-                          e.preventDefault();
-                          return false;
-                      }
-                  }
-                  
-                  isSubmitting = true;
-                  
-                  if(timerInterval) {
-                      clearInterval(timerInterval);
-                      timerInterval = null;
-                  }
-                  
-                  localStorage.removeItem('ujian_' + {{$uji->id}});
-                  localStorage.removeItem('ujian_active_' + {{$uji->id}});
-                  
-                  return true;
-              });
-          }
-      });
-      
-  })();
-  </script>
+<script>
+// ========== FULL UJIAN SYSTEM DENGAN PROTEKSI TOTAL ==========
+(function() {
+    'use strict';
+    
+    // ========== KONFIGURASI ==========
+    const UJIAN_ID = {{$uji->id}};
+    const DURASI_AWAL = {{$uji->durasi * 60 ?? 0}}; // dalam detik
+    const TOTAL_SOAL = {{count($soal)}};
+    const MAX_WARN = 3;
+    let warnCount = 0;
+    let isSubmitting = false;
+    let currentSoalIndex = 0;
+    let timerInterval = null;
+    let waktuTersisa = DURASI_AWAL;
+    
+    // ========== DETEKSI DEVICE ==========
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+    
+    // ========== ELEMEN DOM ==========
+    const displayTimer = document.getElementById("display");
+    const form = document.getElementById("form");
+    const soalContainers = document.querySelectorAll('.soal-container');
+    const navButtons = document.querySelectorAll('#soalNavGrid .nav-btn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const soalHeader = document.getElementById('soalHeader');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    
+    // ========== 1. TIMER DENGAN LOCALSTORAGE (SURVIVE REFRESH) ==========
+    function saveTimerToStorage() {
+        if(waktuTersisa > 0) {
+            localStorage.setItem(`ujian_timer_${UJIAN_ID}`, JSON.stringify({
+                remainingTime: waktuTersisa,
+                lastUpdated: Date.now()
+            }));
+        }
+    }
+    
+    function loadTimerFromStorage() {
+        const saved = localStorage.getItem(`ujian_timer_${UJIAN_ID}`);
+        if(saved) {
+            try {
+                const data = JSON.parse(saved);
+                const elapsed = Math.floor((Date.now() - data.lastUpdated) / 1000);
+                waktuTersisa = data.remainingTime - elapsed;
+                
+                if(waktuTersisa < 0) waktuTersisa = 0;
+                return true;
+            } catch(e) {
+                console.warn('Error loading timer:', e);
+            }
+        }
+        waktuTersisa = DURASI_AWAL;
+        return false;
+    }
+    
+    function updateTimerDisplay() {
+        if(!displayTimer) return;
+        let menit = Math.floor(waktuTersisa / 60);
+        let detik = waktuTersisa % 60;
+        menit = menit < 10 ? "0" + menit : menit;
+        detik = detik < 10 ? "0" + detik : detik;
+        displayTimer.innerText = `${menit}:${detik}`;
+        
+        // Warning waktu 5 menit tersisa
+        if(waktuTersisa <= 300 && waktuTersisa > 0) {
+            displayTimer.classList.add('has-text-danger', 'has-text-weight-bold');
+            if(waktuTersisa === 300) {
+                alert("⚠️ PERINGATAN: Waktu tersisa 5 menit!");
+            }
+        }
+    }
+    
+    function startTimer() {
+        if(timerInterval) clearInterval(timerInterval);
+        
+        loadTimerFromStorage();
+        
+        if(waktuTersisa <= 0) {
+            if(displayTimer) displayTimer.innerText = "00:00";
+            submitFormOtomatis();
+            return;
+        }
+        
+        updateTimerDisplay();
+        
+        timerInterval = setInterval(() => {
+            if(waktuTersisa <= 0) {
+                clearInterval(timerInterval);
+                localStorage.removeItem(`ujian_timer_${UJIAN_ID}`);
+                submitFormOtomatis();
+                return;
+            }
+            
+            waktuTersisa--;
+            updateTimerDisplay();
+            saveTimerToStorage();
+        }, 1000);
+    }
+    
+    function stopTimer() {
+        if(timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+    
+    // ========== 2. MANAJEMEN JAWABAN ==========
+    let jawabanState = {};
+    
+    function updateJawabanStatus() {
+        let answeredCount = 0;
+        jawabanState = {};
+        
+        // Reset semua status
+        navButtons.forEach(btn => btn.classList.remove('answered'));
+        
+        // Cek radio buttons (pilihan ganda)
+        document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+            const match = radio.name.match(/\[(\d+)\]/);
+            if(match) {
+                const soalId = match[1];
+                const btn = document.querySelector(`#soalNavGrid .nav-btn[data-soal-id="${soalId}"]`);
+                if(btn) {
+                    btn.classList.add('answered');
+                    jawabanState[soalId] = true;
+                }
+            }
+        });
+        
+        // Cek textarea (essay)
+        document.querySelectorAll('textarea.jawaban-text').forEach(textarea => {
+            if(textarea.value.trim() !== '') {
+                const match = textarea.name.match(/\[(\d+)\]/);
+                if(match) {
+                    const soalId = match[1];
+                    const btn = document.querySelector(`#soalNavGrid .nav-btn[data-soal-id="${soalId}"]`);
+                    if(btn) {
+                        btn.classList.add('answered');
+                        jawabanState[soalId] = true;
+                    }
+                }
+            }
+        });
+        
+        answeredCount = Object.keys(jawabanState).length;
+        const percentage = (answeredCount / TOTAL_SOAL) * 100;
+        
+        if(progressBar) progressBar.value = percentage;
+        if(progressText) progressText.innerText = `${answeredCount}/${TOTAL_SOAL} soal terjawab`;
+        
+        // Auto-save ke localStorage
+        saveAnswersToLocalStorage();
+        
+        return answeredCount;
+    }
+    
+    function saveAnswersToLocalStorage() {
+        const answers = {};
+        document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+            const match = radio.name.match(/\[(\d+)\]/);
+            if(match) answers[match[1]] = radio.value;
+        });
+        document.querySelectorAll('textarea.jawaban-text').forEach(textarea => {
+            const match = textarea.name.match(/\[(\d+)\]/);
+            if(match && textarea.value.trim() !== '') {
+                answers[match[1]] = textarea.value;
+            }
+        });
+        localStorage.setItem(`ujian_jawaban_${UJIAN_ID}`, JSON.stringify(answers));
+    }
+    
+    function loadAnswersFromLocalStorage() {
+        const saved = localStorage.getItem(`ujian_jawaban_${UJIAN_ID}`);
+        if(saved) {
+            try {
+                const answers = JSON.parse(saved);
+                Object.keys(answers).forEach(soalId => {
+                    const input = document.querySelector(`[name="jawaban[${soalId}]"]`);
+                    if(input) {
+                        if(input.type === 'radio') {
+                            const radio = document.querySelector(`[name="jawaban[${soalId}]"][value="${answers[soalId]}"]`);
+                            if(radio) radio.checked = true;
+                        } else if(input.tagName === 'TEXTAREA') {
+                            input.value = answers[soalId];
+                        }
+                    }
+                });
+                updateJawabanStatus();
+            } catch(e) {}
+        }
+    }
+    
+    // ========== 3. FUNGSI NAVIGASI ==========
+    function showSoal(index) {
+        if(index < 0) index = 0;
+        if(index >= TOTAL_SOAL) index = TOTAL_SOAL - 1;
+        
+        soalContainers.forEach(container => {
+            container.classList.remove('active');
+        });
+        
+        if(soalContainers[index]) {
+            soalContainers[index].classList.add('active');
+        }
+        
+        if(soalHeader) soalHeader.innerText = `Soal ${index + 1} dari ${TOTAL_SOAL}`;
+        
+        if(prevBtn) prevBtn.disabled = (index === 0);
+        if(nextBtn) nextBtn.disabled = (index === TOTAL_SOAL - 1);
+        
+        navButtons.forEach((btn, i) => {
+            btn.classList.remove('current');
+            if(i === index) btn.classList.add('current');
+        });
+        
+        currentSoalIndex = index;
+        localStorage.setItem(`ujian_current_soal_${UJIAN_ID}`, index);
+    }
+    
+    function loadCurrentSoal() {
+        const saved = localStorage.getItem(`ujian_current_soal_${UJIAN_ID}`);
+        if(saved && !isNaN(parseInt(saved))) {
+            const index = parseInt(saved);
+            if(index >= 0 && index < TOTAL_SOAL) {
+                showSoal(index);
+                return;
+            }
+        }
+        showSoal(0);
+    }
+    
+    // ========== 4. PROTEKSI MULTI TAB ==========
+    function initMultiTabProtection() {
+        const sessionKey = `ujian_active_${UJIAN_ID}`;
+        const sessionId = Math.random().toString(36).substring(2);
+        const currentUrl = window.location.href;
+        
+        const existingSession = localStorage.getItem(sessionKey);
+        
+        if(existingSession) {
+            try {
+                const sessionData = JSON.parse(existingSession);
+                const sessionTime = sessionData.time;
+                const now = Date.now();
+                
+                if(sessionTime && (now - sessionTime) > 3000) {
+                    const confirmMsg = '⚠️ Ujian sedang berlangsung di tab lain!\n\nMembuka tab baru akan menutup tab yang lama.\n\nLanjutkan?';
+                    if(!confirm(confirmMsg)) {
+                        window.location.href = '/dashboard';
+                        return false;
+                    }
+                    localStorage.setItem(`${sessionKey}_close`, sessionData.id);
+                }
+            } catch(e) {}
+        }
+        
+        localStorage.setItem(sessionKey, JSON.stringify({
+            id: sessionId,
+            time: Date.now(),
+            url: currentUrl
+        }));
+        
+        window.addEventListener('storage', function(e) {
+            if(e.key === `${sessionKey}_close` && e.newValue === sessionId) {
+                alert('⚠️ Tab ini akan ditutup karena Anda membuka tab baru!');
+                localStorage.removeItem(sessionKey);
+                localStorage.removeItem(`ujian_timer_${UJIAN_ID}`);
+                window.location.href = '/dashboard';
+            }
+        });
+        
+        window.addEventListener('beforeunload', function() {
+            const currentSession = localStorage.getItem(sessionKey);
+            if(currentSession) {
+                try {
+                    const sessionData = JSON.parse(currentSession);
+                    if(sessionData.id === sessionId) {
+                        localStorage.removeItem(sessionKey);
+                    }
+                } catch(e) {}
+            }
+        });
+        
+        return true;
+    }
+    
+    // ========== 5. PROTEKSI COPY-PASTE & DEV TOOLS ==========
+    function initAntiCheat() {
+        // Blokir klik kanan
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
+        
+        // Blokir shortcut dev tools
+        document.addEventListener('keydown', (e) => {
+            const devToolsKeys = [
+                'F12',
+                (e.ctrlKey && e.shiftKey && e.key === 'I'),
+                (e.ctrlKey && e.shiftKey && e.key === 'J'),
+                (e.ctrlKey && e.key === 'U'),
+                (e.ctrlKey && e.key === 'S'),
+                (e.ctrlKey && e.key === 'P')
+            ];
+            
+            if(devToolsKeys.some(condition => condition === true || condition === e.key)) {
+                e.preventDefault();
+                warnUser(`⚠️ PERINGATAN ${++warnCount}/${MAX_WARN}: Akses developer tools diblokir!`);
+                
+                if(warnCount >= MAX_WARN) {
+                    submitFormOtomatis();
+                }
+                return false;
+            }
+            
+            // Blokir copy paste di textarea essay
+            if(e.target && e.target.tagName === 'TEXTAREA') {
+                if(e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'x')) {
+                    e.preventDefault();
+                    warnUser('⚠️ Copy-paste tidak diizinkan dalam ujian!');
+                    return false;
+                }
+            }
+        });
+        
+        // Blokir copy dari halaman
+        document.addEventListener('copy', (e) => {
+            if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // Deteksi dev tools (debugger)
+        let devToolsDetected = false;
+        function detectDevTools() {
+            const start = performance.now();
+            debugger;
+            const end = performance.now();
+            if(end - start > 100) {
+                if(!devToolsDetected) {
+                    devToolsDetected = true;
+                    warnUser('⚠️ Developer tools terdeteksi! Ujian akan segera berakhir.');
+                    setTimeout(() => submitFormOtomatis(), 2000);
+                }
+            }
+        }
+        
+        setInterval(detectDevTools, 1000);
+        
+        // Blokir resize (potensi cheat)
+        window.addEventListener('resize', () => {
+            if(window.outerHeight - window.innerHeight > 200) {
+                warnUser('⚠️ Perubahan ukuran jendela terdeteksi!');
+            }
+        });
+        
+        // Deteksi keluar dari fullscreen (mobile)
+        document.addEventListener('fullscreenchange', () => {
+            if(!document.fullscreenElement) {
+                warnUser('⚠️ Keluar dari mode layar penuh tidak diizinkan!');
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+        });
+    }
+    
+    function warnUser(message) {
+        console.warn(message);
+        alert(message);
+        
+        if(warnCount >= MAX_WARN) {
+            alert(`⚠️ Anda telah mencapai batas peringatan (${MAX_WARN})! Ujian akan diakhiri.`);
+            submitFormOtomatis();
+        }
+    }
+    
+    // ========== 6. PROTEKSI KELUAR HALAMAN ==========
+    function initPageExitProtection() {
+        let isNavigatingAway = false;
+        
+        window.addEventListener('beforeunload', (e) => {
+            if(!isSubmitting && !isNavigatingAway) {
+                const unanswered = TOTAL_SOAL - Object.keys(jawabanState).length;
+                if(unanswered > 0) {
+                    const message = `⚠️ Peringatan! Anda masih memiliki ${unanswered} soal yang belum dijawab.\n\nApakah yakin ingin meninggalkan halaman?`;
+                    e.preventDefault();
+                    e.returnValue = message;
+                    return message;
+                }
+            }
+        });
+        
+        // Deteksi refresh F5
+        document.addEventListener('keydown', (e) => {
+            if(e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+                e.preventDefault();
+                warnUser('⚠️ Refresh halaman tidak diizinkan selama ujian!');
+                return false;
+            }
+        });
+        
+        // Deteksi back/forward navigation
+        history.pushState(null, null, location.href);
+        window.addEventListener('popstate', () => {
+            warnUser('⚠️ Tombol back/forward tidak diizinkan!');
+            history.pushState(null, null, location.href);
+        });
+    }
+    
+    // ========== 7. SUBMIT UJIAN ==========
+    function submitFormOtomatis() {
+        if(isSubmitting || !form) return;
+        isSubmitting = true;
+        
+        stopTimer();
+        
+        const unanswered = TOTAL_SOAL - Object.keys(jawabanState).length;
+        
+        if(unanswered > 0) {
+            const confirmMsg = `⏰ ${waktuTersisa <= 0 ? 'WAKTU HABIS!' : 'PERHATIAN!'}\n\nMasih ada ${unanswered} soal belum dijawab.\n\nSubmit ujian sekarang?`;
+            if(confirm(confirmMsg)) {
+                cleanupAndSubmit();
+            } else {
+                isSubmitting = false;
+                if(waktuTersisa <= 0) {
+                    cleanupAndSubmit();
+                } else {
+                    startTimer();
+                }
+            }
+        } else {
+            cleanupAndSubmit();
+        }
+    }
+    
+    function cleanupAndSubmit() {
+        // Hapus semua data localStorage
+        localStorage.removeItem(`ujian_timer_${UJIAN_ID}`);
+        localStorage.removeItem(`ujian_jawaban_${UJIAN_ID}`);
+        localStorage.removeItem(`ujian_current_soal_${UJIAN_ID}`);
+        localStorage.removeItem(`ujian_active_${UJIAN_ID}`);
+        
+        // Submit form
+        if(form) {
+            form.submit();
+        }
+    }
+    
+    // ========== 8. FITUR PREVIEW GAMBAR ==========
+    window.showImageModal = function(imageUrl) {
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImage');
+        if(modal && modalImg) {
+            modalImg.src = imageUrl;
+            modal.classList.add('is-active');
+            document.documentElement.classList.add('is-clipped');
+        }
+    };
+    
+    window.closeImageModal = function() {
+        const modal = document.getElementById('imageModal');
+        if(modal) {
+            modal.classList.remove('is-active');
+            document.documentElement.classList.remove('is-clipped');
+        }
+    };
+    
+    // ========== 9. FULLSCREEN MODE (WAJIB) ==========
+    function initFullscreenMode() {
+        function enableFullscreen() {
+            const elem = document.documentElement;
+            if(elem.requestFullscreen) {
+                elem.requestFullscreen().catch(err => {
+                    console.warn(`Fullscreen error: ${err.message}`);
+                });
+            }
+        }
+        
+        // Auto fullscreen saat load
+        setTimeout(enableFullscreen, 500);
+        
+        // Cegah keluar fullscreen
+        document.addEventListener('fullscreenchange', () => {
+            if(!document.fullscreenElement) {
+                warnUser('⚠️ Keluar dari mode fullscreen tidak diizinkan!');
+                enableFullscreen();
+            }
+        });
+        
+        // Klik body untuk fullscreen jika keluar
+        document.body.addEventListener('click', () => {
+            if(!document.fullscreenElement) {
+                enableFullscreen();
+            }
+        });
+    }
+    
+    // ========== 10. BLOCK CONSOLE LOG ==========
+    function blockConsole() {
+        // Override console methods
+        if(!window.isConsoleBlocked) {
+            window.isConsoleBlocked = true;
+            const noop = () => {};
+            console.log = noop;
+            console.info = noop;
+            console.debug = noop;
+            console.warn = () => {};
+            console.error = () => {};
+        }
+    }
+    
+    // ========== 11. CEK WAKTU SERVER (ANTI MANIPULASI) ==========
+    async function checkServerTime() {
+        try {
+            const response = await fetch('/get-server-time', {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await response.json();
+            return data.server_time;
+        } catch(e) {
+            return Date.now() / 1000;
+        }
+    }
+    
+    // ========== 12. INISIALISASI ==========
+    async function init() {
+        // Block console terlebih dahulu
+        blockConsole();
+        
+        // Proteksi multi tab
+        if(!initMultiTabProtection()) return;
+        
+        // Anti cheat
+        initAntiCheat();
+        
+        // Proteksi keluar halaman
+        initPageExitProtection();
+        
+        // Fullscreen mode
+        if(!isMobile) {
+            initFullscreenMode();
+        }
+        
+        // Load jawaban tersimpan
+        loadAnswersFromLocalStorage();
+        
+        // Load posisi soal terakhir
+        loadCurrentSoal();
+        
+        // Update status jawaban
+        updateJawabanStatus();
+        
+        // Start timer
+        startTimer();
+        
+        // Event listener untuk auto-save
+        document.addEventListener('change', updateJawabanStatus);
+        document.addEventListener('input', (e) => {
+            if(e.target.matches('textarea.jawaban-text, input[type="radio"]')) {
+                updateJawabanStatus();
+            }
+        });
+        
+        // Event navigasi
+        navButtons.forEach((btn, index) => {
+            btn.addEventListener('click', () => {
+                if(!isSubmitting) showSoal(index);
+            });
+        });
+        
+        if(prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                if(!isSubmitting) showSoal(currentSoalIndex - 1);
+            });
+        }
+        
+        if(nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                if(!isSubmitting) showSoal(currentSoalIndex + 1);
+            });
+        }
+        
+        // Form submit handler
+        if(form) {
+            form.addEventListener('submit', (e) => {
+                if(isSubmitting) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                const unanswered = TOTAL_SOAL - Object.keys(jawabanState).length;
+                if(unanswered > 0) {
+                    const confirmSubmit = confirm(`⚠️ Masih ada ${unanswered} soal belum dijawab.\n\nYakin submit?`);
+                    if(!confirmSubmit) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+                
+                isSubmitting = true;
+                stopTimer();
+                cleanupAndSubmit();
+                return true;
+            });
+        }
+        
+        // Cek waktu server setiap 30 detik
+        setInterval(async () => {
+            const serverTime = await checkServerTime();
+            const localTime = Math.floor(Date.now() / 1000);
+            if(Math.abs(serverTime - localTime) > 5) {
+                warnUser('⚠️ Perbedaan waktu terdeteksi! Manipulasi waktu tidak diizinkan.');
+            }
+        }, 30000);
+    }
+    
+    // Mulai semua proteksi saat DOM ready
+    if(document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+    
+})();
+</script>
 </body>
 </html>

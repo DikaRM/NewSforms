@@ -52,8 +52,9 @@
 <table class="table is-stripped is-fullwidth">
   <thead>
     <tr>
-      <td>ID</td>
-      <td>Nama</td>
+      <td>No</td>
+      <td>Username</td>
+      <td>Nama Lengkap</td>
       <td>NISN</td>
       <td>Kelas</td>
       <td>Aksi</td>
@@ -62,13 +63,15 @@
   <tbody>
     @foreach($data as $d)
   <tr>
-    <td>{{$d->id}}</td>
+    <td>{{$d->id_siswa}}</td>
+    <td>{{$d->username}}</td>
+    
     <td>{{$d->nama}}</td>
     <td>{{$d->nisn}}</td>
     <td>{{$d->kelas->nama_kelas}}</td>
     <td>
       <div class="buttons">
-        <button class="button is-warning" onclick="document.getElementById('mod{{$d->id}}').classList.add('is-active')">Edit</button>
+        <button class="button is-warning" onclick="document.getElementById('mod{{$d->id_siswa}}').classList.add('is-active')">Edit</button>
         <form action="{{route('admin.siswa.destroy',$d->id_siswa)}}" method="post">
           @csrf
           @method("DELETE")
@@ -77,11 +80,11 @@
       </div>
     </td>
   </tr>
-  <div class="modal" id="mod{{$d->id}}">
+  <div class="modal" id="mod{{$d->id_siswa}}">
   <div class="modal-background"></div>
   <div class="modal-card">
     <header class="modal-card-head">
-      <h5 class="title">Popup Add Siswa</h5>
+      <h5 class="title">Popup Edit Siswa</h5>
     </header>
     <section class="modal-card-body">
       <form action="{{route('admin.siswa.update',$d->id_siswa)}}" method="post">
@@ -89,12 +92,12 @@
         @method("PUT")
         <div class="field">
           <div class="control">
-            <input type="text" class="input" placeholder="Nama Lengkap" name="nama" value="{{$d->nama}}">
+            <input type="text" class="input"  name="nama" placeholder="Hayo"value="{{$d->nama}}">
           </div>
         </div>
         <div class="field">
           <div class="control">
-            <input type="text" class="input" placeholder="Password Lengkap" name="password" >
+            <input type="text" class="input" placeholder="Password Lengkap" name="password" value="{{$d->password}}">
           </div>
         </div>
         <div class="field">

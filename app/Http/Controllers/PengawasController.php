@@ -23,7 +23,7 @@ class PengawasController
         return redirect()->route("guru.index");
       }
       $datas = $data->pluck("id");
-      $jads = Jadwal::with("ujian")->whereIn("pengawas_id",$datas)->get();
+      $jads = Jadwal::with("ujian")->whereIn("pengawas_id",$datas)->whereDate("tanggal",now()->toDateString())->whereTime("waktu_selesai",'>',now()->toTimeString())->orderBy("waktu_selesai",'asc')->get();
       $sis = Siswa::with("kelas")->get();
         return view("pengawas.index",compact('data','jads','sis',"id"));
     }

@@ -6,13 +6,13 @@ use App\Http\Controllers\Api\SiswaController;
 
 // Public routes
 Route::post('/siswa/login', [SiswaAuthController::class, 'login']);
-
+Route::get('/siswa/dashboard', [SiswaAuthController::class, 'dashboardSimple']);
 // Protected routes (hanya untuk siswa)
 Route::middleware(['auth:sanctum', 'ability:siswa'])->group(function () {
     // Auth
     Route::post('/siswa/logout', [SiswaAuthController::class, 'logout']);
     Route::get('/siswa/profile', [SiswaAuthController::class, 'profile']);
-    Route::get('/siswa/dashboard', [SiswaAuthController::class, 'dashboard']);
+    
     
     // Fitur siswa
     Route::get('/siswa/jadwal', [SiswaController::class, 'jadwal']);
@@ -21,4 +21,7 @@ Route::middleware(['auth:sanctum', 'ability:siswa'])->group(function () {
     Route::post('/siswa/ujian/simpan', [SiswaController::class, 'simpanJawaban']);
     Route::post('/siswa/ujian/simpan-sementara', [SiswaController::class, 'simpanJawabanSementara']);
     Route::post('/siswa/pelanggaran', [SiswaController::class, 'pelanggaran']);
+});
+Route::get('/test', function() {
+    return response()->json(['message' => 'API works!']);
 });
