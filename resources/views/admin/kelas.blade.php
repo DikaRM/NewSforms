@@ -1,6 +1,30 @@
 @extends("layouts.blank")
 @section("content")
-<button class="button is-info" onclick="document.getElementById('mod').classList.add('is-active')">Tambah Kelaz</button>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+@if(session('success'))
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: '{{ session('success') }}',
+        confirmButtonColor: '#3085d6'
+    });
+</script>
+@endif
+
+@if(session('error'))
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Gagal!',
+        text: '{{ session('error') }}',
+        confirmButtonColor: '#d33'
+    });
+</script>
+@endif
+
+<button class="button is-info" onclick="document.getElementById('mod').classList.add('is-active')">Tambah Kelas</button>
 <div class="modal" id="mod">
   <div class="modal-background">
     
@@ -51,7 +75,7 @@
      <td>
        <div class="buttons">
          <button class="button is-warning">Edit</button>
-         <button class="button is-link is-dark" onclick="document.getElementById('mods{{$d->id}}').classList.add('is-active')">Add</button>
+         
          <button class="button is-danger">Hapus</button>
          
        </div>

@@ -8,13 +8,14 @@ class Berita extends Model
 {
     protected $table = "berita";
     protected $fillable = [
-        "siswa_id",
+        "kelas_id",
         "ujian_id",
         "pengawas_id",
         "catatan",
     ];
-    public function siswa(){
-        return $this->belongsTo(Siswa::class);
+    
+    public function kelas(){
+        return $this->belongsTo(Kelas::class);
     }
     public function ujian(){
         return $this->belongsTo(Ujian::class);

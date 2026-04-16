@@ -1,0 +1,18 @@
+[90m= [39m[34;4mApp\Models\Siswa[39;24m {#6606
+    [34mid_siswa[39m: [35m1[39m,
+    [34muser_id[39m: "[32m5[39m",
+    [34mnama[39m: "[32mKhiar salwa nailah[39m",
+    [34mnisn[39m: "[32m0987655831[39m",
+    [34mkelas_id[39m: "[32m2[39m",
+    [34mcreated_at[39m: "[32m2026-04-08 17:07:59[39m",
+    [34mupdated_at[39m: "[32m2026-04-15 04:08:21[39m",
+    [34mstatus[39m: "[32munready[39m",
+    [34musername[39m: "[32mKhiar[39m",
+    [34mkelas[39m: [34;4mApp\Models\Kelas[39;24m {#6682
+      [34mid[39m: [35m2[39m,
+      [34mnama_kelas[39m: "[32mXI Animasi 1[39m",
+      [34mcreated_at[39m: "[32m2026-04-08 15:51:27[39m",
+      [34mupdated_at[39m: "[32m2026-04-08 15:51:27[39m",
+    },
+  }
+

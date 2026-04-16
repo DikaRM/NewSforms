@@ -735,7 +735,7 @@ body {
                 </div>
                 <div class="stat-item">
                     <div class="stat-number">{{ $totalSoal > 0 ? round(($jawabanBenar/$totalSoal)*100) : 0 }}%</div>
-                    <div class="stat-label">Akurasi</div>
+                    <div class="stat-label">Nilai</div>
                 </div>
             </div>
         </div>
@@ -794,50 +794,12 @@ body {
                     </div>
                     
                     @if($isPilihanGanda)
-                        <!-- Tampilan Pilihan Ganda -->
-                        <div class="opsi-list">
-                            @foreach($opsiList as $letter => $opsiText)
-                                @php
-                                    $isSelected = strtoupper(trim($jwb->jawaban)) == $letter;
-                                    $isCorrect = strtoupper(trim($bank->jawaban_benar)) == $letter;
-                                @endphp
-                                <div class="opsi-item {{ $isSelected ? 'selected' : '' }} {{ $isCorrect ? 'correct' : '' }}">
-                                    <span class="opsi-letter">{{ $letter }}.</span>
-                                    <span>{{ $opsiText }}</span>
-                                    @if($isSelected)
-                                        <i class="fas fa-arrow-left" style="margin-left: auto; color: #2e5b9a; font-size: 0.8rem;"></i>
-                                        <span style="font-size: 0.7rem; color: #2e5b9a;">Jawaban Anda</span>
-                                    @endif
-                                    @if($isCorrect)
-                                        <i class="fas fa-check" style="margin-left: auto; color: #16a34a; font-size: 0.8rem;"></i>
-                                        <span style="font-size: 0.7rem; color: #16a34a;">Kunci Jawaban</span>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-                        
-                        <!-- Ringkasan Jawaban PG -->
-                        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed #e5e7eb; display: flex; gap: 20px; font-size: 0.85rem;">
-                            <div>
-                                <span style="color: #888;">Jawaban Anda:</span>
-                                <strong style="color: {{ $isBenar ? '#16a34a' : '#dc2626' }};">
-                                    {{ strtoupper($jwb->jawaban ?? '-') }}
-                                </strong>
-                            </div>
-                            <div>
-                                <span style="color: #888;">Kunci:</span>
-                                <strong style="color: #16a34a;">
-                                    {{ strtoupper($bank->jawaban_benar ?? '-') }}
-                                </strong>
-                            </div>
-                        </div>
+
                     @else
                         <!-- Tampilan Essay -->
                         <div class="jawaban-section">
                             <div class="jawaban-box jawaban-siswa">
-                                <div class="jawaban-label">
-                                    <i class="fas fa-user-edit"></i> Jawaban Anda
-                                </div>
+                                
                                 <div class="jawaban-value {{ empty($jwb->jawaban) ? 'empty' : '' }}">
                                     @if(empty($jwb->jawaban))
                                         <i>Tidak ada jawaban</i>
@@ -852,7 +814,7 @@ body {
                                     <i class="fas fa-key"></i> Kunci Jawaban
                                 </div>
                                 <div class="jawaban-value">
-                                    {!! nl2br(e($bank->jawaban_benar ?? 'Tidak tersedia')) !!}
+                Rahasia          
                                 </div>
                             </div>
                         </div>

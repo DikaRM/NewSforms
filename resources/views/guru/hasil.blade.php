@@ -625,7 +625,8 @@ body {
 
 <div class="header">
     <h2>
-        <i class="fas fa-chalkboard-user"></i>
+        <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px"/>
+
         <span>SMK NEGERI 1 CIOMAS</span>
     </h2>
     <div class="user-info-header" id="userMenu">

@@ -4,11 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Pengawas;
+use App\Models\Absensi;
+use App\Models\Susulan;
 use App\Models\Jadwal;
 use App\Models\Berita;
 use App\Models\Siswa;
+use App\Models\Ujian;
 use App\Models\Kelas;
 use App\Models\Pelanggaran;
+use Illuminate\Support\Facades\DB;
 class PengawasController
 {
     /**
@@ -41,19 +45,16 @@ class PengawasController
      */
     public function store(Request $request)
     {
-      $js = Jadwal::find($request->ujian_id);
+    $ju = Ujian::find($request->ujian_id)->with("jadwal");
+      $js = Jadwal::find($ju->jadwal_id);
         Berita::create([
-          "siswa_id" => $request->siswa_id,
+          "kelas_id" => $request->kelas_id,
           "ujian_id" => $request->ujian_id,
           "pengawas_id" => $js->pengawas_id,
           "catatan" => $request->catatan,
           
           ]);
-        Pelanggaran::create([
-          "ujian_id" => $request->ujian_id,
-          "siswa_id" => $request->siswa_id,
-          "jenis_pelanggaran" => $request->catatan,
-          ]);
+        
           return redirect()->route("pengawas.show",["id" => $js->id]);
     }
 
@@ -63,9 +64,12 @@ class PengawasController
     public function show(string $id)
     {
       $jadk = Jadwal::find($id);
+      $da = Pengawas::find($jadk->pengawas_id)->with("user","guru")->latest()->first();
+      
       $data = Siswa::with("kelas")->where("kelas_id",$jadk->kelas_id)->get();
       $pelan = Pelanggaran::with("siswa")->get();
-        return view("pengawas.main",compact("data","jadk","pelan"));
+      $berita = Berita::all();
+        return view("pengawas.main",compact("data","jadk","pelan","da"));
     }
 
     /**
@@ -91,4 +95,60 @@ class PengawasController
     {
         //
     }
+  public function abcent(Request $request)
+{
+    $request->validate([
+        'ujian_id' => 'required|integer',
+        'kelas_id' => 'required|integer',
+        'siswa_id' => 'required|array',
+        'status' => 'required|array',
+    ]);
+    
+
+    if (count($request->siswa_id) != count($request->status)) {
+        return back()->with('error', 'Data tidak valid, jumlah siswa dan status tidak sesuai');
+    }
+    
+    // Gunakan DB transaction agar data konsisten
+    DB::beginTransaction();
+    
+    try {
+        foreach ($request->siswa_id as $index => $siswaId) {
+            $statusKehadiran = $request->status[$index];
+            
+            // Pastikan status tidak kosong
+            if (empty($statusKehadiran)) {
+                return back()->with('error', 'Status kehadiran untuk salah satu siswa tidak dipilih');
+            }
+            
+            // Proses simpan ke absensi
+            Absensi::create([
+                'ujian_id' => $request->ujian_id,
+                'kelas_id' => $request->kelas_id,
+                'siswa_id' => $siswaId,
+                'status_kehadiran' => $statusKehadiran,  // <-- Jangan lupa ini!
+                'waktu_absen' => now(),
+            ]);
+            
+
+            if ($statusKehadiran == 'hadir') {
+                Siswa::where('id_siswa', $siswaId)->update(['status' => 'ready']);
+            } else {
+                Susulan::create([
+                    'siswa_id' => $siswaId,
+                    'ujian_id' => $request->ujian_id,
+                    'kelas_id' => $request->kelas_id,
+                    'alasan' => $statusKehadiran,
+                ]);
+            }
+        }
+        
+        DB::commit();
+        return redirect()->back()->with('success', 'Absensi berhasil disimpan');
+        
+    } catch (\Exception $e) {
+        DB::rollback();
+        return redirect()->back()->with('error', 'Gagal menyimpan absensi: ' . $e->getMessage());
+    }
+}
 }

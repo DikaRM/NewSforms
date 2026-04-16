@@ -18,6 +18,7 @@ class banksoal extends Model
         "opsi_d",
         "jawaban_benar",
         "tipe",
+        "opsi_e",
     ];
     public function mapel(){
         return $this->belongsTo(Mapel::class);

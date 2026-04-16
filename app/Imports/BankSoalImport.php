@@ -26,6 +26,7 @@ class BankSoalImport implements ToModel, WithHeadingRow, WithValidation
             'opsi_b'        => $row['opsi_b'] ?? null,
             'opsi_c'        => $row['opsi_c'] ?? null,
             'opsi_d'        => $row['opsi_d'] ?? null,
+            'opsi_e'        => $row['opsi_e'] ?? null,
             'jawaban_benar' => $row['jawaban_benar'],
             'tipe'          => $row['tipe'] ?? 'pg',
             'gambar'        => $row['gambar'] ?? null,

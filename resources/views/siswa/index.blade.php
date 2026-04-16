@@ -163,7 +163,7 @@ body {
 /* ===== SIDEBAR ===== */
 .sidebar {
     width: 260px;
-    background: #5c6fa6;
+    background: #53629E;
     position: fixed;
     left: 0;
     top: 56px;
@@ -579,8 +579,8 @@ body {
 <!-- Header -->
 <header class="header">
     <h2>
-        <i class="fas fa-graduation-cap"></i>
-        <span>SMK NEGERI 1 CIOMAS</span>
+       <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px;"/>
+        <span class="has-text-light">SMK NEGERI 1 CIOMAS</span>
     </h2>
     
     <div class="user-dropdown" id="userDropdown">
@@ -625,11 +625,15 @@ body {
 
 <div class="app-wrapper">
     <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
+   <aside class="sidebar" id="sidebar">
         <div class="sidebar-menu">
-            <a href="{{ route('siswa.index') }}" class="sidebar-item active">
+            <a href="{{ route('siswa.index') }}" class="sidebar-item ">
                 <i class="fas fa-home"></i>
                 <span>Dashboard</span>
+            </a>
+             <a href="{{ route('siswa.uji') }}" class="sidebar-item active">
+                <i class="fas fa-book"></i>
+                <span>Ujian</span>
             </a>
             <a href="{{ route('siswa.jadwal') }}" class="sidebar-item">
                 <i class="fas fa-calendar-alt"></i>
@@ -639,6 +643,7 @@ body {
                 <i class="fas fa-history"></i>
                 <span>Riwayat Ujian</span>
             </a>
+           
         </div>
         
         <div class="sidebar-logout">
@@ -668,28 +673,16 @@ body {
             </div>
         @endif
         
-        <h1 style="color: #2e5b9a; margin-bottom: 20px; font-size: 1.5rem;">Dashboard</h1>
-        
-        <!-- Cards Menu -->
-        <div class="cards">
-            <a href="{{ route('siswa.jadwal') }}" class="card pink">
-                <h3>Jadwal Ujian</h3>
-                <p>Halaman untuk melihat jadwal ujian siswa.</p>
-                <div class="arrow"><i class="fa fa-arrow-right"></i></div>
-            </a>
-            <a href="{{ route('siswa.riwayat') }}" class="card yellow">
-                <h3>Riwayat</h3>
-                <p>Halaman untuk melihat riwayat ujian.</p>
-                <div class="arrow"><i class="fa fa-arrow-right"></i></div>
-            </a>
-        </div>
+
+         <!-- Cards Menu -->
+
         
         <!-- Ujian Hari Ini -->
 <div class="exam-container">
     <div class="section-title">
         <i class="fas fa-calendar-day"></i> Ujian Hari Ini - {{ date('d/m/Y') }}
     </div>
-    
+  @if($siswa->status === "ready")
     @if(isset($uji) && count($uji) > 0)
         @foreach($uji as $uj)
         @php 
@@ -773,7 +766,7 @@ body {
                     @elseif($statusUjian == 'belum')
                         @if($isUjianReady)
                             <div class="has-text-centered">
-                                <a href="{{ route('siswa.shop', $uj->id) }}" class="button is-primary is-medium">
+                                <a href="{{ route('siswa.shop', $uj->id) }}" class="button is-medium has-text-light" style="background:#2e5b9a;">
                                     <span class="icon">
                                         <i class="fas fa-play"></i>
                                     </span>
@@ -813,6 +806,9 @@ body {
             <p class="is-size-7">Silakan cek jadwal ujian untuk informasi lebih lanjut</p>
         </div>
     @endif
+  @else
+   <h5>Belum Di Absen</h5>
+  @endif
 </div>
 
 

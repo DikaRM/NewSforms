@@ -649,7 +649,7 @@
 <!-- Header -->
 <header class="header">
     <h2>
-        <i class="fas fa-chalkboard-user"></i>
+        <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px"/>
         <span>SMK NEGERI 1 CIOMAS</span>
     </h2>
     
@@ -814,7 +814,7 @@
 
                         @php
                             $totalSchedules = isset($jad) ? $jad->where('ujian_id', $uj->id)->count() : 0;
-                            $totalKelas = $kla->count() ?? 0;
+                            $totalKelas = $uj->kelas->count() ?? 0;
                             $progress = $totalKelas > 0 ? ($totalSchedules / $totalKelas) * 100 : 0;
                         @endphp
 

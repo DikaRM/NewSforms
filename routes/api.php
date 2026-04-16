@@ -6,10 +6,11 @@ use App\Http\Controllers\Api\SiswaController;
 
 // Public routes
 Route::post('/siswa/login', [SiswaAuthController::class, 'login']);
-Route::get('/siswa/dashboard', [SiswaAuthController::class, 'dashboardSimple']);
+
 // Protected routes (hanya untuk siswa)
 Route::middleware(['auth:sanctum', 'ability:siswa'])->group(function () {
     // Auth
+    Route::get('/siswa/dashboard', [SiswaAuthController::class, 'dashboard']);
     Route::post('/siswa/logout', [SiswaAuthController::class, 'logout']);
     Route::get('/siswa/profile', [SiswaAuthController::class, 'profile']);
     

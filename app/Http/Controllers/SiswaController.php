@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use App\Models\Siswa;
 use App\Models\User;
 use App\Models\Ujian;
@@ -49,17 +50,14 @@ class SiswaController
         'password' => 'required',
         'kelas_id' => 'required'
     ]);
-    
-
-    
-    
-
+    $katapertama = Str::of($request->nama)->before(' ')->toString();
     $user = User::create([
         "nama" => $request->nama,
         "password" => Hash::make($request->password),
         "role" => "siswa",
+        "username"=> $katapertama,
     ]);
-    $katapertama = explode(' ',$request->nama)[0];
+    
     Siswa::create([
         "user_id" => $user->id,
         "nama" => $request->nama,
@@ -68,7 +66,7 @@ class SiswaController
         "username" => $katapertama, 
     ]);
     
-    return redirect()->route("admin.siswa.index")->with("success", "Berhasil!");
+    return redirect()->route("admin.siswa.index")->with("success", "Berhasil Tambah Siswa!");
 }
     /**
      * Display the specified resource.
@@ -102,20 +100,21 @@ class SiswaController
     // 2. Proses update data
     $siswa = Siswa::findOrFail($id);
     $usd = User::findOrFail($siswa->user_id);
-    
+    $katapertama = Str::of($request->nama)->before(' ')->toString();
     $usd->nama = $request->nama;
+    $usd->username = $katapertama;
     if($request->filled("password")) {
         $usd->password = Hash::make($request->password);
     }
     $usd->save();
     
     $siswa->nama = $request->nama;
-    $katapertama = explode(' ',$request->nama);
+    
     $siswa->username= $katapertama;
     $siswa->nisn = $request->nisn;
     $siswa->save();
     
-    return redirect()->route("admin.siswa.index");
+    return redirect()->route("admin.siswa.index")->with("success", "Berhasil Update Siswa!");
 }
 
     /**
@@ -308,7 +307,8 @@ class SiswaController
             "nilai" => $nilai,
             "status" => "selesai",
         ]);
-        
+        $siswa = Siswa::find($request->siswa_id);
+        $siswa->update(["status"=>"unready"]);
         return redirect()->route("siswa.index")->with("success", "Ujian selesai!");
     }
     
@@ -411,7 +411,7 @@ class SiswaController
     $soal = banksoal::whereIn('id', $ujians)->get();
     
     // Kirim data peserta (berisi status 'mulai')
-    return view("siswa.shop", compact("id","uji", "soal", "ire", "sis", "ujians", "peserta"));
+    return view("siswa.ujian", compact("id","uji", "soal", "ire", "sis", "ujians", "peserta"));
 }
  public function detail($id)
 {
@@ -504,6 +504,35 @@ class SiswaController
         "today"
     ));
 }
+ public function reportViolation(Request $request)
+{
+    $validated = $request->validate([
+        'ujian_id' => 'required|exists:ujian,id',
+        'siswa_id' => 'required|exists:siswa,id_siswa',
+        'jenis_pelanggaran' => 'required|string',
+        'detail' => 'nullable|string',
+        'user_agent' => 'nullable|string',
+        'screen_resolution' => 'nullable|string',
+        'timestamp' => 'nullable|string'
+    ]);
+    
+    // Simpan ke database
+    $violation = Pelanggaran::create([
+        'ujian_id' => $validated['ujian_id'],
+        'siswa_id' => $validated['siswa_id'],
+        'jenis_pelanggaran' => $validated['jenis_pelanggaran'],
+        'timestamp' => now(),
+        
+    ]);
+    
+    return response()->json([
+        'success' => true,
+        'message' => 'Pelanggaran tercatat',
+        'violation_id' => $violation->id
+    ]);
+}
+ 
+ 
  
 }
 

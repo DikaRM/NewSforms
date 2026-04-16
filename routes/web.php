@@ -78,7 +78,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 // SISWA ROUTES
 Route::middleware(['auth', 'role:siswa'])->prefix('siswa')->name('siswa.')->group(function () {
     Route::get('/uji', [SiswaController::class, 'Siswas'])->name('uji');
-    Route::get('/', [SiswaController::class, 'dashboard'])->name('index');
+    Route::get('/sis', [SiswaController::class, 'dashboard'])->name('index');
     
     Route::get('/riwayat', [SiswaController::class, 'riwayat'])->name('riwayat');
     Route::get('/jadwal', [SiswaController::class, 'jadwal'])->name('jadwal');
@@ -86,31 +86,37 @@ Route::middleware(['auth', 'role:siswa'])->prefix('siswa')->name('siswa.')->grou
     Route::get('/detail/{id}', [SiswaController::class, 'detail'])->name('detail');
     Route::post('/saved', [SiswaController::class, 'Saved'])->name('save');
     // Di web.php
-Route::get('/ujian/resume/{id}', [UjianController::class, 'resume'])->name('resume');
+Route::get('/ujian/resume/{id}', [SiswaController::class, 'resume'])->name('resume');
     
 });
 
 // GURU ROUTES
 Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(function () {
-    Route::get('/', [GuruController::class, 'TeachIndex'])->name('index');
+    Route::get('/siap', [GuruController::class, 'TeachIndex'])->name('index');
     Route::post('/create-soal', [GuruController::class, 'rheina'])->name('soal.save');
     Route::post('/create', [GuruController::class, 'sed'])->name('soal.sad');
     Route::delete('/create-soal/pus/{id}', [GuruController::class, 'bowl'])->name('soal.destroy');
     Route::delete('/hapus-soal/{id}', [GuruController::class, 'hapus'])->name('hapus');
     
-    Route::post('/', [GuruController::class, 'CreateUjian'])->name('store');
+    Route::post('/store', [GuruController::class, 'CreateUjian'])->name('store');
     Route::get('/create-soal/{id}', [GuruController::class, 'CreateSoal'])->name('create');
     Route::post('/save/{id}', [GuruController::class, 'def'])->name('ujian.sold');
     Route::get('/jadwal', [GuruController::class, 'jadwal'])->name('jadwal');
     Route::get('/result', [GuruController::class, 'result'])->name('result');
     Route::get('/hasil/{id}', [GuruController::class, 'hasil'])->name('hasil');
+    Route::post('/catat-kecurangan', [GuruController::class, 'catatKecurangan'])->name('catat-kecurangan');
     Route::get('/riwayat', [GuruController::class, 'riwayat'])->name('riwayat');
+    Route::get('/jadwal-susulan/{ujianId}', [GuruController::class, 'formJadwalSusulan'])->name('jadwal-susulan.form');
+    Route::post('/jadwal-susulan', [GuruController::class, 'bareroll'])->name('jadwal-susulan.store');
+    Route::put('/jadwal-susulan/{id}', [GuruController::class, 'updateJadwalSusulan'])->name('jadwal-susulan.update');
+    Route::delete('/jadwal-susulan/{id}', [GuruController::class, 'destroyJadwalSusulan'])->name('jadwal-susulan.destroy');
 });
 
 // PENGAWAS ROUTES
 
-    Route::get('/pengawas/{id}', [PengawasController::class, 'index'])->name('pengawas.index');
+  Route::get('/pengawas/{id}', [PengawasController::class, 'index'])->name('pengawas.index');
     Route::post('/pengawas/attach', [PengawasController::class, 'store'])->name('pengawas.store');
+    Route::post('/pengawas/abcent', [PengawasController::class, 'abcent'])->name('pengawas.abcent.store');
     Route::post('/pelanggarans/penalty', [SiswaController::class, 'Pelanggaran'])->name('pengawas.pelanggaran.pen');
     Route::get('/pengawas/show/{id}', [PengawasController::class, 'show'])->name('pengawas.show');
 
@@ -124,3 +130,4 @@ Route::resource('/admin', AdminController::class);
 Route::post('/import/soal', [GuruController::class, 'import'])->name('import.soal');
 Route::post('/import/preview', [GuruController::class, 'preview'])->name('import.preview');
 Route::post('/import/confirm', [GuruController::class, 'confirm'])->name('import.confirm');
+Route::post('/siswa/violation', [SiswaController::class, 'reportViolation'])->name('siswa.violation');

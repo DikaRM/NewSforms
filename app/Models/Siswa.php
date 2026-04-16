@@ -48,6 +48,9 @@ class Siswa extends Model
     return $this->hasMany(Pelanggaran::class, 'siswa_id', 'id_siswa');
  
 }
+public function absensi(){
+return $this->hasMany(Absensi::class,'siswa_id','id_siswa');
+}
 
     /**
      * Accessor untuk format nama

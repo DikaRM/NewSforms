@@ -1,6 +1,31 @@
 @extends("layouts.blank")
 @section("content")
 
+<!-- SweetAlert2 CSS/JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+@if(session('success'))
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: '{{ session('success') }}',
+        confirmButtonColor: '#3085d6'
+    });
+</script>
+@endif
+
+@if(session('error'))
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Gagal!',
+        text: '{{ session('error') }}',
+        confirmButtonColor: '#d33'
+    });
+</script>
+@endif
+
 <!-- Tombol Tambah Mapel -->
 <button class="button is-info" onclick="document.getElementById('mod').classList.add('is-active')">
     Tambah Mata Pelajaran
@@ -51,13 +76,14 @@
         <div class="card">
             <div class="card-header">
                 <h5 class="card-header-title title is-5">
-                    {{ $map->nama_mapel ?? 'Mapel' }} -- {{ $map->id }}
+                    {{ $map->nama_mapel ?? 'Mapel' }}
                 </h5>
             </div>
             
             <div class="card-content">
                 <!-- Form Tambah Guru ke Mapel -->
-                <form action="{{ route('admin.built') }}" method="post">
+                <form action="{{ route('admin.built') }}" method="post" 
+                      onsubmit="return cekDuplikasiGuru(event, this, {{ $map->guru->pluck('id') }})">
                     @csrf
                     <input type="hidden" name="mapel_id" value="{{ $map->id }}">
                     
@@ -65,10 +91,14 @@
                         <label class="label">Pilih Guru</label>
                         <div class="control">
                             <div class="select is-fullwidth">
-                                <select name="guru_id" required>
+                                <select name="guru_id" class="guru-select" data-mapel-id="{{ $map->id }}" required>
                                     <option value="">-- Pilih Guru --</option>
                                     @foreach($guruList ?? [] as $g)
-                                    <option value="{{ $g->id }}">{{ $g->nama }}</option>
+                                    <option value="{{ $g->id }}" 
+                                        {{ $map->guru->contains('id', $g->id) ? 'disabled' : '' }}>
+                                        {{ $g->nama }}
+                                        {{ $map->guru->contains('id', $g->id) ? '(Sudah Ada)' : '' }}
+                                    </option>
                                     @endforeach
                                 </select>
                             </div>
@@ -88,7 +118,18 @@
                 @if($map->guru && $map->guru->count() > 0)
                     <ul>
                         @foreach($map->guru as $guru)
-                        <li>{{ $guru->nama }}</li>
+                        <li>
+                            {{ $guru->nama }}
+                            <form action="{{ route('admin.letroy', $guru->id)}}" 
+                                  method="post" style="display: inline;">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="button is-small is-danger" 
+                                        onclick="return confirm('Hapus guru ini dari mapel?')">
+                                    Hapus
+                                </button>
+                            </form>
+                        </li>
                         @endforeach
                     </ul>
                 @else
@@ -111,7 +152,7 @@
                             @method("DELETE")
                             <button class="button is-danger" 
                                     type="submit" 
-                                    onclick="return confirm('Yakin ingin menghapus?')">
+                                    onclick="return confirm('Yakin ingin menghapus mapel ini?')">
                                 Delete
                             </button>
                         </form>
@@ -146,20 +187,6 @@
                                    required>
                         </div>
                     </div>
-                    
-                    <div class="field">
-                        <label class="label">Tambahkan Guru</label>
-                        <div class="control">
-                            <div class="select is-fullwidth">
-                                <select name="guru_id">
-                                    <option value="">-- Pilih Guru (opsional) --</option>
-                                    @foreach($guruList ?? [] as $g)
-                                    <option value="{{ $g->id }}">{{ $g->nama }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                    </div>
                 </section>
                 
                 <footer class="modal-card-foot">
@@ -186,4 +213,52 @@
     @endforelse
 </div>
 
+@endsection
+
+@section('scripts')
+<script>
+function cekDuplikasiGuru(event, form, existingGuruIds) {
+    // Ambil select element
+    const selectElement = form.querySelector('select[name="guru_id"]');
+    const selectedGuruId = parseInt(selectElement.value);
+    const selectedGuruName = selectElement.options[selectElement.selectedIndex].text;
+    
+    // Cek apakah guru sudah ada
+    if (existingGuruIds.includes(selectedGuruId)) {
+        event.preventDefault();
+        
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal Menambahkan!',
+            text: `Guru "${selectedGuruName}" sudah terdaftar di mapel ini!`,
+            confirmButtonColor: '#d33'
+        });
+        
+        return false;
+    }
+    
+    // Konfirmasi sebelum menambah
+    event.preventDefault();
+    
+    Swal.fire({
+        title: 'Konfirmasi',
+        text: `Tambahkan "${selectedGuruName}" ke mapel ini?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, Tambahkan!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            form.submit();
+        }
+    });
+    
+    return false;
+}
+
+// Optional: Update daftar guru setelah submit (tanpa reload)
+// Anda bisa implementasikan dengan AJAX jika diperlukan
+</script>
 @endsection
