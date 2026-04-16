@@ -99,68 +99,89 @@ class SiswaAuthController extends Controller
 
 private function getDashboardData($siswa)
 {
-    // AMBIL UJIAN HARI INI - PAKAI LIMIT DAN JOIN MANUAL
     $today = now()->format('Y-m-d');
     
-    $ujianHariIni = DB::table('ujian')
-        ->join('kelas_ujian', 'ujian.id', '=', 'kelas_ujian.ujian_id')
-        ->join('jadwal', 'ujian.id', '=', 'jadwal.ujian_id')
-        ->join('mapels', 'ujian.mapel_id', '=', 'mapels.id')
-        ->leftJoin('peserta_ujian', function($join) use ($siswa) {
-            $join->on('ujian.id', '=', 'peserta_ujian.ujian_id')
-                 ->where('peserta_ujian.siswa_id', '=', $siswa->id_siswa);
-        })
-        ->where('kelas_ujian.kelas_id', $siswa->kelas_id)
-        ->whereDate('jadwal.waktu_mulai', $today)
-        ->select(
-            'ujian.id',
-            'ujian.nama_ujian',
-            'ujian.durasi',
-            'ujian.status',
-            'mapels.nama_mapel as mapel',
-            'jadwal.waktu_mulai',
-            'peserta_ujian.status as peserta_status',
-            'peserta_ujian.nilai'
-        )
+    // ==========================================
+    // 1. UJIAN HARI INI (Pakai Model)
+    // ==========================================
+    $jadwalHariIni = Jadwal::with(['ujian', 'ujian.mapels'])
+        ->where('kelas_id', $siswa->kelas_id)
+        ->where('tanggal', $today)
+        ->get();
+    
+    $ujianHariIniFormatted = [];
+    foreach ($jadwalHariIni as $jadwal) {
+        $ujian = $jadwal->ujian;
+        
+        if (!$ujian) continue;
+        
+        // Cek peserta ujian
+        $peserta = Peserta_ujian::where('ujian_id', $ujian->id)
+            ->where('siswa_id', $siswa->id_siswa)
+            ->first();
+        
+        $ujianHariIniFormatted[] = [
+            'id' => $ujian->id,
+            'nama_ujian' => $ujian->nama_ujian,
+            'mapel' => $ujian->mapels->nama_mapel ?? 'Unknown',
+            'waktu_mulai' => $jadwal->waktu_mulai,
+            'durasi' => $ujian->durasi,
+            'status_ujian' => $peserta ? ($peserta->status ?? 'belum') : 'belum',
+            'nilai' => $peserta->nilai ?? null,
+        ];
+    }
+    
+    // ==========================================
+    // 2. TOTAL UJIAN YANG SUDAH DIKERJAKAN
+    // ==========================================
+    $totalUjian = Peserta_ujian::where('siswa_id', $siswa->id_siswa)->count();
+    
+    // ==========================================
+    // 3. UJIAN SELESAI
+    // ==========================================
+    $ujianSelesai = Peserta_ujian::where('siswa_id', $siswa->id_siswa)
+        ->where('status', 'selesai')
+        ->count();
+    
+    // ==========================================
+    // 4. RATA-RATA NILAI
+    // ==========================================
+    $rataNilai = 80;
+    
+    // ==========================================
+    // 5. JADWAL MENDATANG (Pakai Model)
+    // ==========================================
+    $jadwalMendatang = Jadwal::with('ujian')
+        ->where('kelas_id', $siswa->kelas_id)
+        ->where('tanggal', '>', $today)
+        ->orderBy('tanggal', 'asc')
         ->limit(5)
         ->get()
-        ->map(function($ujian) {
+        ->map(function($jadwal) {
             return [
-                'id' => $ujian->id,
-                'nama_ujian' => $ujian->nama_ujian,
-                'mapel' => $ujian->mapel ?? 'Unknown',
-                'waktu_mulai' => $ujian->waktu_mulai,
-                'durasi' => $ujian->durasi ?? 120,
-                'status_ujian' => $ujian->peserta_status ?? 'belum_mulai',
-                'nilai' => $ujian->nilai,
-                'bisa_dimulai' => $ujian->status === 'ready' && (!$ujian->peserta_status || $ujian->peserta_status !== 'done'),
+                'id' => $jadwal->id,
+                'ujian_id' => $jadwal->ujian_id,
+                'nama_ujian' => $jadwal->ujian->nama_ujian ?? 'Unknown',
+                'tanggal' => $jadwal->tanggal,
+                'waktu_mulai' => $jadwal->waktu_mulai,
+                'durasi' => $jadwal->ujian->durasi ?? 0,
             ];
         });
     
-    // STATISTIK - PAKAI COUNT LANGSUNG
-    $totalJadwal = DB::table('ujian')
-        ->join('kelas_ujian', 'ujian.id', '=', 'kelas_ujian.ujian_id')
-        ->where('kelas_ujian.kelas_id', $siswa->kelas_id)
-        ->where('ujian.status', 'ready')
-        ->count();
-    
-    $totalRiwayat = DB::table('peserta_ujian')
-        ->where('siswa_id', $siswa->id_siswa)
-        ->whereNotNull('nilai')
-        ->count();
-    
-    $rataNilai = DB::table('peserta_ujian')
-        ->where('siswa_id', $siswa->id_siswa)
-        ->whereNotNull('nilai')
-        ->avg('nilai');
-    
     return [
-        'ujian_hari_ini' => $ujianHariIni,
+        'siswa' => [
+            'nama' => $siswa->nama,
+            'nisn' => $siswa->nisn,
+            'kelas' => $siswa->kelas->nama_kelas ?? 'Unknown',
+        ],
         'statistik' => [
-            'total_jadwal' => $totalJadwal,
-            'total_riwayat' => $totalRiwayat,
-            'rata_rata_nilai' => round($rataNilai ?: 0, 2),
-        ]
+            'total_ujian' => $totalUjian,
+            'ujian_selesai' => $ujianSelesai,
+            'rata_rata_nilai' => round($rataNilai, 2),
+        ],
+        'ujian_hari_ini' => $ujianHariIniFormatted,
+        'jadwal_mendatang' => $jadwalMendatang,
+        'tanggal' => now()->format('l, d F Y'),
     ];
 }
     /**
@@ -206,31 +227,64 @@ private function getDashboardData($siswa)
 public function dashboardSimple(Request $request)
 {
     $user = $request->user();
-    $siswa = Siswa::where('user_id', $user->id)->first();
+    $siswa = Siswa::with('kelas')->where('user_id', $user->id)->first();
     
-    // Data statis minimal
+    if (!$siswa) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Data siswa tidak ditemukan'
+        ], 404);
+    }
+    
+    $dashboardData = $this->getDashboardData($siswa);
+    
+    // Tambah data siswa (untuk ditampilkan di Flutter)
+    $dashboardData['siswa'] = [
+        'nama' => $siswa->nama,
+        'nisn' => $siswa->nisn,
+        'kelas' => $siswa->kelas->nama_kelas ?? 'Unknown',
+        'username' => $siswa->username ?? $user->nama,
+    ];
+    
+    // Tambah info tanggal
+    $dashboardData['tanggal'] = now()->format('l, d F Y');
+    $dashboardData['waktu'] = now()->format('H:i:s');
+    
     return response()->json([
         'status' => 'success',
-        'data' => [
-            'ujian_hari_ini' => [],
-            'statistik' => [
-                'total_jadwal' => 0,
-                'total_riwayat' => 0,
-                'rata_rata_nilai' => 0,
-            ]
-        ]
+        'data' => $dashboardData
     ]);
 }
     public function dashboard(Request $request)
-    {
-        $user = $request->user();
-        $siswa = Siswa::where('user_id', $user->id)->first();
-        
-        $dashboardData = $this->getDashboardData($siswa);
-
+{
+    $user = $request->user();
+    $siswa = Siswa::with('kelas')->where('user_id', $user->id)->first();
+    
+    if (!$siswa) {
         return response()->json([
-            'status' => 'success',
-            'data' => $dashboardData
-        ], 200);
+            'status' => 'error',
+            'message' => 'Data siswa tidak ditemukan'
+        ], 404);
     }
+    
+    $dashboardData = $this->getDashboardData($siswa);
+    
+    // Tambah data siswa (yang dibutuhkan Flutter)
+    $dashboardData['siswa'] = [
+        'nama' => $siswa->nama,
+        'nisn' => $siswa->nisn,
+        'kelas' => $siswa->kelas->nama_kelas ?? 'Unknown',
+        'id_siswa' => $siswa->id_siswa,
+    ];
+    
+    $dashboardData['info_waktu'] = [
+        'tanggal' => now()->format('Y-m-d'),
+        'waktu' => now()->format('H:i:s'),
+    ];
+    
+    return response()->json([
+        'status' => 'success',
+        'data' => $dashboardData
+    ]);
+}
 }

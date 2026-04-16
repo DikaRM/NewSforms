@@ -6,23 +6,31 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use App\Imports\BankSoalImport;
 use App\Imports\BankSoalImportPreview;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Guru;
+use App\Models\Pengawas;
 use App\Models\User;
 use App\Models\Ujian;
+use App\Models\Siswa;
 use App\Models\Jadwal;
+use App\Models\Susulan;
+use App\Models\Absensi;
 use App\Models\Kelas;
 use App\Models\Mapel;
+use App\Models\Berita;
 use App\Models\Nilai;
 use App\Models\Peserta_ujian;
+use App\Models\Pelanggaran;
 use App\Models\banksoal ;
 use App\Models\GuruMapel;
 use App\Models\Ujian_soals;
+use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-class GuruController
+class GuruController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -48,10 +56,12 @@ class GuruController
     public function store(Request $request)
     {
       $pass = Hash::make($request->password);
+      $kata = Str::of($request->username)->before(" ")->toString();
       User::create([
         "nama" => $request->username,
         "password" => $pass,
         "role" => "guru",
+        "username"=>$kata,
         ]);
       $whe = User::where("nama",$request->username)->first();
         Guru::create([
@@ -59,7 +69,7 @@ class GuruController
         "nama" => $request->username,
         "nip" => $request->nip,
         ]);
-      return redirect()->route("admin.guru.index")->with("succes","Berhasil Menambah Data");
+      return redirect()->route("admin.guru.index")->with("success","Berhasil Menambah Data");
     }
 
     /**
@@ -82,20 +92,35 @@ class GuruController
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
-    {
-        $dat = Guru::findOrFail($id);
-        $usew = User::findOrFail($id);
-        $pa = Hash::make($request->password);
-        $usew->update([
-          "nama" => $request->username,
-          "password" => $pa,
-          ]);
-        $dat->update([
-          "nama" => $request->username,
-          "nip" => $request->nip,
-          ]);
-        
+{
+    // Cari data Guru berdasarkan ID
+    $guru = Guru::findOrFail($id);
+    
+    // Cari User berdasarkan user_id dari tabel Guru
+    $user = User::findOrFail($guru->user_id);
+    $kata = Str::of($request->username)->before(" ")->toString();
+    // Update data User
+    $userData = [
+        "nama" => $request->username,
+        "username"=>$kata,
+    ];
+    
+    // Only update password if provided
+    if ($request->filled('password')) {
+        $userData["password"] = Hash::make($request->password);
     }
+    
+    $user->update($userData);
+    
+    // Update data Guru
+    $guru->update([
+        "nama" => $request->username,
+        "nip" => $request->nip,
+    ]);
+    
+    // Optional: Add success message
+    return redirect()->back()->with('success', 'Data berhasil diupdate');
+}
 
     /**
      * Remove the specified resource from storage.
@@ -106,7 +131,7 @@ class GuruController
         $gu = Guru::findOrFail($id);
         
          $gu->delete();
-        return redirect()->route("admin.guru.index")->with("succes","Berhasil Dihapus");
+        return redirect()->route("admin.guru.index")->with("success","Berhasil Dihapus");
     }
     public function TeachIndex()
     {
@@ -212,7 +237,8 @@ class GuruController
         'soal.*.opsi_b' => 'required|string',
         'soal.*.opsi_c' => 'required|string',
         'soal.*.opsi_d' => 'required|string',
-        'soal.*.jawaban_benar' => 'required|in:a,b,c,d',
+        'soal.*.opsi_e' => 'nullable|string',
+        'soal.*.jawaban_benar' => 'required|in:a,b,c,d,e',
         'soal.*.gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
     ]);
 
@@ -247,6 +273,7 @@ class GuruController
                 'opsi_b' => $soalData['opsi_b'],
                 'opsi_c' => $soalData['opsi_c'],
                 'opsi_d' => $soalData['opsi_d'],
+                'opsi_e' => $soalData['opsi_e'],
                 'jawaban_benar' => $soalData['jawaban_benar'],
                 'tipe' => 'pg',
                 'created_at' => now(),
@@ -400,15 +427,101 @@ class GuruController
     }
     public function hasil($id)
 {
-    // Ambil semua peserta ujian berdasarkan id ujian
-    $pesertaUjian = Peserta_ujian::with(['siswa' => function($query) {
-        $query->with('pelanggaran'); // Memuat pelanggaran melalui relasi siswa
-    }])->where('ujian_id', $id)->get();
+    $ujian = Ujian::with('jadwal')->findOrFail($id);
+    
+    // 1. Data peserta yang sudah mengerjakan (nilai sudah ada)
+    $pesertaUjian = Peserta_ujian::with([
+        'siswa.kelas',
+        'siswa.pelanggaran' => function($q) use ($id) {
+            $q->where('ujian_id', $id); // Filter kecurangan per ujian
+        }
+    ])->where('ujian_id', $id)->get();
+    
+    // 2. Data siswa susulan
+    $siswaSusulan = Susulan::with('siswa.kelas')
+        ->where('ujian_id', $id)
+      ->get();
+    
+    // 3. Data absensi (sakit/izin/alfa)
+    $absensi = Absensi::where('ujian_id', $id)
+        ->get()
+        ->keyBy('siswa_id');
+    
+    // 4. Semua siswa di kelas ini
+    $siswa = Siswa::with('kelas')
+        ->where("kelas_id", $ujian->jadwal->kelas_id)
+        ->get();
+    
+    // 5. Gabungkan semua data ke dalam satu collection
+    $hasilUjian = $siswa->map(function($siswa) use ($pesertaUjian, $siswaSusulan, $absensi, $id) {
+        $peserta = $pesertaUjian->firstWhere('siswa_id', $siswa->id_siswa);
+        $susulan = $siswaSusulan->firstWhere('siswa_id', $siswa->id_siswa);
+        $absen = $absensi->get($siswa->id_siswa);
+        
+        // Tentukan status kehadiran
+        if($peserta) {
+            $status_kehadiran = 'hadir';
+            $nilai = $peserta->nilai;
+            $pelanggaran = $peserta->siswa->pelanggaran;
+        } elseif($susulan) {
+            $status_kehadiran = 'susulan';
+            $nilai = null;
+            $pelanggaran = collect();
+        } elseif($absen) {
+            $status_kehadiran = $absen->status_kehadiran; // sakit/izin/alfa
+            $nilai = null;
+            $pelanggaran = collect();
+        } else {
+            $status_kehadiran = 'alfa';
+            $nilai = null;
+            $pelanggaran = collect();
+        }
+        
+        return (object) [
+            'siswa' => $siswa,
+            'status_kehadiran' => $status_kehadiran,
+            'nilai' => $nilai,
+            'pelanggaran' => $pelanggaran,
+            'waktu_absen' => $absen?->waktu_absen,
+        ];
+    });
+    
+    $berita = Berita::where('ujian_id', $id)->get();
+    
+    return view('guru.result', compact(
+        'pesertaUjian',  // Ganti pesertaUjian dengan ini
+        'ujian', 
+        'berita', 
+        'siswaSusulan',
+        'siswa',
+        'absensi'
+    ));
+}
 
-    // Ambil data ujian (untuk judul, dll)
-    $ujian = Ujian::find($id);
+// Method untuk a kecurangan
+public function catatKecurangan(Request $request)
+{
+    $validated = $request->validate([
+        'siswa_id' => 'required',
+        'ujian_id' => 'required',
+        'jenis_pelanggaran' => 'required|string',
+    ]);
+    
+   Pelanggaran::create([
+            'siswa_id' => $request->siswa_id,
+            'ujian_id' => $request->ujian_id,
+            'jenis_pelanggaran' => $request->jenis_pelanggaran,
+           
+        ]);
+        
 
-    return view('guru.result', compact('pesertaUjian', 'ujian'));
+        
+        
+        
+        return redirect()->back()->with('success', 'Kecurangan berhasil dicatat!');
+    
+    
+    
 }
     public function riwayat(){
       $ire = Auth::user();
@@ -488,8 +601,9 @@ public function preview(Request $request)
                 'opsi_b' => $row[2] ?? null,
                 'opsi_c' => $row[3] ?? null,
                 'opsi_d' => $row[4] ?? null,
-                'jawaban_benar' => $row[5] ?? null,
-                'tipe' => $row[6] ?? 'pg',
+                'opsi_e' => $row[5] ?? null,
+                'jawaban_benar' => $row[6] ?? null,
+                'tipe' => $row[7] ?? 'pg',
             ];
             
             // LOG setiap soal
@@ -571,6 +685,7 @@ public function confirm(Request $request)
                 'opsi_b' => $soal['opsi_b'] ?? null,
                 'opsi_c' => $soal['opsi_c'] ?? null,
                 'opsi_d' => $soal['opsi_d'] ?? null,
+                'opsi_e' => $soal['opsi_e'] ?? null,
             ]);
             
             $bankData[] = [
@@ -582,6 +697,7 @@ public function confirm(Request $request)
                 'opsi_b' => $soal['opsi_b'] ?? null,
                 'opsi_c' => $soal['opsi_c'] ?? null,
                 'opsi_d' => $soal['opsi_d'] ?? null,
+                'opsi_e' => $soal['opsi_e'] ?? null,
                 'jawaban_benar' => strtoupper($soal['jawaban_benar'] ?? ''),
                 'tipe' => $soal['tipe'] ?? 'pg',
                 'created_at' => now(),
@@ -650,5 +766,193 @@ public function confirm(Request $request)
         ]);
     }
 }
+public function bareroll(Request $request)
+{
+    // Validasi input
+    $request->validate([
+        'ujian_id' => 'required|exists:ujian,id',
+        'kelas_id' => 'required|exists:kelas,id',
+        'guru_id' => 'required|exists:guru,id',
+        'tanggal_susulan' => 'required|date',
+        'waktu_mulai' => 'required',
+        'waktu_selesai' => 'required',
+        'jam_mapel' => 'nullable|integer',
+        'keterangan' => 'nullable|string'
+    ]);
+    
+    DB::beginTransaction();
+    
+    try {
+        // Ambil data ujian
+        $uji = Ujian::findOrFail($request->ujian_id);
+        
+        // Cek apakah ujian sudah memiliki kelas ini
+        if (!$uji->kelas()->where('kelas_id', $request->kelas_id)->exists()) {
+            $uji->kelas()->attach($request->kelas_id);
+        }
+        
+        // Cari atau buat pengawas
+        $guru = Guru::findOrFail($request->guru_id);
+        $pengawas = Pengawas::where('guru_id', $guru->id)
+            ->where('user_id', $guru->user_id)
+            ->first();
+        
+        if (!$pengawas) {
+            $pengawas = Pengawas::create([
+                "guru_id" => $guru->id,
+                "user_id" => $guru->user_id,
+            ]);
+        }
+        
+        // Hitung waktu
+        $waktuMulai = Carbon::parse($request->tanggal_susulan . ' ' . $request->waktu_mulai);
+        $waktuSelesai = Carbon::parse($request->tanggal_susulan . ' ' . $request->waktu_selesai);
+        
+        // ==========================================
+        // GUNAKAN updateOrCreate AGAR TIDAK BENTROK UNIQUE CONSTRAINT
+        // ==========================================
+        $jads = Jadwal::updateOrCreate(
+            [
+                // KOMBINASI UNIQUE (cek dulu apakah sudah ada)
+                'pengawas_id' => $pengawas->id,
+                'tanggal' => $request->tanggal_susulan,
+                'jam_mapel' => $request->jam_mapel ?? 0,
+            ],
+            [
+                // DATA YANG AKAN DIUPDATE ATAU DICREATE
+                'waktu_mulai' => $waktuMulai,
+                'waktu_selesai' => $waktuSelesai,
+                'ujian_id' => $request->ujian_id,
+                'kelas_id' => $request->kelas_id,
+                'untuk_susulan' => 1,  // ← true = jadwal susulan
+                'keterangan' => $request->keterangan,
+            ]
+        );
+        
+        // Update ujian
+        $uji->update([
+            "jadwal_id" => $jads->id, 
+            "status" => "ready",
+        ]);
+        
+        DB::commit();
+        
+        $message = $jads->wasRecentlyCreated 
+            ? 'Jadwal ujian susulan berhasil dibuat!' 
+            : 'Jadwal ujian susulan berhasil diperbarui!';
+        
+        return redirect()->route("guru.hasil", ["id" => $request->ujian_id])
+            ->with('success', $message);
+            
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->withErrors([
+            'error' => 'Terjadi kesalahan: ' . $e->getMessage()
+        ])->withInput();
+    }
+}
+    
+
+    public function updateJadwalSusulan(Request $request, $id)
+    {
+        $request->validate([
+            'tanggal' => 'required|date',
+            'waktu_mulai' => 'required',
+            'pengawas_id' => 'required',
+        ]);
+        
+        DB::beginTransaction();
+        
+        try {
+            $jadwal = Jadwal::findOrFail($id);
+            $uji = Ujian::findOrFail($jadwal->ujian_id);
+            
+            // Hitung waktu
+            $waktuMulai = Carbon::parse($request->tanggal . ' ' . $request->waktu_mulai);
+            $waktuSelesai = $waktuMulai->copy()->addMinutes($uji->durasi);
+            
+            // Cek bentrok (kecuali dengan dirinya sendiri)
+            $bentrok = Jadwal::where('kelas_id', $jadwal->kelas_id)
+                ->where('id', '!=', $id)
+                ->where('tanggal', $request->tanggal)
+                ->where(function($query) use ($waktuMulai, $waktuSelesai) {
+                    $query->whereBetween('waktu_mulai', [$waktuMulai, $waktuSelesai])
+                          ->orWhereBetween('waktu_selesai', [$waktuMulai, $waktuSelesai]);
+                })
+                ->exists();
+            
+            if ($bentrok) {
+                return back()->with('error', 'Waktu bentrok dengan jadwal lain di kelas ini!');
+            }
+            
+            // Update jadwal
+            $jadwal->update([
+                'tanggal' => $request->tanggal,
+                'waktu_mulai' => $waktuMulai,
+                'waktu_selesai' => $waktuSelesai,
+                'pengawas_id' => $request->pengawas_id,
+                'keterangan' => $request->keterangan
+            ]);
+            
+            DB::commit();
+            
+            return redirect()->route('guru.hasil', $jadwal->ujian_id)
+                ->with('success', 'Jadwal susulan berhasil diupdate!');
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal update jadwal: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Hapus jadwal susulan
+     */
+    public function destroyJadwalSusulan($id)
+    {
+        DB::beginTransaction();
+        
+        try {
+            $jadwal = Jadwal::findOrFail($id);
+            $ujianId = $jadwal->ujian_id;
+            Susulan::where('jadwal_id', $id)->update([
+                'jadwal_id' => null,
+                'status' => 'menunggu'
+            ]);
+            
+            $jadwal->delete();
+            
+            DB::commit();
+            
+            return redirect()->route('guru.hasil', $ujianId)
+                ->with('success', 'Jadwal susulan berhasil dihapus!');
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal hapus jadwal: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Tampilkan form buat jadwal susulan
+     */
+    public function formJadwalSusulan($ujianId)
+    {
+        $ujian = Ujian::with('jadwal')->findOrFail($ujianId);
+        
+        // Ambil siswa yang mengajukan susulan
+        $siswaSusulan = Susulan::with('siswa')
+            ->where('ujian_id', $ujianId)
+            ->get();
+        
+        // Ambil daftar pengawas
+        $pengawas = User::where('role', 'guru')->get();
+        
+        // Ambil kelas yang terkait dengan ujian
+        $kelas = $ujian->kelas;
+        
+        return view('guru.form-jadwal-susulan', compact('ujian', 'siswaSusulan', 'pengawas', 'kelas'));
+    }
+
     
 }

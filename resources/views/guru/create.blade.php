@@ -419,7 +419,7 @@
             background: white;
             border-radius: 12px;
             padding: 24px;
-            margin-top: 30px;
+            margin: 0 30px 30px 30px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
         }
 
@@ -600,6 +600,11 @@
                 width: 95%;
                 max-height: 95vh;
             }
+            
+            .import-card {
+                margin: 0 20px 20px 20px;
+                padding: 20px;
+            }
         }
 
         /* Sidebar Overlay for Mobile */
@@ -632,15 +637,6 @@
                 <i class="fas fa-tachometer-alt"></i>
                 <span>Dashboard</span>
             </a>
-            <a href="{{ route('guru.index') }}" class="sidebar-item">
-                <i class="fas fa-clipboard-list"></i>
-                <span>Daftar Ujian</span>
-            </a>
-            <a href="{{ route('guru.index') }}" class="sidebar-item">
-                <i class="fas fa-plus-circle"></i>
-                <span>Buat Ujian Baru</span>
-            </a>
-           
             <a href="{{ route('guru.result') }}" class="sidebar-item">
                 <i class="fas fa-chart-bar"></i>
                 <span>Result Siswa</span>
@@ -649,7 +645,6 @@
                 <i class="fas fa-file-alt"></i>
                 <span>Jadwal</span>
             </a>
-           
         </nav>
     </aside>
 
@@ -700,6 +695,63 @@
             </div>
         </header>
 
+        <!-- IMPORT EXCEL SECTION -->
+        <div class="import-card">
+            <div class="import-header">
+                <i class="fas fa-file-excel"></i>
+                <h3>Import Soal dari Excel/CSV</h3>
+            </div>
+            
+            <form id="importForm" enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="uji_id" value="{{ $uji->id ?? '' }}">
+                <input type="hidden" name="mapel_id" value="{{ $uji->mapel ?? '' }}">
+                <input type="hidden" name="guru_id" value="{{ $uji->guru_id ?? '' }}">
+                
+                <div class="field">
+                    <label class="label">Pilih File (Excel/CSV)</label>
+                    <div class="file has-name is-info">
+                        <label class="file-label">
+                            <input class="file-input" 
+                                   type="file" 
+                                   name="file_excel" 
+                                   accept=".xlsx,.xls,.csv"
+                                   id="excelFileInput"
+                                   required>
+                            <span class="file-cta">
+                                <span class="file-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </span>
+                                <span class="file-label">
+                                    Cari file...
+                                </span>
+                            </span>
+                            <span class="file-name" id="importFileName">
+                                Belum ada file dipilih
+                            </span>
+                        </label>
+                    </div>
+                    <p class="help">
+                        <i class="fas fa-info-circle"></i> 
+                        Format header yang diperlukan: <strong>soal, opsi_a, opsi_b, opsi_c, opsi_d, opsi_e, jawaban_benar, tipe</strong>
+                        <br>
+                        <i class="fas fa-file-alt"></i> Tipe: <strong>pg</strong> (pilihan ganda) atau <strong>essay</strong>
+                        <br>
+                        <i class="fas fa-download"></i> Klik tombol "Download Template" untuk mendapatkan contoh file
+                    </p>
+                </div>
+                
+                <div class="field" style="margin-top: 15px;">
+                    <button type="button" class="btn-primary" id="previewBtn">
+                        <i class="fas fa-eye"></i> Preview Soal
+                    </button>
+                    <button type="button" class="btn-outline" id="downloadTemplateBtn">
+                        <i class="fas fa-download"></i> Download Template
+                    </button>
+                </div>
+            </form>
+        </div>
+
         <!-- Content -->
         <div class="content">
             <!-- Flash Notification -->
@@ -718,7 +770,7 @@
             @endif
 
             <!-- Form Soal -->
-            <form action="{{ route('guru.ujian.sold', $uji->id) }}" 
+            <form action="{{ route('guru.ujian.sold', $uji->id ?? 0) }}" 
                   method="POST" 
                   enctype="multipart/form-data"
                   id="formSoal">
@@ -727,7 +779,7 @@
                 
                 <input type="hidden" name="guru_id" value="{{ $uji->guru_id ?? '' }}">
                 <input type="hidden" name="mapel_id" value="{{ $uji->mapel ?? '' }}">
-                <input type="hidden" name="uji_id" value="{{ $uji->id }}">
+                <input type="hidden" name="uji_id" value="{{ $uji->id ?? '' }}">
                 
                 <div class="card" style="border-radius: 12px; overflow: hidden; margin-bottom: 24px;">
                     <div class="card-header" style="background: #2e5b9a; color: white;">
@@ -755,7 +807,7 @@
                                 </div>
                                 <div class="level-right">
                                     <span class="tag is-info is-light">
-                                        <i class="fas fa-question-circle"></i> Buat soal dengan opsi A-D
+                                        <i class="fas fa-question-circle"></i> Buat soal dengan opsi A-E 
                                     </span>
                                 </div>
                             </div>
@@ -865,6 +917,19 @@
                                             </div>
                                         </div>
                                     </div>
+                                    
+                                    <div class="column is-half">
+                                        <div class="field">
+                                            <label class="label required">Opsi E</label>
+                                            <div class="control">
+                                                <input class="input" 
+                                                       type="text" 
+                                                       name="soal[0][opsi_e]" 
+                                                       placeholder="Pilihan E"
+                                                       value="{{ old('soal.0.opsi_e') }}">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div class="field">
@@ -877,6 +942,7 @@
                                                 <option value="b" {{ old('soal.0.jawaban_benar') == 'b' ? 'selected' : '' }}>B</option>
                                                 <option value="c" {{ old('soal.0.jawaban_benar') == 'c' ? 'selected' : '' }}>C</option>
                                                 <option value="d" {{ old('soal.0.jawaban_benar') == 'd' ? 'selected' : '' }}>D</option>
+                                                <option value="e" {{ old('soal.0.jawaban_benar') == 'e' ? 'selected' : '' }}>E</option>
                                             </select>
                                         </div>
                                     </div>
@@ -899,63 +965,6 @@
                     </div>
                 </div>
             </form>
-            
-            <!-- IMPORT EXCEL SECTION -->
-            <div class="import-card">
-                <div class="import-header">
-                    <i class="fas fa-file-excel"></i>
-                    <h3>Import Soal dari Excel/CSV</h3>
-                </div>
-                
-                <form id="importForm" enctype="multipart/form-data">
-                    @csrf
-                    <input type="hidden" name="uji_id" value="{{ $uji->id }}">
-                    <input type="hidden" name="mapel_id" value="{{ $uji->mapel ?? '' }}">
-                    <input type="hidden" name="guru_id" value="{{ $uji->guru_id ?? '' }}">
-                    
-                    <div class="field">
-                        <label class="label">Pilih File (Excel/CSV)</label>
-                        <div class="file has-name is-info">
-                            <label class="file-label">
-                                <input class="file-input" 
-                                       type="file" 
-                                       name="file_excel" 
-                                       accept=".xlsx,.xls,.csv"
-                                       id="excelFileInput"
-                                       required>
-                                <span class="file-cta">
-                                    <span class="file-icon">
-                                        <i class="fas fa-cloud-upload-alt"></i>
-                                    </span>
-                                    <span class="file-label">
-                                        Cari file...
-                                    </span>
-                                </span>
-                                <span class="file-name" id="importFileName">
-                                    Belum ada file dipilih
-                                </span>
-                            </label>
-                        </div>
-                        <p class="help">
-                            <i class="fas fa-info-circle"></i> 
-                            Format header yang diperlukan: <strong>soal, opsi_a, opsi_b, opsi_c, opsi_d, jawaban_benar, tipe</strong>
-                            <br>
-                            <i class="fas fa-file-alt"></i> Tipe: <strong>pg</strong> (pilihan ganda) atau <strong>essay</strong>
-                            <br>
-                            <i class="fas fa-download"></i> Klik tombol "Download Template" untuk mendapatkan contoh file
-                        </p>
-                    </div>
-                    
-                    <div class="field" style="margin-top: 15px;">
-                        <button type="button" class="btn-primary" id="previewBtn">
-                            <i class="fas fa-eye"></i> Preview Soal
-                        </button>
-                        <button type="button" class="btn-outline" id="downloadTemplateBtn">
-                            <i class="fas fa-download"></i> Download Template
-                        </button>
-                    </div>
-                </form>
-            </div>
         </div>
     </main>
 </div>
@@ -1012,18 +1021,31 @@
         });
     }
     
-    // ==================== DOWNLOAD TEMPLATE ====================
+    // ==================== DOWNLOAD TEMPLATE (FIXED) ====================
     const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
     if (downloadTemplateBtn) {
-        downloadTemplateBtn.addEventListener('click', function() {
-            const templateData = [
-                ['soal', 'opsi_a', 'opsi_b', 'opsi_c', 'opsi_d', 'jawaban_benar', 'tipe'],
-                ['Apa manfaat PPKI?', 'Merumuskan dasar negara', 'Membuat UUD', 'Menjadikan Jakarta sebagai Ibukota', 'Mempertahankan kemerdekaan', 'A', 'pg'],
-                ['1+1 berapa?', '1', '2', '3', '4', 'B', 'pg'],
-                ['Jelaskan pengertian gotong royong?', '', '', '', '', 'Kerja sama antar warga', 'essay']
-            ];
+        downloadTemplateBtn.addEventListener('click', function(e) {
+            e.preventDefault();
             
-            let csvContent = templateData.map(row => row.join(',')).join('\n');
+            // Data template dengan 5 opsi (A-E)
+            const headers = ['soal', 'opsi_a', 'opsi_b', 'opsi_c', 'opsi_d', 'opsi_e', 'jawaban_benar', 'tipe'];
+            const example1 = ['Apa manfaat PPKI?', 'Merumuskan dasar negara', 'Membuat UUD', 'Menjadikan Jakarta sebagai Ibukota', 'Mempertahankan kemerdekaan', 'Indonesia Merdeka', 'A', 'pg'];
+            const example2 = ['1 + 1 = ?', '1', '2', '3', '4', '5', 'B', 'pg'];
+            const example3 = ['Jelaskan pengertian gotong royong!', '', '', '', '', '', 'Kerja sama antar warga', 'essay'];
+            
+            const templateData = [headers, example1, example2, example3];
+            
+            // Konversi ke CSV
+            let csvContent = templateData.map(row => {
+                return row.map(cell => {
+                    if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"'))) {
+                        return '"' + cell.replace(/"/g, '""') + '"';
+                    }
+                    return cell;
+                }).join(',');
+            }).join('\n');
+            
+            // Tambahkan BOM untuk UTF-8
             const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
@@ -1033,10 +1055,12 @@
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
+            
+            showNotification('success', 'Template berhasil di download!');
         });
     }
     
-    // ==================== PREVIEW IMPORT (FIXED) ====================
+    // ==================== PREVIEW IMPORT ====================
     const previewBtn = document.getElementById('previewBtn');
     if (previewBtn) {
         previewBtn.addEventListener('click', async function() {
@@ -1067,42 +1091,19 @@
                 
                 const result = await response.json();
                 
-                console.log('Response Preview:', result);
-                
                 if (result.success) {
-                    // *** FIX: Handle different possible response structures ***
                     let soalData = [];
                     
-                    // Check various possible structures
                     if (Array.isArray(result.data)) {
                         soalData = result.data;
+                    } else if (result.data && Array.isArray(result.data.rows)) {
+                        soalData = result.data.rows;
                     } else if (result.data && Array.isArray(result.data.data)) {
                         soalData = result.data.data;
-                    } else if (result.data && Array.isArray(result.data.soal)) {
-                        soalData = result.data.soal;
-                    } else if (result.data && typeof result.data === 'object') {
-                        // If it's an object but not an array, try to extract array values
-                        const values = Object.values(result.data);
-                        const arrays = values.filter(v => Array.isArray(v));
-                        if (arrays.length > 0) {
-                            soalData = arrays[0]; // Use the first array found
-                        } else {
-                            // If no arrays found, convert the object to an array with one item
-                            soalData = [result.data];
-                        }
                     } else {
-                        showNotification('error', 'Format data tidak dikenali. Silakan periksa file Anda.');
-                        previewContent.innerHTML = `
-                            <div class="notification is-danger">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                <p><strong>Error:</strong> Format data tidak dikenali</p>
-                                <p>Struktur response: ${JSON.stringify(result, null, 2)}</p>
-                            </div>
-                        `;
-                        return;
+                        soalData = [];
                     }
                     
-                    // Store the properly formatted data
                     previewData = { rows: soalData };
                     displayPreview(previewData);
                 } else {
@@ -1125,16 +1126,14 @@
         });
     }
     
-    // ==================== DISPLAY PREVIEW (FIXED) ====================
+    // ==================== DISPLAY PREVIEW ====================
     function displayPreview(data) {
-        // *** FIX: Ensure data.rows is always an array ***
         let rows = [];
         
         if (data && data.rows) {
             if (Array.isArray(data.rows)) {
                 rows = data.rows;
             } else if (typeof data.rows === 'object') {
-                // Convert object to array if needed
                 rows = Object.values(data.rows);
             }
         }
@@ -1144,7 +1143,6 @@
                 <div class="notification is-warning">
                     <i class="fas fa-exclamation-triangle"></i>
                     <p>Tidak ada data yang ditemukan di file.</p>
-                    <p>Pastikan file memiliki header: <strong>soal, opsi_a, opsi_b, opsi_c, opsi_d, jawaban_benar, tipe</strong></p>
                 </div>
             `;
             return;
@@ -1153,7 +1151,7 @@
         let html = `
             <div class="notification is-info is-light">
                 <i class="fas fa-info-circle"></i>
-                <strong>${rows.length} soal</strong> ditemukan. Silakan periksa sebelum mengimport.
+                <strong>${rows.length} soal</strong> ditemukan.
             </div>
             <div style="overflow-x: auto;">
                 <table class="table is-fullwidth is-striped is-hoverable" style="font-size: 0.85rem;">
@@ -1165,6 +1163,7 @@
                             <th>Opsi B</th>
                             <th>Opsi C</th>
                             <th>Opsi D</th>
+                            <th>Opsi E</th>
                             <th>Jawaban</th>
                             <th>Tipe</th>
                         </tr>
@@ -1181,16 +1180,9 @@
                     <td>${escapeHtml(row.opsi_b || '-')}</td>
                     <td>${escapeHtml(row.opsi_c || '-')}</td>
                     <td>${escapeHtml(row.opsi_d || '-')}</td>
-                    <td>
-                        <span class="tag ${row.jawaban_benar ? 'is-success' : 'is-danger'}">
-                            ${row.jawaban_benar ? row.jawaban_benar.toUpperCase() : '-'}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="tag ${row.tipe === 'pg' ? 'is-info' : 'is-warning'}">
-                            ${row.tipe || 'pg'}
-                        </span>
-                    </td>
+                    <td>${escapeHtml(row.opsi_e || '-')}</td>
+                    <td><span class="tag is-success">${row.jawaban_benar ? row.jawaban_benar.toUpperCase() : '-'}</span></td>
+                    <td><span class="tag ${row.tipe === 'pg' ? 'is-info' : 'is-warning'}">${row.tipe || 'pg'}</span></td>
                 </tr>
             `;
         });
@@ -1204,14 +1196,13 @@
         previewContent.innerHTML = html;
     }
     
-
+    // ==================== CONFIRM IMPORT ====================
     function confirmImport() {
         if (!previewData || !previewData.rows || previewData.rows.length === 0) {
             showNotification('error', 'Tidak ada data untuk diimport!');
             return;
         }
         
-
         const rows = Array.isArray(previewData.rows) ? previewData.rows : [];
         
         if (rows.length === 0) {
@@ -1219,35 +1210,30 @@
             return;
         }
         
-
         const soalData = [];
         
         for (let i = 0; i < rows.length; i++) {
             const soal = rows[i];
-            
-            console.log(`Soal ke-${i+1} dari previewData:`, soal);
-            
             soalData.push({
                 soal: soal.soal || '',
                 opsi_a: soal.opsi_a || '',  
                 opsi_b: soal.opsi_b || '',  
                 opsi_c: soal.opsi_c || '',  
                 opsi_d: soal.opsi_d || '',  
+                opsi_e: soal.opsi_e || '',  
                 jawaban_benar: soal.jawaban_benar || '',
                 tipe: soal.tipe || 'pg',
                 gambar: soal.gambar || null
             });
         }
         
-
         const requestData = {
-            uji_id: '{{ $uji->id }}',
+            uji_id: '{{ $uji->id ?? "" }}',
             mapel_id: '{{ $uji->mapel ?? "" }}',
             guru_id: '{{ $uji->guru_id ?? "" }}',
             soal_data: soalData
         };
         
-        // ========== TAMPILKAN ALERT KONFIRMASI DENGAN OPSI ==========
         const firstSoal = requestData.soal_data[0];
         let confirmMessage = `⚠️ KONFIRMASI IMPORT SOAL ⚠️\n\n`;
         confirmMessage += `Total soal: ${soalData.length}\n\n`;
@@ -1257,6 +1243,7 @@
         confirmMessage += `Opsi B: ${firstSoal.opsi_b || '(kosong)'}\n`;
         confirmMessage += `Opsi C: ${firstSoal.opsi_c || '(kosong)'}\n`;
         confirmMessage += `Opsi D: ${firstSoal.opsi_d || '(kosong)'}\n`;
+        confirmMessage += `Opsi E: ${firstSoal.opsi_e || '(kosong)'}\n`;
         confirmMessage += `Jawaban Benar: ${firstSoal.jawaban_benar || '(kosong)'}\n`;
         confirmMessage += `Tipe: ${firstSoal.tipe}\n\n`;
         confirmMessage += `✅ Lanjutkan import?`;
@@ -1265,22 +1252,9 @@
             return;
         }
         
-        // ========== KIRIM KE SERVER ==========
-        console.log('=========================================');
-        console.log('DATA YANG DIKIRIM KE CONFIRM:');
-        console.log(JSON.stringify(requestData, null, 2));
-        console.log('=========================================');
-        console.log('CEK OPSI SOAL PERTAMA:');
-        console.log('Opsi A:', requestData.soal_data[0].opsi_a);
-        console.log('Opsi B:', requestData.soal_data[0].opsi_b);
-        console.log('Opsi C:', requestData.soal_data[0].opsi_c);
-        console.log('Opsi D:', requestData.soal_data[0].opsi_d);
-        console.log('=========================================');
-        
         const loadingOverlay = document.getElementById('loadingOverlay');
         if (loadingOverlay) loadingOverlay.classList.add('active');
         
-        // Close modal first
         closePreviewModal();
         
         fetch('{{ route("import.confirm") }}', {
@@ -1293,11 +1267,8 @@
         })
         .then(response => response.json())
         .then(result => {
-            console.log('RESPONSE DARI SERVER:', result);
-            
             if (result.success) {
                 showNotification('success', result.message);
-                
                 setTimeout(function() {
                     if (result.redirect_url) {
                         window.location.href = result.redirect_url;
@@ -1331,13 +1302,11 @@
         `;
         document.body.appendChild(notification);
         
-        // Show notification with animation
         setTimeout(() => {
             notification.style.opacity = '1';
             notification.style.transform = 'translateY(0)';
         }, 100);
         
-        // Hide after 3 seconds
         setTimeout(() => {
             notification.style.opacity = '0';
             notification.style.transform = 'translateY(-20px)';
@@ -1348,7 +1317,6 @@
     // ==================== MODAL FUNCTIONS ====================
     function closePreviewModal() {
         if (previewModal) previewModal.classList.remove('is-active');
-        // Don't reset previewData here, we need it for confirmImport
     }
     
     const modalBackground = document.querySelector('.modal-background');

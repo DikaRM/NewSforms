@@ -625,7 +625,7 @@
 <!-- Header -->
 <header class="header">
     <h2>
-        <i class="fas fa-chalkboard-user"></i>
+        <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px"/>
         <span>SMK NEGERI 1 CIOMAS</span>
     </h2>
     
@@ -973,7 +973,29 @@
 
 <!-- Toast Notification Container -->
 <div id="toastContainer"></div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+@if(session('success'))
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: '{{ session('success') }}',
+        confirmButtonColor: '#3085d6'
+    });
+</script>
+@endif
+
+@if(session('error'))
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Gagal!',
+        text: '{{ session('error') }}',
+        confirmButtonColor: '#d33'
+    });
+</script>
+@endif
 <script>
     // ========== KONFIGURASI ==========
     const CSRF_TOKEN = '{{csrf_token()}}';

@@ -730,6 +730,9 @@ body {
     background: #5c6fa6;
     border-radius: 3px;
 }
+.image{
+height:35px;
+}
 </style>
 
 @stack('styles')
@@ -740,7 +743,7 @@ body {
 <!-- Header -->
 <header class="header">
     <h2>
-        <i class="fas fa-graduation-cap"></i>
+        <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34"/>
         <span>SMK NEGERI 1 CIOMAS</span>
     </h2>
     

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Siswa;
@@ -32,8 +34,21 @@ class AdminController
     $data = $use->orderBy($sort,$order,)->get();
     $ire = Auth::user();
     
-    // ========== TAMBAHKAN INI ==========
-    // Total counts
+// Karena Anda tahu pakai SQLite, langsung gunakan SQLite syntax
+$pelanggaranPerBulan = Pelanggaran::selectRaw(
+    "strftime('%m', created_at) as bulan, COUNT(*) as total"
+)
+->whereRaw("strftime('%Y', created_at) = ?", [date('Y')])
+->groupBy('bulan')
+->pluck('total', 'bulan')
+->toArray();
+
+// Format untuk chart (12 bulan)
+$chartData = [];
+for($i = 1; $i <= 12; $i++) {
+    $chartData[] = $pelanggaranPerBulan[$i] ?? 0;
+}
+
     $totalSiswa = User::where('role', 'siswa')->count();
     $totalGuru = User::where('role', 'guru')->count();
     $totalKelas = Kelas::count();
@@ -59,7 +74,7 @@ class AdminController
         "pelanggaran", "mapel",
         "totalSiswa", "totalGuru", "totalKelas", 
         "totalMapel", "totalPelanggaran", "totalBankSoal",
-        "ujianReady", "ujianDraft", "ujianDone"
+        "ujianReady", "ujianDraft", "ujianDone","chartData"
     ));
 }
 
@@ -83,10 +98,12 @@ class AdminController
           "nip" => "nullable",
           ]);
           $ps = Hash::make($validated["password"]);
+          $kata = Str::of($validated["nama"])->before(" ")->toString();
           $usrr = [
             "nama" => $validated["nama"],
             "password" => $ps,
             "role" => $validated["role"],
+            "username"=>$kata,
             ];
             User::create($usrr);
           if($validated["role"] === "siswa"){
@@ -106,7 +123,7 @@ class AdminController
               ];
             Guru::create($su);
           }
-          return redirect()->route("admin.index");
+          return redirect()->route("admin.index")->with("success","Berhasil Menambahkan User");
     }
 
     /**
@@ -131,8 +148,15 @@ class AdminController
     public function update(Request $request, $admin)
     {
       $usef = User::findOrFail($admin);
-        $usef->update($request->all());
-        return redirect()->route("admin.index");
+      $ps = Hash::make($request->password);
+      $kata = Str::of($request->nama)->before(" ")->toString();
+        $usef->update([
+        "nama" =>$request->nama,
+        "role" => $request->role,
+        "username"=>$kata,
+        
+        ]);
+        return redirect()->route("admin.index")->with("success","Berhasil Update User");
     }
 
     /**
@@ -142,7 +166,7 @@ class AdminController
     {
       $user = User::findOrFail($admin);
         $user->delete();
-        return redirect()->route("admin.index");
+        return redirect()->route("admin.index")->with("success","berhasil delete user");
     }
     public function KelasIndex()
     {
@@ -156,7 +180,7 @@ class AdminController
       $request->validate([
         "nama_kelas" => "required"]);
       Kelas::create($request->all());
-      return redirect()->route("admin.kelas")->with("sip","Berhasil Menambah Kelas");
+      return redirect()->route("admin.kelas")->with("success","Berhasil Menambah Kelas");
     }
     public function KelasUpdate(Request $request ,$id)
     {
@@ -165,13 +189,13 @@ class AdminController
       $request->validate([
         "nama_kelas" => "required"]);
       $us->update($request->all());
-      return redirect()->route("admin.kelas")->with("sip","Berhasil Update Kelas");
+      return redirect()->route("admin.kelas")->with("success","Berhasil Update Kelas");
     }
     public function KelasDestroy($id)
     {
       $hi = Kelas::findOrFail($id);
       $hi->delete();
-      return redirect()->route("admin.kelas")->with("sip","Berhasil hapus Kelas");
+      return redirect()->route("admin.kelas")->with("success","Berhasil hapus Kelas");
     }
     public function AddSiswa(Request $request ,$id)
     {
@@ -201,17 +225,35 @@ class AdminController
     }
     public function MapelDestroy($id)
     {
-      $hi = Kelas::findOrFail($id);
+      $hi = Mapel::findOrFail($id);
       $hi->delete();
       return redirect()->route("admin.mapel")->with("sip","Berhasil hapus Mapel");
     }
     public function AddGuru(Request $request)
-    {
-      $sis = Guru::where("nama",$request->nama)->first();
-      $gu = Guru::with("mapel")->find($request->guru_id);
-      $gu->mapel()->attach($request->mapel_id);
-      return redirect()->route("admin.mapel")->with("sip","Sip Menambahkan Guru Ke Mapel");
+{
+    // Validasi input
+    $request->validate([
+        'guru_id' => 'required|exists:guru,id',
+        'mapel_id' => 'required|exists:mapel,id'
+    ]);
+    
+    // Cari guru beserta relasi mapelnya
+    $guru = Guru::with('mapel')->find($request->guru_id);
+    
+    // Cek apakah guru sudah memiliki mapel ini
+    if ($guru->mapel()->where('mapel_id', $request->mapel_id)->exists()) {
+        return redirect()
+            ->route('admin.mapel')
+            ->with('error', 'Guru sudah terdaftar di mapel ini!');
     }
+    
+    // Jika belum ada, tambahkan relasi
+    $guru->mapel()->attach($request->mapel_id);
+    
+    return redirect()
+        ->route('admin.mapel')
+        ->with('success', 'Berhasil menambahkan guru ke mapel');
+}
     public function Made(Request $request)
     {
       $request->validate([
@@ -251,8 +293,7 @@ class AdminController
     $waktuMulai = \Carbon\Carbon::parse($request->tanggal . ' ' . $request->waktu_mulai);
     $waktuSelesai = $waktuMulai->copy()->addMinutes($uji->durasi);
     
-    // ============ CEK APAKAH SUDAH ADA JADWAL ============
-    // Cek apakah sudah ada jadwal untuk kelas ini di tanggal dan jam yang sama
+
     $existingJadwal = Jadwal::where('kelas_id', $request->kelas_id)
         ->where('tanggal', $request->tanggal)
         ->where('jam_mapel', $request->jam_mapel)
@@ -264,8 +305,7 @@ class AdminController
         ])->withInput();
     }
     
-    // ============ CEK BENTURAN WAKTU ============
-    // Cek apakah ada jadwal lain di kelas yang sama yang waktunya bentrok
+
     $bentrok = Jadwal::where('kelas_id', $request->kelas_id)
         ->where('tanggal', $request->tanggal)
         ->where(function($query) use ($waktuMulai, $waktuSelesai) {
@@ -284,7 +324,7 @@ class AdminController
         ])->withInput();
     }
     
-    // ============ CEK PENGAWAS ============
+
     $pengawas = Pengawas::where('guru_id', $request->guru_id)
         ->where('user_id', $guru->user_id)
         ->first();
@@ -296,8 +336,7 @@ class AdminController
         ]);
     }
     
-    // ============ CEK JADWAL PENGAWAS ============
-    // Cek apakah pengawas sudah memiliki jadwal di waktu yang sama
+
     $pengawasBentrok = Jadwal::where('pengawas_id', $pengawas->id)
         ->where('tanggal', $request->tanggal)
         ->where(function($query) use ($waktuMulai, $waktuSelesai) {
@@ -311,6 +350,7 @@ class AdminController
             'error' => "Pengawas sudah memiliki jadwal ujian di waktu yang sama"
         ])->withInput();
     }
+    $kelas = Kelas::with("siswa")->get();
     
     // Buat jadwal baru
     $jads = Jadwal::create([
@@ -325,6 +365,7 @@ class AdminController
     
     $uji->update([
         "jadwal_id" => $jads->id, 
+        "status"=> "ready",
     ]);
     
     return redirect()->route("admin-ops.set", ["id" => $request->kelas_id])

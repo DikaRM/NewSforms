@@ -15,10 +15,10 @@ return new class extends Migration
             $table->id();
             
             // ============ KARENA SISWA PAKAI id_siswa ============
-            $table->unsignedBigInteger('siswa_id');
-            $table->foreign('siswa_id')
-                  ->references('id_siswa')
-                  ->on('siswa')
+            $table->unsignedBigInteger('kelas_id');
+            $table->foreign('kelas_id')
+                  ->references('id')
+                  ->on('kelas')
                   ->onDelete('cascade');
             
             // Ujian dan pengawas menggunakan id standar

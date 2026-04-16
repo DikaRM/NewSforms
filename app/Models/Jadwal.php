@@ -15,6 +15,8 @@ class Jadwal extends Model
         "kelas_id",
         "waktu_mulai",
         "waktu_selesai",
+        "untuk_susulan",
+        "keterangan",
     ];
     public function pengawas(){
         return $this->belongsTo(Pengawas::class);

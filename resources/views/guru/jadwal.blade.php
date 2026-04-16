@@ -566,7 +566,8 @@
 <!-- Header -->
 <header class="header">
     <h2>
-        <i class="fas fa-chalkboard-user"></i>
+        <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px"/>
+        <span>SMK NEGERI 1 CIOMAS</span>
         <span>SMK NEGERI 1 CIOMAS</span>
     </h2>
     
@@ -705,8 +706,7 @@
                                 <th>Tanggal & Waktu</th>
                                 <th>Durasi</th>
                                 <th>Status</th>
-                                <th style="width: 120px;">Aksi</th>
-                            </tr>
+                                
                         </thead>
                         <tbody>
                         @foreach($data as $d)
@@ -718,9 +718,7 @@
            <td style="color:#2e5b9a;">{{\Carbon\Carbon::parse($d->ujian->tanggal)->format("D, d F Y H:i")}}</td>
            <td style="color:#2e5b9a;">{{$d->ujian->durasi}} Menit</td>
            <td style="color:#2e5b9a;">{{$d->ujian->status}}</td>
-           <td style="color:#2e5b9a;">
-           <a href="{{route('guru.hasil',$d->ujian->id)}}"  class="button is-link is-outlined">
-           Lihat Hasil Nya</a></td>
+           
                         </tr>
                         @endforeach
                         </tbody>

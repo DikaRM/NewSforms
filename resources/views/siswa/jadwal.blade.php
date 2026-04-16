@@ -94,7 +94,7 @@ body {
 /* ===== SIDEBAR ===== */
 .sidebar {
     width: 280px;
-    background: linear-gradient(180deg, #5c6fa6 0%, #4a5a8a 100%);
+    background: #53629E;
     min-height: 100vh;
     padding: 25px 0;
     color: white;
@@ -105,69 +105,57 @@ body {
     box-shadow: 4px 0 20px rgba(0,0,0,0.08);
 }
 
-.sidebar ul {
-    list-style: none;
-    padding: 0;
+
+
+.sidebar-menu {
+    padding: 20px 0;
 }
 
-.sidebar ul li {
-    margin: 4px 16px;
-}
-
-.sidebar ul li a {
+.sidebar-item {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 12px 18px;
+    gap: 12px;
+    padding: 12px 20px;
+    margin: 4px 12px;
     color: white;
     text-decoration: none;
-    border-radius: 12px;
+    border-radius: 8px;
     transition: all 0.3s ease;
+}
+
+.sidebar-item i {
+    width: 22px;
+    font-size: 1rem;
+}
+
+.sidebar-item span {
+    font-size: 0.85rem;
     font-weight: 500;
 }
 
-.sidebar ul li a i {
-    width: 22px;
-    font-size: 1.1rem;
-}
-
-.sidebar ul li a:hover {
+.sidebar-item:hover {
     background: rgba(255,255,255,0.2);
-    transform: translateX(5px);
 }
 
-.sidebar ul li a.active {
+.sidebar-item.active {
     background: rgba(255,255,255,0.25);
     border-left: 3px solid white;
 }
 
-.logout {
+.sidebar-logout {
     position: absolute;
-    bottom: 25px;
+    bottom: 20px;
     left: 0;
     right: 0;
-    padding: 0 20px;
+    padding: 0 12px;
 }
 
-.logout form button {
-    width: 100%;
-    background: rgba(220, 53, 69, 0.9);
-    border: none;
+.sidebar-logout .sidebar-item {
     color: white;
-    padding: 12px;
-    border-radius: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
 }
 
-.logout form button:hover {
+.sidebar-logout .sidebar-item:hover {
     background: #dc3545;
-    transform: translateY(-2px);
 }
 
 /* ===== MAIN CONTENT ===== */
@@ -649,8 +637,8 @@ body {
 
 <div class="header">
     <h2>
-        <i class="fas fa-graduation-cap"></i>
-        <span>SMK NEGERI 1 CIOMAS</span>
+       <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px;"/>
+        <span class="has-text-light">SMK NEGERI 1 CIOMAS</span>
     </h2>
     <div class="user-info-header" id="userMenu">
         <div class="user-avatar">
@@ -670,34 +658,37 @@ body {
 
 <div class="app-wrapper">
     <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <ul>
-            <li>
-                <a href="{{route('siswa.index')}}">
-                    <i class="fas fa-home"></i> Dashboard
-                </a>
-            </li>
-            <li>
-                <a href="{{route('siswa.jadwal')}}" class="active">
-                    <i class="fas fa-calendar-alt"></i> Jadwal Ujian
-                </a>
-            </li>
-            <li>
-                <a href="{{route('siswa.riwayat')}}">
-                    <i class="fas fa-history"></i> Riwayat
-                </a>
-            </li>
-        </ul>
-
-        <div class="logout">
+   <aside class="sidebar" id="sidebar">
+        <div class="sidebar-menu">
+            <a href="{{ route('siswa.index') }}" class="sidebar-item ">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+             <a href="{{ route('siswa.uji') }}" class="sidebar-item">
+                <i class="fas fa-book"></i>
+                <span>Ujian</span>
+            </a>
+            <a href="{{ route('siswa.jadwal') }}" class="sidebar-item active">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Jadwal Ujian</span>
+            </a>
+            <a href="{{ route('siswa.riwayat') }}" class="sidebar-item">
+                <i class="fas fa-history"></i>
+                <span>Riwayat Ujian</span>
+            </a>
+           
+        </div>
+        
+        <div class="sidebar-logout">
             <form action="{{ route('users.logout') }}" method="post">
                 @csrf
-                <button type="submit">
-                    <i class="fas fa-sign-out-alt"></i> Logout
+                <button type="submit" class="sidebar-item" style="width: 100%; background: none; border: none; cursor: pointer;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
                 </button>
             </form>
         </div>
-    </div>
+    </aside>
 
     <!-- Main Content -->
     <div class="main">

@@ -3,288 +3,361 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login SmartSchool Skenic</title>
-  <link rel="stylesheet" href="{{asset('bulma.min.css')}}">
+<title>SmartSchool Login</title>
+
 <style>
-*{
-  box-sizing:border-box;
-  font-family:Arial, sans-serif;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
 }
 
-body{
-  margin:0;
-  background:#1f4f8c;
-}
-.title{
-color:#1f4f8c;}
-/* ===== LAYOUT FLEX ===== */
-.login-page{
-  display:flex;
-  flex-direction: row;           /* desktop: kiri + kanan sejajar */
-  min-height:100vh;
-  width:100%;
-  
+body {
+  height: 100vh;
+  display: flex;
 }
 
-/* ===== BANNER KIRI ===== */
-.login-banner{
-  width:55%;
-  background:#1f4f8c;
-  color:white;
-  padding:50px;
-  position:relative;
-  overflow:hidden;
-  perspective:500px
+/* LEFT SIDE */
+.left {
+  width: 55%;
+  background: #2f5597;
+  color: white;
+  padding: 40px;
+  position: relative;
+  text-align: center;
 }
 
-.brand{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-bottom:40px;
+.logo {
+  display: flex;
+  align-items: center;
+  margin-bottom: 40px;
+}
+.logo img {
+  width: 85px;
+  height: 70px;
+  margin-right: 15px;
 }
 
-.logo{
-  width:42px;
-  height:42px;
-  border-radius:50%;
-  background:white;
+.logo span {
+  font-weight: 600;
+  font-size: 30px;
 }
 
-.login-banner h1{
-  font-size:36px;
-  line-height:1.3;
-  margin-bottom:40px;
+.left h1 {
+  font-size: 36px;
+  line-height: 1.4;
+  margin:150px auto;
 }
 
-.login-banner span{
-  color:#ffd34f;
+.left h1 span {
+  color: #ffcc33;
 }
 
-/* ===== FOTO + FRAME MIRING ===== */
-.photos{
-  display:flex;
-  gap:25px;
+/* decorative shapes */
+.shape {
+  position: absolute;
+  bottom: 50px;
+  left: 40px;
+  display: flex;
+  gap: 20px;
 }
 
-/* frame */
-.photo-frame{
-  padding:10px;
-  border-radius:18px;
-  transform:skewY(20deg) perspective(1000px) ;
-  
-  box-shadow:5px 5px 10px rgba(0,0,0,0.2);
-}
-.photo-frame-leutik{
-padding:10px;
-  border-radius:18px;
-  transform:perspective(600px) rotateX(-15deg) skewY(-4deg) rotate(5deg) ;
-  
-  box-shadow:0 15px 30px rgba(0,0,0,.25);}
-/* warna frame */
-.photo-frame.green,.photo-frame-leutik.green{
-  background:#2dd4a4;
+.green {
+  position: absolute;
+  top: 62%;
+  left: 9%;
+  width: 180px;
+  height: 250px;
+  background: #4CBC9A;
+  border-radius: 10px;
+  transform: rotate(0deg) skewY(-20deg) scaleY(1) perspective(600px);
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
 }
 
-.photo-frame-yellow{
-  background:#f6c343;
-  padding:10px;
-  border-radius:18px;
-  transform:skewY(20deg) perspective(1000px) translate(50%,-50%);
-  
-  box-shadow:5px 5px 10px rgba(0,0,0,0.2);
-}
-.photo-frame-yellow-leutik{
-background:#f6c343;
-  padding:10px;
-  border-radius:18px;
-  transform: rotateX(-10deg);
-  
-  box-shadow:5px 5px 10px rgba(0,0,0,0.2);
-}
-/* foto di dalam frame (dibalik transform agar lurus) */
-.photo-frame img{
-  display:block;
-  width:170px;
-  height:115px;
-  object-fit:cover;
-  border-radius:14px;
-  transform:skewY(20deg) perspective(1000px);
+.green-kecil {
+  position: absolute;
+  top: 70%;
+  left: 40%;
+  width: 60px;
+  height: 105px;
+  background: #4CBC9A;
+  border-radius: 10px;
+  transform: rotate(0deg) skewY(-20deg) scaleY(1) perspective(600px);
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
 }
 
-/* ===== FORM KANAN ===== */
-.login-form{
-  width:45%;
-  background:#f9fbff;
-  padding:50px;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  border-radius:50px;
+.blue {
+  position: absolute;
+  top: 150px;
+  left: -90px;
+  width: 120px;
+  height: 160px;
+  background: #0a446a;
+  border-radius: 5px;
+  transform: rotate(100deg) skewY(-20deg);
 }
 
-.login-form h2{
-  margin-bottom:20px;
+.yellow {
+  position: absolute;
+  top: 20%;
+  left: 85%;
+  width: 160px;
+  height: 250px;
+  background: #ffcc33;
+  border-radius: 10px;
+  transform: rotate(0deg) skewY(-20deg) scaleY(1) perspective(600px);
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
 }
 
-.roles{
-  display:flex;
-  gap:10px;
-  margin-bottom:25px;
-  flex-wrap:wrap;
+.yellow-kecil {
+  position: absolute;
+  top: 58%;
+  left: 85%;
+  width: 60px;
+  height: 105px;
+  background: #ffcc33;
+  border-radius: 10px;
+  transform: rotate(0deg) skewY(-20deg) scaleY(1) perspective(600px);
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
 }
 
-.roles button{
-  border:none;
-  background:#e7eefb;
-  padding:8px 14px;
-  border-radius:8px;
-  cursor:pointer;
-  font-size:13px;
-  transition: background 0.2s;
+.wisuda{
+  position: absolute;
+  top: 19%;
+  left: 84%;
+  width: 160px;
+  height: 250px;
+  background: #ffcc33;
+  border-radius: 10px;
+  transform: rotate(0deg) skewY(-20deg) scaleY(1) perspective(600px);
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+  z-index: 5;
 }
 
-.roles button:hover {
-  background:#d0ddeb;
+.laptop{
+  position: absolute;
+  top: 64%;
+  left: 9%;
+  width: 160px;
+  height: 250px;
+  background: #4CBC9A;
+  border-radius: 10px;
+  transform: rotate(0deg) skewY(-20deg) scaleY(1) perspective(600px);
+  box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+  z-index: 5;
 }
 
-.input{
-  padding:12px 14px;
-  margin-bottom:14px;
-  border-radius:20px;
-  border:1px solid rgba(0,0,0,0.1);
-  font-size:14px;
-  background:transparent;
+/* RIGHT SIDE */
+.right {
+  width: 45%;
+  background: #f3f5f9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50px;
 }
 
-input:focus{
-  outline:none;
-  border-color:#4c6fa7;
+.login-box {
+  width: 80%;
+  padding: 10px;
 }
 
-.button{
-  padding:12px;
-  background:#4c6fa7;
-  color:white;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  font-size:15px;
+.login-box h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #2f5597;
+  font-size: 30px;
 }
 
-.button:hover{
-  opacity:.9;
+.role {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 20px;
 }
 
+.role button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  background: #e0e6f2;
+  cursor: pointer;
+}
 
-@media(max-width:768px){
-  .login-page{
-    flex-direction: column;       /* mobile: banner di atas, form di bawah */
+.input-group {
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #4e6fae;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 50px;
+}
+
+/* ========== RESPONSIVE UNTUK HP ========== */
+@media (max-width: 768px) {
+  /* Ubah layout dari samping jadi ke bawah */
+  body {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
   }
-  .login-banner,
-  .login-form{
-    width:100%;                 
+
+  /* LEFT SECTION - Full width */
+  .left {
+    width: 100%;
+    padding: 30px 20px;
+    min-height: auto;
   }
 
+  /* Perkecil logo */
+  .logo {
+    justify-content: center;
+    margin-bottom: 20px;
+  }
 
-  .login-banner {
+  .logo img {
+    width: 55px;
+    height: 45px;
+  }
+
+  .logo span {
+    font-size: 18px;
+  }
+
+  /* Perkecil judul */
+  .left h1 {
+    font-size: 24px;
+    margin: 40px auto;
+  }
+
+  /* SEMUA shape & gambar dekoratif disembunyikan di HP */
+  .green,
+  .green-kecil,
+  .blue,
+  .yellow,
+  .yellow-kecil,
+  .wisuda,
+  .laptop,
+  .shape {
+    display: none;
+  }
+
+  /* RIGHT SECTION - Full width, menempel di bawah */
+  .right {
+    width: 100%;
+    border-radius: 30px 30px 0 0;
+    margin-top: -20px;
     padding: 30px 20px;
   }
-  .login-form {
-    padding: 40px 25px;
+
+  /* Form login lebih lebar */
+  .login-box {
+    width: 100%;
   }
 
+  .login-box h2 {
+    font-size: 24px;
+  }
 
-  .photo-frame img{
-    width: 130px;
-    height: 90px;
+  /* Input lebih nyaman disentuh */
+  .input-group input {
+    padding: 14px;
+    font-size: 16px;
   }
-  .photos {
-    gap: 15px;
-  }
-  .login-banner h1 {
-    font-size: 28px;
+
+  .login-btn {
+    padding: 14px;
+    margin-top: 30px;
   }
 }
 
-
-@media(max-width:480px){
-  .photo-frame img{
-    width: 110px;
-    height: 75px;
+/* HP sangat kecil (max 480px) */
+@media (max-width: 480px) {
+  .left h1 {
+    font-size: 20px;
+    margin: 30px auto;
   }
-  .roles button {
-    padding: 6px 10px;
-    font-size: 12px;
+
+  .logo span {
+    font-size: 14px;
+  }
+
+  .logo img {
+    width: 45px;
+    height: 35px;
+  }
+
+  .login-box h2 {
+    font-size: 22px;
   }
 }
 </style>
 </head>
+
 <body>
 
-<div class="login-page">
-<div class="login-banner">
-
-    <div class="brand">
-      <div class="logo"></div>
-      <strong>SMK NEGRI 1 CIOMAS</strong>
-    </div>
-
-    <h1>
-      Selamat Datang<br>
-      di <span>SmartSchool Exam</span><br>
-      SKANIC
-    </h1>
-
-    <div class="photos">
-
-      <!-- frame hijau -->
-      <div class="photo-frame green">
-
-        <img src="https://picsum.photos/400/300?random=11" alt="student activity">
-      </div>
-      <div class="photo-frame-leutik green" style="">
-       <h3 style="color:transparent;">hdhdhdhdhdh</h3>
-      </div>
-
-      <div class="photo-frame-yellow">
-        <img src="bg.gif" alt="classroom">
-      </div>
-
-    </div>
-
+<!-- LEFT -->
+<div class="left">
+  <div class="logo">
+    <img src="WhatsApp Image 2026-04-10 at 08.00.25.png" />
+    <span>SMK NEGRI 1 CIOMAS</span>
   </div>
 
+  <h1>
+    Selamat Datang <br>
+    di <span>SmartSchool Exam</span><br>
+    SKANIC
+  </h1>
+  <img src="siswi-skanic.webp" class="wisuda">
+  <div class="blue"></div>
+  <div class="yellow"></div>
+  <div class="yellow-kecil"></div>
+  <div class="shape"></div>
+  <div class="green"></div>
+  <div class="green-kecil"></div>
+  <img src="ilustrasi-laptop-anak-sma.jpg" class="laptop">
+</div>
 
-  <div class="login-form ">
-
-    <h2 class="title has-text-centered">Login</h2>
-
-    <div class="roles">
-      <button type="button">Guru</button>
-      <button type="button">Siswa</button>
-      <button type="button">Pengawas</button>
-      <button type="button">Admin OP</button>
-      <button type="button">Admin S</button>
-    </div>
-    <form action="{{route('users.store')}}" method="post">
+<!-- RIGHT -->
+<div class="right">
+  <div class="login-box">
+    <h2>Login</h2>
+    <form method="POST" action="{{route('users.store')}}">
       @csrf
-    <div class="field">
-      <label class="label">Pengguna</label>
-      <input type="text" placeholder="Pengguna" name="nama" class="input py-5">
-    </div>
-      <div class="field">
-      <label class="label">Password</label>
-       <input type="password" placeholder="Password" name="password" class="input py-5">
-    </div>
-   
+      <div class="input-group">
+        <label>Pengguna</label>
+        <input type="text" placeholder="Nama Lengkap / Username" name="login">
+      </div>
 
-    <button class="button is-fullwidth mt-5" style="display:block;" type="submit">Masuk</button>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" placeholder="Password" name="password">
+      </div>
+
+      <button class="login-btn" type="submit">Masuk</button>
     </form>
-    
-
   </div>
-
 </div>
 
 </body>

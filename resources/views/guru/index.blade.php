@@ -607,7 +607,7 @@ body {
 <!-- Header -->
 <header class="header">
     <h2>
-        <i class="fas fa-chalkboard-user"></i>
+       <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px"/>
         <span>SMK NEGERI 1 CIOMAS</span>
     </h2>
     
@@ -706,9 +706,7 @@ body {
         
         <div class="level is-mobile" style="margin-bottom: 20px;">
             <div class="level-left">
-                <h1 style="color: #2e5b9a; font-size: 1.5rem; font-weight: 600;">
-                    <i class="fas fa-chalkboard"></i> Dashboard
-                </h1>
+                
             </div>
             <div class="level-right">
                 @if(isset($ire))
@@ -722,14 +720,28 @@ body {
         <!-- Cards Menu -->
         <div class="cards">
             <a href="{{ route('guru.jadwal') }}" class="card pink">
-                <h3><i class="fas fa-calendar-alt"></i> Jadwal Ujian</h3>
+            <div class="columns">
+            
+                <div class="column"><img src="{{asset('Siswa/Jadwal-ujian.png')}}" 
+                /> </div>
+                <div class="column">
+                <h5 class="title is-size-5">Jadwal Ujian</h5>
                 <p>lihat jadwal ujian yang akan dilaksanakan.</p>
                 <div class="arrow"><i class="fa fa-arrow-right"></i></div>
+                </div>
+                </div>
+                
             </a>
             <a href="{{ route('guru.result') }}" class="card yellow">
-                <h3><i class="fas fa-chart-line"></i> Hasil Ujian</h3>
+            <div class="columns">
+                <div class="column"><img src="{{asset('Guru/hasil-nilai.png')}}" 
+                /></div>
+                <div class="column">
+                 <h5 class="title is-size-5">Hasil Ujian</h5>
                 <p>Lihat rekapitulasi nilai dan hasil ujian siswa.</p>
                 <div class="arrow"><i class="fa fa-arrow-right"></i></div>
+               </div>
+               </div>
             </a>
         </div>
         
@@ -743,8 +755,10 @@ body {
             </div>
             
             @if(isset($uji) && count($uji) > 0)
-                @foreach($uji as $uj)
-                <div class="card exam-card">
+    <div class="columns is-multiline">
+        @foreach($uji as $uj)
+            <div class="column is-4-desktop is-6-tablet is-12-mobile">
+                <div class="card exam-card" style="height: 100%;">
                     <div class="card-content">
                         <div class="media">
                             <div class="media-content">
@@ -814,7 +828,7 @@ body {
                                         <i class="fas fa-check-double"></i> Selesai
                                     </span>
                                     <div class="mt-2">
-                                        <a href="{{ route('guru.result') }}" class="button is-small is-info is-light">
+                                        <a href="{{ route('guru.result', $uj->id) }}" class="button is-small is-info is-light">
                                             <i class="fas fa-chart-simple"></i> Lihat Hasil
                                         </a>
                                     </div>
@@ -827,14 +841,16 @@ body {
                         </div>
                     </div>
                 </div>
-                @endforeach
-            @else
-                <div class="has-text-centered" style="padding: 40px; color: #999;">
-                    <i class="fas fa-folder-open fa-3x" style="margin-bottom: 15px; color: #5c6fa6;"></i>
-                    <p>Belum ada ujian yang dibuat</p>
-                    <p class="is-size-7">Klik tombol "Buat Ujian Baru" untuk memulai</p>
-                </div>
-            @endif
+            </div>
+        @endforeach
+    </div>
+@else
+    <div class="has-text-centered" style="padding: 40px; color: #999;">
+        <i class="fas fa-folder-open fa-3x" style="margin-bottom: 15px; color: #5c6fa6;"></i>
+        <p>Belum ada ujian yang dibuat</p>
+        <p class="is-size-7">Klik tombol "Buat Ujian Baru" untuk memulai</p>
+    </div>
+@endif
         </div>
     </main>
 </div>
@@ -901,8 +917,18 @@ body {
                 <div class="field">
                     <label class="label">Tingkatan Kelas (Grade)</label>
                     <div class="control">
-                        <input type="text" class="input" name="grade" placeholder="Contoh: XII RPL, XI TKJ">
+                    <div class="select">
+                    <select name="grade" >
+                    <option value="">Pilih Tingkatan Kelas</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                    </select>
+                       
+                       
+                        </div>
                     </div>
+                    
                     <p class="help">Isi untuk informasi tambahan/deskripsi</p>
                 </div>
                 
@@ -930,7 +956,7 @@ body {
                 
                 {{-- Catatan --}}
                 <div class="field">
-                    <label class="label">Catatan (opsional)</label>
+                    <label class="label">Catatan</label>
                     <div class="control">
                         <input type="text" class="input" name="catatan" placeholder="Contoh: Untuk kelas XII RPL 1 & 2">
                     </div>

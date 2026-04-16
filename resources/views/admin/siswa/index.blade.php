@@ -1,5 +1,29 @@
 @extends("layouts.blank")
 @section("content")
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+@if(session('success'))
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: '{{ session('success') }}',
+        confirmButtonColor: '#3085d6'
+    });
+</script>
+@endif
+
+@if(session('error'))
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Gagal!',
+        text: '{{ session('error') }}',
+        confirmButtonColor: '#d33'
+    });
+</script>
+@endif
+
 <button class="button is-info is-outline" onclick="document.getElementById('mod').classList.add('is-active')">
   Tambah Data Siswa
 </button>
@@ -7,7 +31,7 @@
   <div class="modal-background"></div>
   <div class="modal-card">
     <header class="modal-card-head">
-      <h5 class="title">Popup Add Siswa</h5>
+      <h5 class="title">Add Siswa</h5>
     </header>
     <section class="modal-card-body">
       <form action="{{route('admin.siswa.store')}}" method="post">
@@ -84,7 +108,7 @@
   <div class="modal-background"></div>
   <div class="modal-card">
     <header class="modal-card-head">
-      <h5 class="title">Popup Edit Siswa</h5>
+      <h5 class="title"> Edit Siswa</h5>
     </header>
     <section class="modal-card-body">
       <form action="{{route('admin.siswa.update',$d->id_siswa)}}" method="post">

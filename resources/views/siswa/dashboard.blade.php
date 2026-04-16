@@ -163,7 +163,7 @@ body {
 /* ===== SIDEBAR ===== */
 .sidebar {
     width: 260px;
-    background: #5c6fa6;
+    background: #53629E;
     position: fixed;
     left: 0;
     top: 56px;
@@ -654,6 +654,49 @@ body {
     background: #5c6fa6;
     border-radius: 3px;
 }
+.cards {
+    display: flex;
+    gap: 25px;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+}
+
+.card {
+    width: 300px;
+    padding: 25px;
+    border-radius: 15px;
+    color: #333;
+    position: relative;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+    transition: 0.3s;
+    text-decoration: none;
+    display: block;
+}
+.card.pink{
+background:#EBF1FA;
+}
+.card.yellow{
+background:#D3DFF5;
+}
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card h3 {
+    margin-bottom: 10px;
+}
+
+.card p {
+    font-size: 14px;
+    color: #555;
+}
+
+.card .arrow {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    font-size: 20px;
+}
 </style>
 </head>
 
@@ -662,8 +705,8 @@ body {
 <!-- Header -->
 <header class="header">
     <h2>
-        <i class="fas fa-graduation-cap"></i>
-        <span>SMK NEGERI 1 CIOMAS</span>
+       <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px;"/>
+        <span class="has-text-light">SMK NEGERI 1 CIOMAS</span>
     </h2>
     
     <div class="user-dropdown" id="userDropdown">
@@ -714,18 +757,19 @@ body {
                 <i class="fas fa-home"></i>
                 <span>Dashboard</span>
             </a>
-            <a href="{{ route('siswa.jadwal') }}" class="sidebar-item">
+             <a href="{{ route('siswa.jadwal') }}" class="sidebar-item">
                 <i class="fas fa-calendar-alt"></i>
                 <span>Jadwal Ujian</span>
+            </a>
+             <a href="{{ route('siswa.uji') }}" class="sidebar-item">
+                <i class="fas fa-book"></i>
+                <span>Ujian</span>
             </a>
             <a href="{{ route('siswa.riwayat') }}" class="sidebar-item">
                 <i class="fas fa-history"></i>
                 <span>Riwayat Ujian</span>
             </a>
-            <a href="{{ route('siswa.uji') }}" class="sidebar-item">
-                <i class="fas fa-book"></i>
-                <span>Ujian</span>
-            </a>
+           
         </div>
         
         <div class="sidebar-logout">
@@ -741,19 +785,29 @@ body {
     
     <!-- Main Content -->
     <main class="main-content" id="mainContent">
-        @if(session('success'))
-            <div class="notification-toast notification-success" id="notification">
-                <i class="fas fa-check-circle"></i>
-                <span>{{ session('success') }}</span>
-            </div>
-        @endif
-        
-        @if(session('error'))
-            <div class="notification-toast notification-error" id="notification">
-                <i class="fas fa-exclamation-circle"></i>
-                <span>{{ session('error') }}</span>
-            </div>
-        @endif
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+@if(session('success'))
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: '{{ session('success') }}',
+        confirmButtonColor: '#3085d6'
+    });
+</script>
+@endif
+
+@if(session('error'))
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Gagal!',
+        text: '{{ session('error') }}',
+        confirmButtonColor: '#d33'
+    });
+</script>
+@endif
         
         <!-- IDENTITAS SISWA CARD -->
         <div class="identity-card">
@@ -845,13 +899,45 @@ body {
                 <span id="liveTime"></span>
             </div>
         </div>
+                <div class="cards">
+            <a href="{{ route('siswa.jadwal') }}" class="card pink">
+       <div class="columns">
+        <div class="column">
+            <img src="{{asset('Siswa/Jadwal-ujian.png')}}">
+        </div>
+      <div class="column">
+           <h3>Jadwal Ujian</h3>
+          <p>Halaman untuk melihat jadwal ujian siswa.</p>
+          <br>
+      <div class="arrow" style="color:#EBF1FA;background:#9BACD4;padding:5px 10px;border-radius:5px;"><i class="fa fa-arrow-right"></i>
+                </div>
+                
+              </div>
+              </div>
+            </a>
+            
+            <a href="{{ route('siswa.riwayat') }}" class="card yellow">
+          <div class="columns">
+        <div class="column">
+            <img src="{{asset('Siswa/RIWAYAT.png')}}">
+        </div>
+        <div class="column"
+          <h3>Riwayat</h3>
+          <p>Halaman  melihat riwayat ujian.</p>
+        <div class="arrow" style="color:#EBF1FA;background:#9BACD4;padding:5px 10px;border-radius:5px;"><i class="fa fa-arrow-right"></i>
+                </div>
+                
+                </div>
+              </div>
+            </a>
+        </div>
         
         <!-- UJIAN HARI INI -->
         <div class="exam-container">
             <div class="section-title">
                 <i class="fas fa-pencil-alt"></i> Ujian Hari Ini
             </div>
-            
+        @if($siswa->status === "ready")  
             @if(isset($uji) && count($uji) > 0)
                 @foreach($uji as $uj)
                 @php 
@@ -895,14 +981,14 @@ body {
                                     <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 20px; border-radius: 8px;">
                                         <i class="fas fa-check-circle" style="color: #22c55e; font-size: 2rem;"></i>
                                         <div style="font-size: 2rem; font-weight: 700; color: #22c55e; margin: 10px 0;">
-                                            {{ $nilaiSiswa ?? 0 }}
+                                            {{ round($nilaiSiswa) ?? 0 }}
                                         </div>
                                         <span style="background: #22c55e; color: white; margin: 5px 30px; border-radius: 20px; font-size: 0.85rem;display:block;">
                                             Ujian Selesai
                                         </span>
                           <a class="button is-success is-outlined block" href="{{route('siswa.detail',$peserta->id)}}">Detail</a>          </div>
          </div>
-                            @elseif($statusUjian == 'mulai')
+            @elseif($statusUjian == 'mulai')
                                 <div class="has-text-centered">
                                     <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                                         <i class="fas fa-hourglass-half" style="color: #d97706;"></i> 
@@ -918,7 +1004,7 @@ body {
                             @else
                                 @if($isUjianReady)
                                     <div class="has-text-centered">
-                                        <a href="{{ route('siswa.shop', $uj->id) }}" class="button is-primary is-medium">
+                                        <a href="{{ route('siswa.shop', $uj->id) }}" class="button is-medium has-text-light" style="background:#2e5b9a;">
                                             <span class="icon">
                                                 <i class="fas fa-play"></i>
                                             </span>
@@ -945,8 +1031,6 @@ body {
                 </div>
             @endif
         </div>
-        
-        <!-- JADWAL MENDATANG -->
         @if(isset($jadwalMendatang) && count($jadwalMendatang) > 0)
         <div class="upcoming-schedule">
             <div class="section-title">
@@ -970,6 +1054,10 @@ body {
             @endforeach
         </div>
         @endif
+      @else
+      <h5>Belum Di Absen</h5>
+      @endif
+      
     </main>
 </div>
 
