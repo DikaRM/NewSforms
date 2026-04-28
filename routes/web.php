@@ -17,9 +17,9 @@ if (Auth::check()) {
             case 'admin-ops':
                 return redirect('/admin-ops');
             case 'siswa':
-                return redirect('/siswa');
+                return redirect('/siswa/sis');
             case 'guru':
-                return redirect('/guru');
+                return redirect('/guru/siap');
             case 'pengawas':
                 return redirect('/pengawas');
             default:
@@ -39,9 +39,9 @@ Route::get('/login', function () {
             case 'admin-ops':
                 return redirect('/admin-ops');
             case 'siswa':
-                return redirect('/siswa');
+                return redirect('/siswa/sis');
             case 'guru':
-                return redirect('/guru');
+                return redirect('/guru/siap');
             case 'pengawas':
                 return redirect('/pengawas');
             default:
@@ -52,8 +52,20 @@ Route::get('/login', function () {
     return view('login');
 })->name('login');
 
+
+
+
+
 Route::post("/login/load", [UsersController::class, "login"])->name("users.store");
 Route::post("/logout", [UsersController::class, "logout"])->name("users.logout");
+Route::middleware(['auth'])->group(function(){
+// Route Profile
+ Route::get('/profile',[App\Http\Controllers\UsersController::class,'profil'])->name('profile.index');
+
+Route::post('/profil/password', [App\Http\Controllers\Userscontroller::class, 'updatePassword'])->name('profile.password.update');
+// Route Reset Password (POST)
+Route::post('/profil/reset', [App\Http\Controllers\UsersController::class, 'sendResetLink'])->name('profile.password.reset');
+});
 
 // ADMIN ROUTES
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -67,7 +79,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/kelas/{id}', [AdminController::class, 'KelasUpdate'])->name('date');
     Route::delete('/kelas/{id}', [AdminController::class, 'KelasDestroy'])->name('let');
     Route::post('/kelas/{id}', [AdminController::class, 'AddSiswa'])->name('ade');
-    
+    Route::get('/ruangan', [AdminController::class, 'RuangIndex'])->name('ruangan');
+    Route::post('/ruangan', [AdminController::class, 'RuangCreate'])->name('tambah-ruangan');
+    Route::put('/ruangan/{id}', [AdminController::class, 'RuangUpdate'])->name('update-ruangan');
+    Route::delete('/ruangan/{id}', [AdminController::class, 'RuangDestroy'])->name('delete-ruangan');
     Route::get('/mapel', [AdminController::class, 'MapelIndex'])->name('mapel');
     Route::post('/mapel/buat', [AdminController::class, 'Made'])->name('made');
     Route::put('/mapel/{id}', [AdminController::class, 'MapelUpdate'])->name('deat');
@@ -99,6 +114,7 @@ Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(f
     Route::delete('/hapus-soal/{id}', [GuruController::class, 'hapus'])->name('hapus');
     
     Route::post('/store', [GuruController::class, 'CreateUjian'])->name('store');
+    Route::post('/update-nilai', [GuruController::class, 'updateNilai'])->name('update-nilai');
     Route::get('/create-soal/{id}', [GuruController::class, 'CreateSoal'])->name('create');
     Route::post('/save/{id}', [GuruController::class, 'def'])->name('ujian.sold');
     Route::get('/jadwal', [GuruController::class, 'jadwal'])->name('jadwal');
@@ -125,9 +141,17 @@ Route::middleware(['auth', 'role:admin-ops'])->prefix('admin-ops')->name('admin-
     Route::get('/', [AdminController::class, 'ops'])->name('index');
     Route::get('/{id}', [AdminController::class, 'SetUji'])->name('set');
     Route::post('/create', [AdminController::class, 'operateCreate'])->name('sav');
+    Route::post('/jadwal', [GuruController::class, 'bareroll'])->name('jadwal-susulan.store');
+    // Route Hapus Jadwal
+Route::delete('/jadwal/{id}', [AdminController::class, 'operateDestroy'])->name('jadwal.destroy');
+
+// Route Update/Edit Jadwal
+Route::post('/jadwal/update/{id}', [AdminController::class, 'operateUpdate'])->name('jadwal.update');
 });
 Route::resource('/admin', AdminController::class);
 Route::post('/import/soal', [GuruController::class, 'import'])->name('import.soal');
 Route::post('/import/preview', [GuruController::class, 'preview'])->name('import.preview');
 Route::post('/import/confirm', [GuruController::class, 'confirm'])->name('import.confirm');
 Route::post('/siswa/violation', [SiswaController::class, 'reportViolation'])->name('siswa.violation');
+Route::get("/ruangan/{id}",[UsersController::class,"show"])->name("show-qr");
+Route::post('/ruangan-check/{id}', [App\Http\Controllers\PengawasController::class, 'checkRuangan'])->name('ruangan.check');

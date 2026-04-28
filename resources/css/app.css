@@ -9,3 +9,11 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+/* PAKSA TIDAK PERNAH DARK MODE */
+html.dark {
+    color-scheme: light !important;
+}
+html.dark body, html.dark .bg-gray-900, html.dark .bg-gray-800, html.dark .bg-white {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}

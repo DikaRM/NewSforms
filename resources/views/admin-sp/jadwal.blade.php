@@ -7,7 +7,7 @@
 <title>Penjadwalan Ujian - {{$klas->nama_kelas}} | Sistem Ujian</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulmaswatch/default/bulmaswatch.min.css">
 
 <style>
     * {
@@ -296,7 +296,7 @@
     
     .day-header {
         padding: 15px 25px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #2e5b9a 0%, #5c6fa6 100%);
         color: white;
         display: flex;
         align-items: center;
@@ -306,17 +306,17 @@
     }
     
     .day-header:hover {
-        filter: brightness(1.05);
+        filter: brightness(1.1);
     }
     
-    /* Warna untuk setiap hari */
-    .day-header.sunday { background: linear-gradient(135deg, #f56565 0%, #c53030 100%); }
-    .day-header.monday { background: linear-gradient(135deg, #4299e1 0%, #2b6cb0 100%); }
-    .day-header.tuesday { background: linear-gradient(135deg, #48bb78 0%, #2f855a 100%); }
-    .day-header.wednesday { background: linear-gradient(135deg, #ecc94b 0%, #b7791f 100%); }
-    .day-header.thursday { background: linear-gradient(135deg, #9f7aea 0%, #6b46c1 100%); }
-    .day-header.friday { background: linear-gradient(135deg, #ed8936 0%, #c05621 100%); }
-    .day-header.saturday { background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%); }
+    /* Warna elegan senada tema (Tidak pelangi) */
+    .day-header.sunday { background: linear-gradient(135deg, #3a6db5 0%, #6b83b8 100%); }
+    .day-header.monday { background: linear-gradient(135deg, #2e5b9a 0%, #5c6fa6 100%); }
+    .day-header.tuesday { background: linear-gradient(135deg, #26538e 0%, #4e659d 100%); }
+    .day-header.wednesday { background: linear-gradient(135deg, #4475be 0%, #7a90c2 100%); }
+    .day-header.thursday { background: linear-gradient(135deg, #2a5393 0%, #566faa 100%); }
+    .day-header.friday { background: linear-gradient(135deg, #365fa8 0%, #6079b4 100%); }
+    .day-header.saturday { background: linear-gradient(135deg, #4266a5 0%, #7489bc 100%); }
     
     .day-content {
         padding: 25px;
@@ -332,7 +332,7 @@
         border-radius: 12px;
         padding: 20px;
         margin-bottom: 15px;
-        border-left: 5px solid #4299e1;
+        border-left: 5px solid #2e5b9a;
         transition: all 0.3s ease;
         animation: slideIn 0.3s ease;
     }
@@ -574,7 +574,7 @@
     /* Responsive */
     @media (max-width: 768px) {
         .header h2 span {
-            display: none;
+            display: inline;
         }
         
         .user-name span {
@@ -645,10 +645,12 @@
         </div>
         
         <div class="dropdown-menu-custom">
-            <div class="dropdown-item-custom">
-                <i class="fas fa-user-circle"></i>
-                <span>Profil Saya</span>
-            </div>
+            
+                <a href="{{ route('profile.index') }}" class="dropdown-item-custom">
+        <i class="fas fa-user-circle"></i>
+        <span>Profil Saya</span>
+    </a>
+            
             <div class="dropdown-divider"></div>
             <form action="{{ route('users.logout') }}" method="post">
                 @csrf
@@ -820,7 +822,8 @@
                           }
                         }
                       @endphp
-                      <div class="schedule-item {{$bentrok ? 'conflict' : ''}}" data-pengawas="{{$jd->pengawas->guru_id}}">
+                      <!-- DATA ID PENTING UNTUK FITUR EDIT & DELETE -->
+                      <div class="schedule-item {{$bentrok ? 'conflict' : ''}}" data-id="{{$jd->id}}" data-pengawas="{{$jd->pengawas->guru_id}}">
                           <div class="level" style="flex-wrap: wrap;">
                               <div class="level-left">
                                   <div>
@@ -850,9 +853,11 @@
                               </div>
                               <div class="level-right">
                                   <div class="buttons are-small">
+                                      <!-- Tombol Edit -->
                                       <button class="button is-warning" onclick="editSchedule({{$jd->id}})">
                                           <i class="fas fa-edit"></i>
                                       </button>
+                                      <!-- Tombol Hapus -->
                                       <button class="button is-danger" onclick="deleteSchedule({{$jd->id}})">
                                           <i class="fas fa-trash"></i>
                                       </button>
@@ -884,7 +889,7 @@
                                     <div class="field">
                                         <label class="label is-small">Jam Ke-</label>
                                         <div class="control">
-                                            <input type="number" class="input is-small" name="jam_mapel" min="1" placeholder="Contoh: 1" required>
+                                            <input type="number" class="input is-small auto-jam" name="jam_mapel" min="1" placeholder="Otomatis..." required readonly style="background: #f8f9fc;">
                                         </div>
                                     </div>
                                 </div>
@@ -921,22 +926,6 @@
                                                       <option value="{{$uj->id}}" data-durasi="{{$uj->durasi}}">
                                                           {{$uj->nama_ujian}} ({{$uj->durasi}} menit) - {{$uj->mapels->nama_mapel}}
                                                       </option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="column is-3">
-                                    <div class="field">
-                                        <label class="label is-small">Pengawas</label>
-                                        <div class="control">
-                                            <div class="select is-small is-fullwidth">
-                                                <select name="guru_id" required>
-                                                    <option value="">Pilih Pengawas</option>
-                                                    @foreach($gur as $gu)
-                                                    <option value="{{$gu->id}}">{{$gu->nama}}</option>
                                                     @endforeach
                                                 </select>
                                             </div>
@@ -996,7 +985,24 @@
     });
 </script>
 @endif
+
 <script>
+    // ========== FUNGSI OTOMATIS JAM KE- ==========
+    function updateAutoJamMapel() {
+        document.querySelectorAll('.day-card').forEach(card => {
+            const existingSchedules = card.querySelectorAll('.schedule-item').length;
+            const jamInput = card.querySelector('.auto-jam');
+            
+            if (jamInput) {
+                if (existingSchedules === 0) {
+                    jamInput.value = 1;
+                } else {
+                    jamInput.value = existingSchedules + 1;
+                }
+            }
+        });
+    }
+
     // ========== KONFIGURASI ==========
     const CSRF_TOKEN = '{{csrf_token()}}';
     const KELAS_ID = {{$klas->id}};
@@ -1066,7 +1072,6 @@
     
     // ========== FUNGSI FILTER ==========
     function applyFilters() {
-      const showOnlyReady = document.getElementById('showOnlyReady')?.checked;
       const showConflicts = document.getElementById('showConflicts')?.checked;
       const filterPengawas = document.getElementById('filterPengawas')?.value;
       
@@ -1108,13 +1113,12 @@
     
     // ========== VALIDASI FORM ==========
     function validateForm(form, expectedDay) {
-      const jamMapel = form.querySelector('[name="jam_mapal"]').value;
+      const jamMapel = form.querySelector('[name="jam_mapel"]').value;
       const jamMulai = form.querySelector('[name="waktu_mulai"]').value;
       const tanggal = form.querySelector('[name="tanggal"]').value;
       const ujian = form.querySelector('[name="ujian_id"]').value;
-      const guru = form.querySelector('[name="guru_id"]').value;
       
-      if (!jamMapel || !jamMulai || !tanggal || !ujian || !guru) {
+      if (!jamMapel || !jamMulai || !tanggal || !ujian) {
         showToast('Semua field harus diisi!', 'error');
         return false;
       }
@@ -1163,52 +1167,217 @@
     }
     
     // ========== CRUD OPERATIONS ==========
-    function editSchedule(id) {
-      showToast('Fitur edit akan segera tersedia');
-    }
     
-    function deleteSchedule(id) {
-      if (confirm('Apakah Anda yakin ingin menghapus jadwal ini?')) {
-        const btn = event.target.closest('button');
-        const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<span class="loading-spinner"></span>';
-        btn.disabled = true;
+    // --- FUNGSI EDIT (Membuka Modal Form SweetAlert) ---
+    function editSchedule(id) {
+        // 1. Ambil data jadwal yang diklik dari HTML
+        const item = document.querySelector(`.schedule-item[data-id="${id}"]`);
         
-        fetch(`/admin-ops/jadwal/${id}`, {
-          method: 'DELETE',
-          headers: {
-            'X-CSRF-TOKEN': CSRF_TOKEN,
-            'Content-Type': 'application/json'
-          }
+        // Parse waktu "08:00 - 10:00"
+        const timeText = item.querySelector('.time-badge').innerText.replace('WIB', '').trim();
+        const [start, end] = timeText.split(' - ').map(t => t.trim());
+        
+        const namaUjian = item.querySelector('h5').innerText;
+        const jamKe = item.querySelector('.tag.is-primary').innerText.replace('Jam ke-', '');
+
+        // 2. Ambil opsi ujian dari form "Tambah" di bawah agar dinamis
+        const addFormSelect = document.querySelector('select[name="ujian_id"]');
+        let ujianOptions = '';
+        if(addFormSelect) {
+            Array.from(addFormSelect.options).forEach(opt => {
+                if(opt.value) ujianOptions += `<option value="${opt.value}" data-durasi="${opt.getAttribute('data-durasi')}">${opt.text}</option>`;
+            });
+        }
+
+        // 3. Tampilkan Modal Edit
+        Swal.fire({
+            title: 'Edit Jadwal',
+            html: `
+                <div style="text-align: left;">
+                    <label style="display:block; margin-bottom: 5px; font-weight:bold; font-size: 0.9rem;">Ujian Saat Ini:</label>
+                    <input id="swal-input1" class="swal2-input" value="${namaUjian}" readonly style="background:#f0f0f0; color:#555; margin-bottom: 10px;">
+                    
+                    <label style="display:block; margin-bottom: 5px; font-weight:bold; font-size: 0.9rem;">Pilih Ujian Baru:</label>
+                    <select id="swal-select-ujian" class="swal2-input" style="margin-bottom: 10px;">
+                        <option value="">-- Pilih Ujian Baru --</option>
+                        ${ujianOptions}
+                    </select>
+
+                    <div style="display:flex; gap:10px;">
+                        <div style="flex:1;">
+                            <label style="display:block; margin-bottom: 5px; font-weight:bold; font-size: 0.9rem;">Jam Mulai:</label>
+                            <input type="time" id="swal-input2" class="swal2-input" value="${start}">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="display:block; margin-bottom: 5px; font-weight:bold; font-size: 0.9rem;">Jam Ke-:</label>
+                            <input type="number" id="swal-input3" class="swal2-input" value="${jamKe}">
+                        </div>
+                    </div>
+                </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Simpan Perubahan',
+            confirmButtonColor: '#2e5b9a',
+            cancelButtonColor: '#d33',
+            preConfirm: () => {
+                return {
+                    ujian_id: document.getElementById('swal-select-ujian').value,
+                    waktu_mulai: document.getElementById('swal-input2').value,
+                    jam_mapel: document.getElementById('swal-input3').value,
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const data = result.value;
+                
+                if(!data.ujian_id) {
+                    Swal.fire('Error', 'Silakan pilih ujian baru!', 'error');
+                    return;
+                }
+
+                // Kirim data via AJAX
+                updateScheduleAjax(id, data);
+            }
+        });
+    }
+
+    function updateScheduleAjax(id, data) {
+        Swal.fire({
+            title: 'Memproses...',
+            text: 'Mengecek ketersediaan pengawas...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Ambil tanggal dari input date di form "Tambah" (hari yang sama)
+        const dayCard = document.querySelector(`.schedule-item[data-id="${id}"]`).closest('.day-card');
+        const dateInput = dayCard.querySelector('input[name="tanggal"]');
+        const tanggal = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+
+        const formData = new FormData();
+        formData.append('ujian_id', data.ujian_id);
+        formData.append('waktu_mulai', data.waktu_mulai);
+        formData.append('jam_mapel', data.jam_mapel);
+        formData.append('tanggal', tanggal);
+        formData.append('kelas_id', KELAS_ID);
+        formData.append('_token', CSRF_TOKEN);
+
+        // Request ke Route yang baru dibuat
+        fetch(`/admin-ops/jadwal/update/${id}`, {
+            method: 'POST',
+            body: formData
         })
         .then(response => response.json())
         .then(data => {
-          if (data.success) {
-            const scheduleItem = btn.closest('.schedule-item');
-            scheduleItem.style.animation = 'slideIn 0.3s reverse';
-            setTimeout(() => {
-              scheduleItem.remove();
-              showToast('Jadwal berhasil dihapus');
-              updateCounters();
-            }, 300);
-          } else {
-            showToast('Gagal menghapus jadwal', 'error');
-          }
+            if (data.success) {
+                // Jika sukses, reload halaman agar data guru/ujian baru tampil
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: data.message + (data.teacher_name ? `\nPengawas: ${data.teacher_name}` : ''),
+                    confirmButtonColor: '#2e5b9a'
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire('Gagal', data.message, 'error');
+            }
         })
         .catch(error => {
-          showToast('Terjadi kesalahan', 'error');
-        })
-        .finally(() => {
-          btn.innerHTML = originalHtml;
-          btn.disabled = false;
+            Swal.fire('Error', 'Terjadi kesalahan koneksi.', 'error');
+            console.error(error);
         });
-      }
     }
+
+
+    // --- FUNGSI DELETE (Menggunakan Konfirmasi SweetAlert) ---
+   function deleteSchedule(id) {
+    // 1. Ambil referensi elemen DOM di awal (sebelum fetch)
+    // agar kita yakin bisa mengakses tombol/jadwal untuk animasi nanti.
+    const btn = event.target.closest('button');
+    const scheduleItem = btn.closest('.schedule-item');
+
+    Swal.fire({
+        title: 'Apakah anda yakin?',
+        text: "Jadwal akan dihapus dan status ujian kembali ke draft!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Menghapus...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
+
+            fetch(`/admin-ops/jadwal/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': CSRF_TOKEN,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                // 2. Cek Status HTTP dulu
+                if (!response.ok) {
+                    // Jika status 500 (Error Server) atau 404, lempar ke catch
+                    throw new Error(`HTTP Error! Status: ${response.status}`);
+                }
+                
+                // 3. Coba parse JSON. Jika body HTML (PHP Crash), ini akan error (SyntaxError)
+                // dan akan tertangkap di blok .catch di bawah.
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Animasi Hapus
+                    scheduleItem.style.transition = 'all 0.5s ease';
+                    scheduleItem.style.transform = 'translateX(100px)';
+                    scheduleItem.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        scheduleItem.remove();
+                        updateCounters();
+                        updateAutoJamMapel();
+                        
+                        Swal.fire(
+                            'Terhapus!',
+                            data.message,
+                            'success'
+                        );
+                    }, 500);
+                } else {
+                    // Validasi gagal dari logic (misal: "Jadwal tidak ditemukan")
+                    Swal.fire('Gagal', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Detail Error JavaScript:', error);
+                
+                // Ini yang penting. Jika DB terhapus tapi muncul alert ini,
+                // berarti Response Server bukan JSON valid (kemungkinan Fatal Error PHP)
+                Swal.fire(
+                    'Gagal Proses Data', 
+                    'Terjadi kesalahan koneksi atau server. Cek Console (F12).', 
+                    'error'
+                );
+                
+                // Opsional: Reload halaman paksa jika terjadi error ini agar tampilan sinkron
+                // setTimeout(() => location.reload(), 2000);
+            });
+        }
+    });
+}
     
     function updateCounters() {
-      const totalJadwal = document.querySelectorAll('.schedule-item').length;
       document.querySelectorAll('.day-card').forEach(card => {
-        const day = card.dataset.day;
         const count = card.querySelectorAll('.schedule-item').length;
         const counter = card.querySelector('.tag.is-light');
         if (counter) {
@@ -1261,6 +1430,7 @@
       });
       
       checkAllConflicts();
+      updateAutoJamMapel(); // SUDAH DITAMBAHKAN SAAT LOAD
       
       document.getElementById('showOnlyReady')?.addEventListener('change', applyFilters);
       document.getElementById('showConflicts')?.addEventListener('change', applyFilters);

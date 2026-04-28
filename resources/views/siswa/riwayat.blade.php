@@ -7,7 +7,41 @@
 <title>Riwayat Ujian - Dashboard Siswa</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulmaswatch/default/bulmaswatch.min.css">
+
+<style>
+    /* Animasi masuk (Berjalan otomatis saat halaman baru dibuka) */
+    .main-content{
+        animation: pageEnter 0.3s ease-out forwards;
+    }
+
+    @keyframes pageEnter {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Animasi keluar (Ditambahkan oleh JavaScript saat klik link) */
+    .main-content.page-leaving {
+        animation: pageLeave 0.25s ease-in forwards !important;
+    }
+
+    @keyframes pageLeave {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-12px);
+        }
+    }
+</style>
 
 <style>
 * {
@@ -24,48 +58,54 @@ body {
 
 /* ===== HEADER ===== */
 .header {
-    background: linear-gradient(135deg, #2e5b9a 0%, #1e3a6b 100%);
+    background: #2e5b9a;
     color: white;
-    padding: 16px 28px;
+    padding: 12px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 100;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .header h2 {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .header h2 i {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
 }
 
-.user-info-header {
+/* User Dropdown */
+.user-dropdown {
+    position: relative;
+    cursor: pointer;
+}
+
+.user-info {
     display: flex;
     align-items: center;
-    gap: 12px;
-    background: rgba(255,255,255,0.15);
-    padding: 6px 16px 6px 12px;
-    border-radius: 40px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    gap: 10px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: background 0.3s ease;
 }
 
-.user-info-header:hover {
-    background: rgba(255,255,255,0.25);
+.user-info:hover {
+    background: rgba(255,255,255,0.15);
 }
 
 .user-avatar {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     background: white;
     border-radius: 50%;
     display: flex;
@@ -77,12 +117,74 @@ body {
 
 .user-name {
     font-weight: 500;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .user-name i {
     font-size: 0.7rem;
-    margin-left: 6px;
+    margin-left: 5px;
+}
+
+/* Dropdown Menu */
+.dropdown-menu-custom {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    min-width: 180px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 1001;
+}
+
+.user-dropdown.active .dropdown-menu-custom {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-item-custom {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #333;
+    text-decoration: none;
+    transition: background 0.2s ease;
+    border-bottom: 1px solid #eee;
+    font-size: 0.85rem;
+}
+
+.dropdown-item-custom:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item-custom:hover {
+    background: #f5f5f5;
+}
+
+.dropdown-item-custom i {
+    width: 18px;
+    color: #2e5b9a;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: #eee;
+    margin: 4px 0;
+}
+
+.logout-btn {
+    color: #dc3545;
+}
+
+.logout-btn i {
+    color: #dc3545;
 }
 
 /* ===== LAYOUT ===== */
@@ -486,6 +588,17 @@ body {
     flex-wrap: wrap;
     gap: 12px;
     margin-top: 8px;
+}.buttond{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.buttond a{
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+    background:#e8f0fe;
+    color: #2e5b9a;
 }
 
 .score-badge {
@@ -614,7 +727,7 @@ body {
     }
     
     .header h2 span {
-        display: none;
+        display: inline;
     }
     
     .user-name span {
@@ -628,6 +741,7 @@ body {
         z-index: 99;
         transition: left 0.3s ease;
         height: 100vh;
+        margin-top:25px;
     }
     
     .sidebar.open {
@@ -727,20 +841,43 @@ body {
 
 <body>
 
-<div class="header">
-   <h2>
+<header class="header">
+    <h2>
        <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px;"/>
         <span class="has-text-light">SMK NEGERI 1 CIOMAS</span>
     </h2>
-    <div class="user-info-header" id="userMenu">
-        <div class="user-avatar">
-            <i class="fas fa-user"></i>
+    
+    <div class="user-dropdown" id="userDropdown">
+        <div class="user-info">
+            <div class="user-avatar">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="user-name">
+                @if(isset($ire))
+                    <span>{{ $ire->nama }}</span>
+                @else
+                    <span>Siswa</span>
+                @endif
+                <i class="fas fa-chevron-down"></i>
+            </div>
         </div>
-        <div class="user-name">
-            {{$ire->nama}} <i class="fas fa-chevron-down"></i>
+        
+        <div class="dropdown-menu-custom">
+            <a href="{{ route('profile.index') }}" class="dropdown-item-custom">
+        <i class="fas fa-user-circle"></i>
+        <span>Profil Saya</span>
+    </a>
+            <div class="dropdown-divider"></div>
+            <form action="{{ route('users.logout') }}" method="post">
+                @csrf
+                <button type="submit" class="dropdown-item-custom logout-btn" style="width: 100%; background: none; border: none; cursor: pointer;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
         </div>
     </div>
-</div>
+</header>
 
 <!-- Mobile Menu Toggle -->
 <button class="mobile-toggle" id="mobileToggle">
@@ -752,17 +889,17 @@ body {
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-menu">
-            <a href="{{ route('siswa.index') }}" class="sidebar-item ">
+            <a href="{{ route('siswa.index') }}" class="sidebar-item">
                 <i class="fas fa-home"></i>
                 <span>Dashboard</span>
             </a>
-             <a href="{{ route('siswa.uji') }}" class="sidebar-item ">
-                <i class="fas fa-book"></i>
-                <span>Ujian</span>
-            </a>
-            <a href="{{ route('siswa.jadwal') }}" class="sidebar-item">
+             <a href="{{ route('siswa.jadwal') }}" class="sidebar-item">
                 <i class="fas fa-calendar-alt"></i>
                 <span>Jadwal Ujian</span>
+            </a>
+             <a href="{{ route('siswa.uji') }}" class="sidebar-item">
+                <i class="fas fa-book"></i>
+                <span>Ujian</span>
             </a>
             <a href="{{ route('siswa.riwayat') }}" class="sidebar-item active">
                 <i class="fas fa-history"></i>
@@ -967,7 +1104,10 @@ body {
                                     Selesai
                                 </div>
                             </div>
-                            <a class="button is-info is-outlined block" href="{{route('siswa.detail',$dt->id)}}">Detail</a>
+                            <div class="buttond">
+                                <a class="button is-info mx-auto" href="{{route('siswa.detail',$dt->id)}}">Detail</a>
+                            </div>
+                            
                         </div>
                     </div>
                 @endforeach
@@ -992,6 +1132,18 @@ body {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Mobile Sidebar Toggle
+
+    var userDropdown = document.getElementById('userDropdown');
+    if (userDropdown) {
+        userDropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userDropdown.classList.toggle('active');
+        });
+    }
+    
+    document.addEventListener('click', function() {
+        if (userDropdown) userDropdown.classList.remove('active');
+    });
     const mobileToggle = document.getElementById('mobileToggle');
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -1109,6 +1261,82 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         // Optional: update stats display
     }
+});
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // ==========================================
+    // 1. INTERCEPT LINK KLIK (Smooth Redirect)
+    // ==========================================
+    document.addEventListener('click', function(e) {
+        // Cari elemen <a> yang diklik (berlaku jika klik teks atau icon di dalam <a>)
+        const link = e.target.closest('a');
+        
+        if (!link) return; // Bukan link, abaikan
+        
+        const href = link.getAttribute('href');
+        const target = link.getAttribute('target');
+        
+        // Abaikan jika:
+        // - Link kosong / # / javascript
+        // - Link untuk buka tab baru (target="_blank")
+        // - Link eksternal (mailto, tel, http lain)
+        if (!href || 
+            href.startsWith('#') || 
+            href.startsWith('javascript:') || 
+            href.startsWith('mailto:') || 
+            href.startsWith('tel:') || 
+            target === '_blank') {
+            return;
+        }
+        
+        // Abaikan link khusus jika ada (misal: tombol yang buat modal, dll)
+        if (link.classList.contains('no-transition') || link.getAttribute('data-turbolinks') === 'false') {
+            return;
+        }
+        
+        // Cek apakah link internal (domain yang sama atau relative path /)
+        const isLocal = href.startsWith(window.location.origin) || href.startsWith('/');
+        const mainContent = document.querySelector(".main-content")
+        if (isLocal) {
+            e.preventDefault(); // Cegah pindah halaman secara langsung
+            
+            // Tambahkan class animasi keluar
+           mainContent.classList.add('page-leaving');
+            
+            // Tunggu animasi selesai, baru redirect
+            setTimeout(function() {
+                window.location.href = href;
+            }, 250); // 250ms harus sama dengan durasi CSS pageLeave
+        }
+    });
+
+    // ==========================================
+    // 2. INTERCEPT FORM SUBMIT (Smooth Post/Logout)
+    // ==========================================
+    // Khusus untuk form biasa (misal: form logout, form cari)
+    document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function() {
+            mainContent.classList.add('page-leaving');
+            // Jangan pakai e.preventDefault() biar Laravel tetap proses data/CSRF dengan normal
+        });
+    });
+
+    // Khusus untuk AJAX/Fetch (misal: form absensi, hapus jadwal yang pakai fetch)
+    const originalFetch = window.fetch;
+    window.fetch = function() {
+        mainContent.classList.add('page-leaving');
+        
+        // Tunggu 150ms lalu hilangkan animasi (supaya tidak menghitam saat loading AJAX lama)
+        setTimeout(function() {
+            mainContent.classList.add('page-leaving');
+        }, 150);
+        
+        return originalFetch.apply(this, arguments);
+    };
 });
 </script>
 </body>

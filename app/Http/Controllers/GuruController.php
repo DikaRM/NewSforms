@@ -55,6 +55,7 @@ class GuruController extends Controller
      */
     public function store(Request $request)
     {
+        $request->validate(["password" => "required|min:6","nip" => "required|digits:18"]);
       $pass = Hash::make($request->password);
       $kata = Str::of($request->username)->before(" ")->toString();
       User::create([
@@ -95,7 +96,7 @@ class GuruController extends Controller
 {
     // Cari data Guru berdasarkan ID
     $guru = Guru::findOrFail($id);
-    
+    $request->validate(["password" => "required|min:6","nip" => "required|digits:18"]);
     // Cari User berdasarkan user_id dari tabel Guru
     $user = User::findOrFail($guru->user_id);
     $kata = Str::of($request->username)->before(" ")->toString();
@@ -134,17 +135,40 @@ class GuruController extends Controller
         return redirect()->route("admin.guru.index")->with("success","Berhasil Dihapus");
     }
     public function TeachIndex()
-    {
-      $ire = Auth::user();
-      $dt = Guru::where("nama",$ire->nama)->first();
-      $uji = Ujian::with("jadwal")->where("guru_id",$dt->id)->get();
-      $klas = Kelas::all();
-      $sd = Guru::with("mapel")->where("id",$dt->id)->get();
-      $guruMapel = GuruMapel::with("mapel")->where("guru_id",$dt->id)->get();
-      $map = Mapel::all();
-      $kelasList = Kelas::all();
-      return view("guru.index",compact("ire","uji","dt","klas","kelasList","sd","guruMapel"));
-    }
+{
+    $ire = Auth::user();
+    $dt = Guru::where("nama",$ire->nama)->first();
+    
+    // Data Ujian (Milik sendiri)
+    $uji = Ujian::with("jadwal")->where("guru_id",$dt->id)->get();
+    
+    // Data Referensi
+    $klas = Kelas::all();
+    $sd = Guru::with("mapel")->where("id",$dt->id)->get();
+    $guruMapel = GuruMapel::with("mapel")->where("guru_id",$dt->id)->get();
+    $map = Mapel::all();
+    $kelasList = Kelas::all();
+
+    // --- KODE BARU: MENGAMBIL DATA NOTIFIKASI MENGAWAS ---
+    // Ambil jadwal di mana guru ini bertindak sebagai pengawas
+
+    $jadwalMengawas = Jadwal::with('ujian')
+                            ->where('pengawas_id', $dt->id) // Pastikan kolom ini ada di tabel jadwal
+                            ->orderBy('waktu_mulai', 'desc')
+                            ->get();
+    // Format data menjadi array rapi untuk JavaScript
+    $notifData = $jadwalMengawas->map(function($item) {
+        return [
+            'id'        => $item->id,
+            'title'     => "Mengawas: " . ($item->ujian->nama_ujian ?? 'Ujian Tanpa Nama'),
+            'time'      => \Carbon\Carbon::parse($item->waktu_mulai)->format('d M Y, H:i'),
+            'unread'    => true // Default true agar muncul badge merah
+        ];
+    });
+    // -----------------------------------------------------
+
+    return view("guru.index", compact("ire","uji","dt","klas","kelasList","sd","guruMapel", "notifData"));
+}
     public function CreateUjian(Request $request)
 {
     // Validasi
@@ -226,121 +250,116 @@ class GuruController extends Controller
       }
       return redirect()->route("guru.create",['id' => $id]);
     }
-    public function def(Request $request, $id)
+   public function def(Request $request, $id)
 {
-    $request->validate([
+   
+    // 1. Validasi Dasar
+    $rules = [
         'guru_id' => 'required|exists:guru,id',
         'mapel_id' => 'required|exists:mapel,id',
         'soal' => 'required|array|min:1',
         'soal.*.soal' => 'required|string',
-        'soal.*.opsi_a' => 'required|string',
-        'soal.*.opsi_b' => 'required|string',
-        'soal.*.opsi_c' => 'required|string',
-        'soal.*.opsi_d' => 'required|string',
-        'soal.*.opsi_e' => 'nullable|string',
-        'soal.*.jawaban_benar' => 'required|in:a,b,c,d,e',
+        'soal.*.tipe' => 'required|in:pg,essay',
         'soal.*.gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-    ]);
+    ];
+    
+
+
+    // 2. Validasi Dinamis untuk Jawaban & Opsi
+    foreach ($request->soal as $index => $val) {
+        $tipe = $val['tipe'] ?? 'pg';
+
+        // Jawaban Benar Wajib ada (baik PG maupun Essay)
+        $rules['soal.'.$index.'.jawaban_benar'] = 'required|string';
+
+        if ($tipe === 'pg') {
+            // Jika PG: Opsi A, B, C WAJIB
+            $rules['soal.'.$index.'.opsi_a'] = 'required|string';
+            $rules['soal.'.$index.'.opsi_b'] = 'required|string';
+            $rules['soal.'.$index.'.opsi_c'] = 'required|string';
+            // Opsi D, E Opsional (nullable)
+            $rules['soal.'.$index.'.opsi_d'] = 'nullable|string';
+            $rules['soal.'.$index.'.opsi_e'] = 'nullable|string';
+        } else {
+            // Jika ESSAY: SEMUA Opsi boleh kosong
+            $rules['soal.'.$index.'.opsi_a'] = 'nullable|string';
+            $rules['soal.'.$index.'.opsi_b'] = 'nullable|string';
+            $rules['soal.'.$index.'.opsi_c'] = 'nullable|string';
+            $rules['soal.'.$index.'.opsi_d'] = 'nullable|string';
+            $rules['soal.'.$index.'.opsi_e'] = 'nullable|string';
+        }
+    }
+
+    $request->validate($rules);
 
     try {
         DB::beginTransaction();
-
-        // Cari ujian
+        
         $ujian = Ujian::findOrFail($id);
-        
-        // ============================================
-        // OPTIMASI 1: BATCH INSERT BANK SOAL
-        // ============================================
-        $bankData = [];
-        $gambarPaths = []; // Simpan path gambar untuk referensi
-        
-        // Loop untuk menyiapkan data batch
+
         foreach ($request->soal as $index => $soalData) {
-            // Upload gambar jika ada
+            $tipe = $soalData['tipe'] ?? 'pg';
+
+            // Handle Gambar
             $gambarPath = null;
             if (isset($soalData['gambar']) && $soalData['gambar']->isValid()) {
                 $gambarPath = $soalData['gambar']->store('soal_images', 'public');
-                $gambarPaths[$index] = $gambarPath;
             }
 
-            // Siapkan data untuk batch insert
-            $bankData[] = [
+            // Persiapan Data Soal
+            $insertData = [
                 'guru_id' => $request->guru_id,
                 'mapel_id' => $request->mapel_id,
                 'soal' => $soalData['soal'],
                 'gambar' => $gambarPath,
-                'opsi_a' => $soalData['opsi_a'],
-                'opsi_b' => $soalData['opsi_b'],
-                'opsi_c' => $soalData['opsi_c'],
-                'opsi_d' => $soalData['opsi_d'],
-                'opsi_e' => $soalData['opsi_e'],
+                'tipe' => $tipe,
                 'jawaban_benar' => $soalData['jawaban_benar'],
-                'tipe' => 'pg',
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
-        }
 
-        // BATCH INSERT - 1 QUERY untuk semua soal!
-        banksoal::insert($bankData);
-        
-        // ============================================
-        // OPTIMASI 2: Ambil ID yang baru diinsert
-        // ============================================
-        // Cara 1: Jika pakai auto increment, ambil ID terakhir
-        $lastId = banksoal::latest()->first()->id;
-        $totalSoal = count($bankData);
-        $newBankIds = range($lastId - $totalSoal + 1, $lastId);
-        
-        // Atau Cara 2: Lebih aman - query berdasarkan timestamp
-        // $newBankIds = banksoal::where('guru_id', $request->guru_id)
-        //                 ->where('created_at', '>=', now()->subSeconds(2))
-        //                 ->pluck('id')
-        //                 ->toArray();
+            // Handle Opsi berdasarkan Tipe
+            if ($tipe === 'pg') {
+                // Ambil semua opsi (D & E boleh kosong/tidak ada)
+                $insertData['opsi_a'] = $soalData['opsi_a'] ?? '';
+                $insertData['opsi_b'] = $soalData['opsi_b'] ?? '';
+                $insertData['opsi_c'] = $soalData['opsi_c'] ?? '';
+                $insertData['opsi_d'] = $soalData['opsi_d'] ?? '';
+                $insertData['opsi_e'] = $soalData['opsi_e'] ?? '';
+            } else {
+                // Kosongkan semua opsi jika Essay
+                $insertData['opsi_a'] = null;
+                $insertData['opsi_b'] = null;
+                $insertData['opsi_c'] = null;
+                $insertData['opsi_d'] = null;
+                $insertData['opsi_e'] = null;
+            }
 
-        // ============================================
-        // OPTIMASI 3: BATCH INSERT RELASI
-        // ============================================
-        $relasiData = [];
-        foreach ($newBankIds as $bankId) {
-            $relasiData[] = [
+            // Simpan Soal & Dapat ID
+            $newSoal = banksoal::create($insertData);
+
+            // Simpan Relasi (Pivot)
+            Ujian_soals::create([
                 'ujian_id' => $ujian->id,
-                'bank_id' => $bankId,
+                'bank_id' => $newSoal->id,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ];
+            ]);
         }
-        
-        // BATCH INSERT - 1 QUERY untuk semua relasi!
-        Ujian_soals::insert($relasiData);
 
-        // ============================================
-        // OPTIMASI 4: UPDATE STATUS (tetap 1 query)
-        // ============================================
+        // Update Status Ujian
         $ujian->update(['status' => 'ready']);
 
         DB::commit();
 
-        // Log untuk monitoring performa
-        \Log::info('Batch insert berhasil', [
-            'total_soal' => count($bankData),
-            'total_query' => 3 // Hanya 3 query! (insert bank, insert relasi, update)
-        ]);
-
         return redirect()->route('guru.index')
-            ->with('success', "✅ Berhasil menyimpan " . count($bankData) . " soal dengan gambar (Hanya 3 query!)");
+            ->with('success', "✅ Berhasil menyimpan " . count($request->soal) . " soal.");
 
     } catch (\Exception $e) {
         DB::rollBack();
         
-        // Hapus gambar yang sudah terupload jika gagal
-        if (isset($gambarPaths)) {
-            foreach ($gambarPaths as $path) {
-                if ($path && Storage::disk('public')->exists($path)) {
-                    Storage::disk('public')->delete($path);
-                }
-            }
-        }
+        // Jika ada gambar yang sudah terupload tapi rollback, hapus file-nya
+        // (Opsional, perlu logic yang lebih kompleks untuk tracking file per loop)
         
         return redirect()->back()
             ->with('error', '❌ Gagal menyimpan soal: ' . $e->getMessage())
@@ -418,17 +437,46 @@ class GuruController extends Controller
 
     public function result(){
       $ire = Auth::user();
-      $dt = Guru::where("nama",$ire->nama)->first();
+       $dt = Guru::where("nama",$ire->nama)->first();
       $data = Ujian::where("guru_id",$dt->id)->get();
       $val = Peserta_ujian::with("siswa");
-      $ire = Auth::user();
-      $dt = Guru::where("nama",$ire->nama)->first();
-      return view("guru.hasil",compact("data","ire","val","dt"));
+     
+      $jadwalMengawas = Jadwal::with('ujian')
+                            ->where('pengawas_id', $dt->id) // Pastikan kolom ini ada di tabel jadwal
+                            ->orderBy('waktu_mulai', 'desc')
+                            ->get();
+    // Format data menjadi array rapi untuk JavaScript
+    $notifData = $jadwalMengawas->map(function($item) {
+        return [
+            'id'        => $item->id,
+            'title'     => "Mengawas: " . ($item->ujian->nama_ujian ?? 'Ujian Tanpa Nama'),
+            'time'      => \Carbon\Carbon::parse($item->waktu_mulai)->format('d M Y, H:i'),
+            'unread'    => true // Default true agar muncul badge merah
+        ];
+    });
+      return view("guru.hasil",compact("data","ire","val","dt","notifData"));
     }
     public function hasil($id)
 {
     $ujian = Ujian::with('jadwal')->findOrFail($id);
-    
+    $ire = Auth::user();
+    $dt = Guru::where("nama",$ire->nama)->first();
+      $data = Ujian::where("guru_id",$dt->id)->get();
+      $val = Peserta_ujian::with("siswa");
+      
+      $jadwalMengawas = Jadwal::with('ujian')
+                            ->where('pengawas_id', $dt->id) // Pastikan kolom ini ada di tabel jadwal
+                            ->orderBy('waktu_mulai', 'desc')
+                            ->get();
+    // Format data menjadi array rapi untuk JavaScript
+    $notifData = $jadwalMengawas->map(function($item) {
+        return [
+            'id'        => $item->id,
+            'title'     => "Mengawas: " . ($item->ujian->nama_ujian ?? 'Ujian Tanpa Nama'),
+            'time'      => \Carbon\Carbon::parse($item->waktu_mulai)->format('d M Y, H:i'),
+            'unread'    => true // Default true agar muncul badge merah
+        ];
+    });
     // 1. Data peserta yang sudah mengerjakan (nilai sudah ada)
     $pesertaUjian = Peserta_ujian::with([
         'siswa.kelas',
@@ -448,9 +496,13 @@ class GuruController extends Controller
         ->keyBy('siswa_id');
     
     // 4. Semua siswa di kelas ini
-    $siswa = Siswa::with('kelas')
-        ->where("kelas_id", $ujian->jadwal->kelas_id)
-        ->get();
+    $kelasId = $ujian->jadwal?->kelas_id;
+
+$siswa = Siswa::with('kelas')
+    ->when($kelasId, function($q) use ($kelasId) {
+        $q->where("kelas_id", $kelasId);
+    })
+    ->get();
     
     // 5. Gabungkan semua data ke dalam satu collection
     $hasilUjian = $siswa->map(function($siswa) use ($pesertaUjian, $siswaSusulan, $absensi, $id) {
@@ -494,48 +546,101 @@ class GuruController extends Controller
         'berita', 
         'siswaSusulan',
         'siswa',
-        'absensi'
+        'absensi',
+        'dt',
+        'ire',
+        'notifData'
     ));
 }
 
 // Method untuk a kecurangan
 public function catatKecurangan(Request $request)
 {
-    $validated = $request->validate([
-        'siswa_id' => 'required',
-        'ujian_id' => 'required',
-        'jenis_pelanggaran' => 'required|string',
-    ]);
     
-   Pelanggaran::create([
-            'siswa_id' => $request->siswa_id,
-            'ujian_id' => $request->ujian_id,
-            'jenis_pelanggaran' => $request->jenis_pelanggaran,
-           
-        ]);
-        
 
+    // 1. Simpan Data Pelanggaran
+    \App\Models\Pelanggaran::create([
+        'ujian_id' => $request->ujian_id,
+        'siswa_id' => $request->siswa_id,
+        'jenis_pelanggaran' => $request->jenis_pelanggaran,
+        'waktu_kejadian' => \Carbon\Carbon::now(),
+    ]);
+
+    // 2. LOGIKA SKORS NILAI (Updated)
+    // Jika ada nilai skors, kurangi nilai siswa
+    if ($request->has('skors_nilai') && $request->skors_nilai != null) {
+        $skorsNilai = $request->skors_nilai;
         
+        // Ambil nilai sekarang
+        $peserta = \App\Models\Peserta_ujian::where('ujian_id', $request->ujian_id)
+                                     ->where('siswa_id', $request->siswa_id)
+                                     ->first();
         
-        
-        return redirect()->back()->with('success', 'Kecurangan berhasil dicatat!');
-    
-    
-    
+        if ($peserta) {
+            // Kurangi nilai (tidak langsung ke 0)
+            $nilaiBaru = max(0, $peserta->nilai - $skorsNilai);
+            
+            // Update nilai
+            $peserta->update(['nilai' => $nilaiBaru]);
+        }
+    }
+
+    return redirect()->back()->with('success', 'Pelanggaran berhasil dicatat.');
 }
+    
     public function riwayat(){
       $ire = Auth::user();
       $dt = Guru::where("nama",$ire->nama)->first();
+      $jadwalMengawas = Jadwal::with('ujian')
+                            ->where('pengawas_id', $dt->id) // Pastikan kolom ini ada di tabel jadwal
+                            ->orderBy('waktu_mulai', 'desc')
+                            ->get();
+    // Format data menjadi array rapi untuk JavaScript
+    $notifData = $jadwalMengawas->map(function($item) {
+        return [
+            'id'        => $item->id,
+            'title'     => "Mengawas: " . ($item->ujian->nama_ujian ?? 'Ujian Tanpa Nama'),
+            'time'      => \Carbon\Carbon::parse($item->waktu_mulai)->format('d M Y, H:i'),
+            'unread'    => true // Default true agar muncul badge merah
+        ];
+    });
       $data = Ujian::with("jadwal")->where("guru_id",$dt->id)->get();
-      return view("guru.riwayat",compact("data","ire","dt"));
+      return view("guru.riwayat",compact("data","ire","dt","notifData"));
     }
-    public function jadwal(){
-      
-      $ire = Auth::user();
-      $dt = Guru::where("nama",$ire->nama)->first();
-      $data = Jadwal::with("kelas","ujian.mapels")->get();
-      return view("guru.jadwal",compact("data","ire","dt"));
+   public function jadwal()
+{
+    $ire = Auth::user();
+    $dt = Guru::where("nama", $ire->nama)->first();
+    $jadwalMengawas = Jadwal::with('ujian')
+                            ->where('pengawas_id', $dt->id) // Pastikan kolom ini ada di tabel jadwal
+                            ->orderBy('waktu_mulai', 'desc')
+                            ->get();
+    // Format data menjadi array rapi untuk JavaScript
+    $notifData = $jadwalMengawas->map(function($item) {
+        return [
+            'id'        => $item->id,
+            'title'     => "Mengawas: " . ($item->ujian->nama_ujian ?? 'Ujian Tanpa Nama'),
+            'time'      => \Carbon\Carbon::parse($item->waktu_mulai)->format('d M Y, H:i'),
+            'unread'    => true // Default true agar muncul badge merah
+        ];
+    });
+    // Jika data guru tidak ditemukan, abort biar aman
+    if (!$dt) {
+        abort(403, 'Data profil guru tidak ditemukan di database.');
     }
+
+    // AMBIL JADWAL HANYA YANG DIAWASI OLEH GURU INI
+    // Tambahkan relasi "pengawas.guru" agar tidak error di view & tidak query berulang kali (N+1)
+    $data = Jadwal::with("kelas", "ujian.mapels", "pengawas.guru")
+                ->whereHas('pengawas', function ($query) use ($dt) {
+                    // Filter berdasarkan ID guru yang sedang login
+                    $query->where('guru_id', $dt->id);
+                })
+                ->orderBy('tanggal', 'desc') // Urutkan dari jadwal terbaru
+                ->get();
+
+    return view("guru.jadwal", compact("data", "ire", "dt","notifData"));
+}
     public function sed(Request $request){
       
       return redirect()->route("guru.index");
@@ -769,77 +874,77 @@ public function confirm(Request $request)
 public function bareroll(Request $request)
 {
     // Validasi input
-    $request->validate([
-        'ujian_id' => 'required|exists:ujian,id',
-        'kelas_id' => 'required|exists:kelas,id',
-        'guru_id' => 'required|exists:guru,id',
-        'tanggal_susulan' => 'required|date',
-        'waktu_mulai' => 'required',
-        'waktu_selesai' => 'required',
-        'jam_mapel' => 'nullable|integer',
-        'keterangan' => 'nullable|string'
-    ]);
+    // 'siswa_ids' kita biarkan validasinya, meskipun tidak kita pakai untuk update DB saat ini
+    
     
     DB::beginTransaction();
     
     try {
+        
         // Ambil data ujian
         $uji = Ujian::findOrFail($request->ujian_id);
         
-        // Cek apakah ujian sudah memiliki kelas ini
+        // Cek relasi kelas (opsional)
         if (!$uji->kelas()->where('kelas_id', $request->kelas_id)->exists()) {
             $uji->kelas()->attach($request->kelas_id);
         }
         
-        // Cari atau buat pengawas
-        $guru = Guru::findOrFail($request->guru_id);
-        $pengawas = Pengawas::where('guru_id', $guru->id)
-            ->where('user_id', $guru->user_id)
-            ->first();
-        
-        if (!$pengawas) {
-            $pengawas = Pengawas::create([
-                "guru_id" => $guru->id,
-                "user_id" => $guru->user_id,
-            ]);
+        // 1. ACAK PENGAWAS SECARA OTOMATIS
+        $guru = Guru::inRandomOrder()->first();
+        if (!$guru) {
+            throw new \Exception("Gagal mengacak pengawas. Belum ada data guru di database.");
         }
         
-        // Hitung waktu
-        $waktuMulai = Carbon::parse($request->tanggal_susulan . ' ' . $request->waktu_mulai);
-        $waktuSelesai = Carbon::parse($request->tanggal_susulan . ' ' . $request->waktu_selesai);
-        
-        // ==========================================
-        // GUNAKAN updateOrCreate AGAR TIDAK BENTROK UNIQUE CONSTRAINT
-        // ==========================================
-        $jads = Jadwal::updateOrCreate(
+        $pengawas = Pengawas::firstOrCreate(
             [
-                // KOMBINASI UNIQUE (cek dulu apakah sudah ada)
-                'pengawas_id' => $pengawas->id,
-                'tanggal' => $request->tanggal_susulan,
-                'jam_mapel' => $request->jam_mapel ?? 0,
-            ],
-            [
-                // DATA YANG AKAN DIUPDATE ATAU DICREATE
-                'waktu_mulai' => $waktuMulai,
-                'waktu_selesai' => $waktuSelesai,
-                'ujian_id' => $request->ujian_id,
-                'kelas_id' => $request->kelas_id,
-                'untuk_susulan' => 1,  // ← true = jadwal susulan
-                'keterangan' => $request->keterangan,
+                'guru_id' => $guru->id,
+                'user_id' => $guru->user_id,
             ]
         );
         
-        // Update ujian
+        // 2. HITUNG WAKTU
+        $tanggalSekarang = \Carbon\Carbon::now()->format('Y-m-d');
+        $waktuMulai = \Carbon\Carbon::parse($tanggalSekarang . ' ' . $request->waktu_mulai);
+        $waktuSelesai = \Carbon\Carbon::parse($tanggalSekarang . ' ' . $request->waktu_selesai);
+        
+        // 3. SIMPAN JADWAL
+        // PENTING: 'ujian_id' dimasukkan ke array pertama agar unik tiap ujian.
+        // Jika tidak ada, jadwal Ujian A akan tertimpa oleh Ujian B jika kelas & tanggalnya sama.
+        $jads = Jadwal::updateOrCreate(
+            [
+                'kelas_id' => $request->kelas_id,
+                'ujian_id' => $request->ujian_id, // AGAR UNIK PER UJIAN
+            ],
+            [
+                'waktu_mulai' => $waktuMulai,
+                'waktu_selesai' => $waktuSelesai,
+                'tanggal' => $tanggalSekarang,
+                'keterangan' => $request->keterangan,
+                'untuk_susulan' => 1,
+                'pengawas_id' => $pengawas->id,
+            ]
+        );
+        
+        // ==========================================
+        // 4. UPDATE UJIAN (Sesuai Permintaan)
+        // ==========================================
+        // Anda bilang "Di ujian itu butuh jadwal_id", jadi kita update.
         $uji->update([
-            "jadwal_id" => $jads->id, 
+            "jadwal_id" => $jads->id, // Update ke ID jadwal susulan yang baru dibuat
             "status" => "ready",
         ]);
-        
+        if ($request->has('siswa_ids') && is_array($request->siswa_ids)) {
+
+    Siswa::whereIn('id_siswa', $request->siswa_ids)
+        ->update([
+            'status' => 'ready'
+        ]);
+}
         DB::commit();
         
         $message = $jads->wasRecentlyCreated 
-            ? 'Jadwal ujian susulan berhasil dibuat!' 
-            : 'Jadwal ujian susulan berhasil diperbarui!';
+            ? "Jadwal susulan hari ini berhasil dibuat! (Pengawas: {$guru->nama})" 
+            : "Jadwal susulan hari ini berhasil diperbarui! (Pengawas: {$guru->nama})";
         
         return redirect()->route("guru.hasil", ["id" => $request->ujian_id])
             ->with('success', $message);
@@ -953,6 +1058,37 @@ public function bareroll(Request $request)
         
         return view('guru.form-jadwal-susulan', compact('ujian', 'siswaSusulan', 'pengawas', 'kelas'));
     }
+    public function updateNilai(Request $request) {
+    try {
+        // 1. Validasi
+        $request->validate([
+            'peserta_id' => 'required',
+            'nilai' => 'required|numeric|min:0|max:100',
+        ]);
 
+        // 2. Cari data - Coba ganti find ke findOrFail agar error tertangkap catch
+        // Pastikan nama modelnya benar (Peserta_ujian atau PesertaUjian)
+        $peserta = \App\Models\Peserta_ujian::findOrFail($request->peserta_id);
+        
+        $peserta->nilai = $request->nilai;
+        $saved = $peserta->save();
+
+        if ($saved) {
+            return response()->json([
+                'success' => true, 
+                'message' => 'Nilai berhasil diupdate ke ' . $request->nilai
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Gagal simpan'], 500);
+
+    } catch (\Exception $e) {
+        // Ini akan mengirimkan pesan error PHP asli ke console browser kamu
+        return response()->json([
+            'success' => false, 
+            'message' => 'Error Server: ' . $e->getMessage()
+        ], 500);
+    }
+}
     
 }

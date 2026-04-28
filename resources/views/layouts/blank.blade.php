@@ -7,8 +7,44 @@
 <title>Admin Dashboard - Sistem Ujian</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulmaswatch/default/bulmaswatch.min.css">
+<style>
+    /* Animasi masuk (Berjalan otomatis saat halaman baru dibuka) */
+    .main-content {
+    animation: pageEnter 0.3s ease-out;
+}
 
+.main-content.page-leaving {
+    animation: pageLeave 0.25s ease-in forwards;
+}
+
+    @keyframes pageEnter {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Animasi keluar (Ditambahkan oleh JavaScript saat klik link) */
+    .main-content.page-leaving {
+        animation: pageLeave 0.25s ease-in forwards !important;
+    }
+
+    @keyframes pageLeave {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-12px);
+        }
+    }
+</style>
 <style>
 * {
     margin: 0;
@@ -16,7 +52,19 @@
     box-sizing: border-box;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
+.modal-card {
+    animation: fadeUp 0.3s ease;
+}
 
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
+.table td {
+    padding: 14px;
+}
 body {
     background: #f3f5f9;
     overflow-x: hidden;
@@ -201,14 +249,20 @@ body {
 .sidebar-item span {
     font-size: 0.85rem;
     font-weight: 500;
+    transition:0.05s linear;
+}
+.sidebar-item:hover{
+    color : #2e5b9a;
 }
 
 .sidebar-item:hover {
-    background: rgba(255,255,255,0.2);
+    background: #ffffff96;
+     border-left : 4px solid #fff;
 }
 
 .sidebar-item.active {
-    background: rgba(255,255,255,0.25);
+    background: #ffffff96;
+    border-left : 4px solid #fff;
 }
 
 .sidebar-logout {
@@ -447,10 +501,14 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
+
     background: rgba(0,0,0,0.5);
     z-index: 2000;
+
     align-items: center;
     justify-content: center;
+
+    padding: 10px;
 }
 
 .modal.is-active {
@@ -460,11 +518,25 @@ body {
 .modal-content {
     background: white;
     border-radius: 12px;
-    width: 90%;
+
+    width: 100%;
     max-width: 500px;
+
     max-height: 90vh;
     overflow-y: auto;
+
+    margin: auto;
 }
+
+/* Mobile modal fix */
+@media (max-width: 480px) {
+    .modal-content {
+        width: 95%;
+        border-radius: 10px;
+    }
+}
+
+
 
 .modal-header {
     padding: 18px 20px;
@@ -501,7 +573,25 @@ body {
     justify-content: flex-end;
     gap: 10px;
 }
+.swal2-container {
+    z-index: 999999 !important;
+    position: fixed !important;
+}
 
+.swal2-popup {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    border-radius: 14px !important;
+}
+
+/* pastikan tidak ketiban sidebar/header */
+body.swal2-shown {
+    overflow: hidden !important;
+}
+
+/* biar backdrop full layar tanpa geser layout */
+.swal2-backdrop-show {
+    backdrop-filter: blur(4px);
+}
 /* Form */
 .field {
     margin-bottom: 15px;
@@ -631,7 +721,7 @@ body {
 /* Responsive Breakpoints */
 @media (max-width: 768px) {
     .header h2 span {
-        display: none;
+        display: inline;
     }
     
     .user-name span {
@@ -763,10 +853,10 @@ height:35px;
         </div>
         
         <div class="dropdown-menu-custom">
-            <div class="dropdown-item-custom">
-                <i class="fas fa-user-circle"></i>
-                <span>Profil Saya</span>
-            </div>
+           <a href="{{ route('profile.index') }}" class="dropdown-item-custom">
+        <i class="fas fa-user-circle"></i>
+        <span>Profil Saya</span>
+    </a>
             <div class="dropdown-divider"></div>
             <form action="{{ route('users.logout') }}" method="post" id="logoutForm">
                 @csrf
@@ -814,6 +904,10 @@ height:35px;
             <a href="{{ route('admin.mapel') }}" class="sidebar-item {{ request()->routeIs('admin.mapel') ? 'active' : '' }}">
                 <i class="fas fa-book"></i>
                 <span>Data Mapel</span>
+            </a>
+            <a href="{{ route('admin.ruangan') }}" class="sidebar-item {{ request()->routeIs('admin.ruangan') ? 'active' : '' }}">
+                <i class="fas fa-door-open"></i>
+                <span>Data Ruangan</span>
             </a>
         </div>
         
@@ -957,7 +1051,91 @@ height:35px;
         });
     });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // ==========================================
+    // 1. INTERCEPT LINK KLIK (Smooth Redirect)
+    // ==========================================
+    document.addEventListener('click', function(e) {
+        // Cari elemen <a> yang diklik (berlaku jika klik teks atau icon di dalam <a>)
+        const link = e.target.closest('a');
+        
+        if (!link) return; // Bukan link, abaikan
+        
+        const href = link.getAttribute('href');
+        const target = link.getAttribute('target');
+        
+        // Abaikan jika:
+        // - Link kosong / # / javascript
+        // - Link untuk buka tab baru (target="_blank")
+        // - Link eksternal (mailto, tel, http lain)
+        if (!href || 
+            href.startsWith('#') || 
+            href.startsWith('javascript:') || 
+            href.startsWith('mailto:') || 
+            href.startsWith('tel:') || 
+            target === '_blank') {
+            return;
+        }
+        
+        // Abaikan link khusus jika ada (misal: tombol yang buat modal, dll)
+        if (link.classList.contains('no-transition') || link.getAttribute('data-turbolinks') === 'false') {
+            return;
+        }
+        
+        // Cek apakah link internal (domain yang sama atau relative path /)
+        const isLocal = href.startsWith(window.location.origin) || href.startsWith('/');
+        
+        if (isLocal) {
+            e.preventDefault(); // Cegah pindah halaman secara langsung
+            
+            const mainContent = document.getElementById('mainContent');
 
+mainContent.classList.add('page-leaving');
+
+
+            
+            // Tunggu animasi selesai, baru redirect
+            setTimeout(function() {
+                window.location.href = href;
+            }, 250); // 250ms harus sama dengan durasi CSS pageLeave
+        }
+    });
+
+    // ==========================================
+    // 2. INTERCEPT FORM SUBMIT (Smooth Post/Logout)
+    // ==========================================
+    // Khusus untuk form biasa (misal: form logout, form cari)
+    document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function() {
+            const mainContent = document.getElementById('mainContent');
+
+mainContent.classList.add('page-leaving');
+            // Jangan pakai e.preventDefault() biar Laravel tetap proses data/CSRF dengan normal
+        });
+    });
+
+    // Khusus untuk AJAX/Fetch (misal: form absensi, hapus jadwal yang pakai fetch)
+    const originalFetch = window.fetch;
+    window.fetch = function() {
+        const mainContent = document.getElementById('mainContent');
+
+mainContent.classList.add('page-leaving');
+        
+        // Tunggu 150ms lalu hilangkan animasi (supaya tidak menghitam saat loading AJAX lama)
+        setTimeout(function() {
+            const mainContent = document.getElementById('mainContent');
+
+mainContent.classList.add('page-leaving');
+
+
+        }, 150);
+        
+        return originalFetch.apply(this, arguments);
+    };
+});
+</script>
 @stack('scripts')
 </body>
 </html>

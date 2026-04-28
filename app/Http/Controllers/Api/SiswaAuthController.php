@@ -56,15 +56,8 @@ class SiswaAuthController extends Controller
 
         $token = $user->createToken('siswa-token', ['siswa'])->plainTextToken;
 
-        // DATA DASHBOARD KOSONG DULU (JANGAN PAKAI getDashboardData)
-        $dashboardData = [
-            'ujian_hari_ini' => [],
-            'statistik' => [
-                'total_jadwal' => 0,
-                'total_riwayat' => 0,
-                'rata_rata_nilai' => 0,
-            ]
-        ];
+                // AMBIL DATA DASHBOARD ASLI
+        $dashboardData = $this->getDashboardData($siswa);
 
         return response()->json([
             'status' => 'success',
@@ -82,6 +75,7 @@ class SiswaAuthController extends Controller
                     'nisn' => $siswa->nisn,
                     'kelas' => $siswa->kelas ? $siswa->kelas->nama_kelas : null,
                     'kelas_id' => $siswa->kelas_id,
+                    'status' => $siswa->status,
                 ],
                 'dashboard' => $dashboardData
             ]

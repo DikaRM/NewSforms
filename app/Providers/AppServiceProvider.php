@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Url;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 use App\Models\Jadwal;
@@ -20,6 +21,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Define rate limiter untuk API
+         if (str_contains(config('app.url'), 'https')) {
+            URL::forceScheme('https');
+        }
         RateLimiter::for('api', function ($job) {
             return Limit::perMinute(60)->by($job->user()?->id ?: $job->ip());
         });
