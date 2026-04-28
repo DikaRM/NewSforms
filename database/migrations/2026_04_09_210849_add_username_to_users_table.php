@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             // Tambah kolom username setelah kolom nama
-            $table->string('username')->unique()->nullable()->after('nama');
+            $table->string('username')->nullable()->after('nama');
         });
     }
 

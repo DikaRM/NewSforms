@@ -11,13 +11,14 @@ use App\Models\Siswa;
 use App\Models\Guru;
 use App\Models\Pengawas;
 use App\Models\Kelas;
+use App\Models\Ruangan;
 use App\Models\Ujian;
 use App\Models\Jadwal;
 use App\Models\GuruMapel;
 use App\Models\Mapel;
 use App\Models\Pelanggaran;
 use App\Models\banksoal;
-
+use Carbon\Carbon;
 class AdminController
 {
     /**
@@ -35,7 +36,8 @@ class AdminController
     $ire = Auth::user();
     
 // Karena Anda tahu pakai SQLite, langsung gunakan SQLite syntax
-$pelanggaranPerBulan = Pelanggaran::selectRaw(
+// Query tetap sama
+ $pelanggaranPerBulan = Pelanggaran::selectRaw(
     "strftime('%m', created_at) as bulan, COUNT(*) as total"
 )
 ->whereRaw("strftime('%Y', created_at) = ?", [date('Y')])
@@ -43,11 +45,16 @@ $pelanggaranPerBulan = Pelanggaran::selectRaw(
 ->pluck('total', 'bulan')
 ->toArray();
 
-// Format untuk chart (12 bulan)
-$chartData = [];
-for($i = 1; $i <= 12; $i++) {
-    $chartData[] = $pelanggaranPerBulan[$i] ?? 0;
+// ✅ PERBAIKAN BAGIAN LOOP INI
+ $chartData = [];
+for ($i = 1; $i <= 12; $i++) {
+    // Ubah integer (1) menjadi string '01', '02', dst
+    $keyBulan = sprintf("%02d", $i);
+    
+    $chartData[] = $pelanggaranPerBulan[$keyBulan] ?? 0;
 }
+$pelanggaranPerBulan = $chartData;
+// Contoh hasil: [0, 0, 0, 5, 0, 0, 0, 0, 0, 10, 0, 0]
 
     $totalSiswa = User::where('role', 'siswa')->count();
     $totalGuru = User::where('role', 'guru')->count();
@@ -74,7 +81,7 @@ for($i = 1; $i <= 12; $i++) {
         "pelanggaran", "mapel",
         "totalSiswa", "totalGuru", "totalKelas", 
         "totalMapel", "totalPelanggaran", "totalBankSoal",
-        "ujianReady", "ujianDraft", "ujianDone","chartData"
+        "ujianReady", "ujianDraft", "ujianDone","pelanggaranPerBulan"
     ));
 }
 
@@ -93,7 +100,7 @@ for($i = 1; $i <= 12; $i++) {
     {
         $validated = $request->validate([
             "nama" => "required",
-          "password" => "required",
+          "password" => "required|min:6",
           "role" => "required",
           "nip" => "nullable",
           ]);
@@ -147,6 +154,7 @@ for($i = 1; $i <= 12; $i++) {
      */
     public function update(Request $request, $admin)
     {
+      $request->validate(["password" => "required|min:6"]);
       $usef = User::findOrFail($admin);
       $ps = Hash::make($request->password);
       $kata = Str::of($request->nama)->before(" ")->toString();
@@ -171,14 +179,14 @@ for($i = 1; $i <= 12; $i++) {
     public function KelasIndex()
     {
       $ire = Auth::user();
-      $dat = Kelas::all();
-      $siswa = Siswa::all();
+      $dat = Kelas::with("ruangan")->get();
+      $siswa = Ruangan::all();
       return view("admin.kelas",compact("dat","ire","siswa"));
     }
     public function KelasCreate(Request $request)
     {
       $request->validate([
-        "nama_kelas" => "required"]);
+        "nama_kelas" => "required","ruangan_id" => "required"]);
       Kelas::create($request->all());
       return redirect()->route("admin.kelas")->with("success","Berhasil Menambah Kelas");
     }
@@ -187,7 +195,7 @@ for($i = 1; $i <= 12; $i++) {
       $us = Kelas::findOrFail($id);
       
       $request->validate([
-        "nama_kelas" => "required"]);
+        "nama_kelas" => "required","ruangan_id" => "required"]);
       $us->update($request->all());
       return redirect()->route("admin.kelas")->with("success","Berhasil Update Kelas");
     }
@@ -216,18 +224,18 @@ for($i = 1; $i <= 12; $i++) {
     }
     public function MapelUpdate(Request $request ,$id)
     {
-      $us = Kelas::findOrFail($id);
+      $us = Mapel::findOrFail($id);
       
       $request->validate([
         "nama_mapel" => "required"]);
       $us->update($request->all());
-      return redirect()->route("admin.mapel")->with("sip","Berhasil Update Mapel");
+      return redirect()->route("admin.mapel")->with("success","Berhasil Update Mapel");
     }
     public function MapelDestroy($id)
     {
       $hi = Mapel::findOrFail($id);
       $hi->delete();
-      return redirect()->route("admin.mapel")->with("sip","Berhasil hapus Mapel");
+      return redirect()->route("admin.mapel")->with("success","Berhasil hapus Mapel");
     }
     public function AddGuru(Request $request)
 {
@@ -259,8 +267,57 @@ for($i = 1; $i <= 12; $i++) {
       $request->validate([
         "nama_mapel" => "required"]);
       Mapel::create($request->all());
-      return redirect()->route("admin.mapel")->with("sip","Berhasil Menambah Mapel");
+      return redirect()->route("admin.mapel")->with("success","Berhasil Menambah Mapel");
     }
+public function RuangIndex()
+    {
+      $ire = Auth::user();
+      $dat = Ruangan::all();
+      return view("admin.ruangan",compact("dat","ire"));
+    }
+    public function RuangCreate(Request $request)
+{
+    $request->validate([
+        "nama_ruang" => "required"
+    ]);
+
+    Ruangan::create([
+        "nama_ruang" => $request->nama_ruang,
+        "kode" => strtoupper(Str::random(6)),
+        "kode_expired_at" => Carbon::now()->addHour(),
+    ]);
+
+    return redirect()->route("admin.ruangan")
+        ->with("success", "Berhasil Menambah Ruangan");
+}
+    public function RuangUpdate(Request $request, $id)
+{
+    $ruangan = Ruangan::findOrFail($id);
+
+    $request->validate([
+        "nama_ruang" => "required"
+    ]);
+
+    $ruangan->update([
+        "nama_ruang" => $request->nama_ruang,
+
+        // 🔥 OPTIONAL: kalau mau kode selalu berubah saat update
+        "kode" => strtoupper(Str::random(6)),
+        "kode_expired_at" => Carbon::now()->addHour(),
+    ]);
+
+    return redirect()->route("admin.ruangan")
+        ->with("success", "Berhasil Update Ruangan");
+}
+    public function RuangDestroy($id)
+    {
+      $hi = Ruangan::findOrFail($id);
+      $hi->delete();
+      return redirect()->route("admin.ruangan")->with("success","Berhasil hapus Ruangan");
+    }
+
+
+
     public function ops(){
       $uji = Ujian::with("kelas","mapels")->get();
       $sis = Siswa::all();
@@ -280,20 +337,38 @@ for($i = 1; $i <= 12; $i++) {
     }
     public function operateCreate(Request $request)
 {
+  
     $uji = Ujian::find($request->ujian_id);
     
-    // Cek dulu apakah ujian sudah memiliki kelas ini
-    if (!$uji->kelas()->where('kelas_id', $request->kelas_id)->exists()) {
-        $uji->kelas()->attach($request->kelas_id);
-    }
-    
-    $guru = Guru::find($request->guru_id);
-    
-    // Gabungkan tanggal dan waktu
+    // 1. Tentukan waktu mulai dan selesai
     $waktuMulai = \Carbon\Carbon::parse($request->tanggal . ' ' . $request->waktu_mulai);
     $waktuSelesai = $waktuMulai->copy()->addMinutes($uji->durasi);
-    
 
+    // 2. Cari GURU ACAK yang sedang tidak bertugas di waktu tersebut
+    // Kita filter guru yang TIDAK punya jadwal bentrok
+    $guruAcak = Guru::whereDoesntHave('pengawas.jadwal', function($query) use ($request, $waktuMulai, $waktuSelesai) {
+        $query->where('tanggal', $request->tanggal)
+              ->where(function($q) use ($waktuMulai, $waktuSelesai) {
+                  // Cek apakah waktu ujian baru bersinggungan dengan jadwal yang sudah ada
+                  $q->whereBetween('waktu_mulai', [$waktuMulai, $waktuSelesai])
+                    ->orWhereBetween('waktu_selesai', [$waktuMulai, $waktuSelesai])
+                    ->orWhere(function($inner) use ($waktuMulai, $waktuSelesai) {
+                        $inner->where('waktu_mulai', '<=', $waktuMulai)
+                              ->where('waktu_selesai', '>=', $waktuSelesai);
+                    });
+              });
+    })
+    ->inRandomOrder() // Langkah krusial: Mengacak urutan database
+    ->first();
+
+    // 3. Validasi jika tidak ada guru yang tersedia
+    if (!$guruAcak) {
+        return redirect()->back()->withErrors([
+            'error' => "Gagal mengacak: Tidak ada guru yang tersedia di jam tersebut (semua sedang mengawas)."
+        ])->withInput();
+    }
+
+    // 4. Cek Bentrok Kelas (Sama seperti kodemu sebelumnya)
     $existingJadwal = Jadwal::where('kelas_id', $request->kelas_id)
         ->where('tanggal', $request->tanggal)
         ->where('jam_mapel', $request->jam_mapel)
@@ -301,58 +376,22 @@ for($i = 1; $i <= 12; $i++) {
     
     if ($existingJadwal) {
         return redirect()->back()->withErrors([
-            'error' => "Kelas ini sudah memiliki jadwal ujian pada tanggal {$request->tanggal} jam ke-{$request->jam_mapel}"
+            'error' => "Kelas ini sudah memiliki jadwal pada jam tersebut."
         ])->withInput();
     }
-    
 
-    $bentrok = Jadwal::where('kelas_id', $request->kelas_id)
-        ->where('tanggal', $request->tanggal)
-        ->where(function($query) use ($waktuMulai, $waktuSelesai) {
-            $query->whereBetween('waktu_mulai', [$waktuMulai, $waktuSelesai])
-                  ->orWhereBetween('waktu_selesai', [$waktuMulai, $waktuSelesai])
-                  ->orWhere(function($q) use ($waktuMulai, $waktuSelesai) {
-                      $q->where('waktu_mulai', '<=', $waktuMulai)
-                        ->where('waktu_selesai', '>=', $waktuSelesai);
-                  });
-        })
-        ->first();
-    
-    if ($bentrok) {
-        return redirect()->back()->withErrors([
-            'error' => "Waktu ujian bentrok dengan jadwal lain di kelas ini"
-        ])->withInput();
+    // 5. Eksekusi Simpan Data
+    // Pastikan relasi ke kelas di tabel pivot ujian_kelas tetap ada
+    if (!$uji->kelas()->where('kelas_id', $request->kelas_id)->exists()) {
+        $uji->kelas()->attach($request->kelas_id);
     }
-    
 
-    $pengawas = Pengawas::where('guru_id', $request->guru_id)
-        ->where('user_id', $guru->user_id)
-        ->first();
-    
-    if (!$pengawas) {
-        $pengawas = Pengawas::create([
-            "guru_id" => $request->guru_id,
-            "user_id" => $guru->user_id,
-        ]);
-    }
-    
+    // Setup data pengawas dari hasil acak
+    $pengawas = Pengawas::firstOrCreate([
+        "guru_id" => $guruAcak->id,
+        "user_id" => $guruAcak->user_id,
+    ]);
 
-    $pengawasBentrok = Jadwal::where('pengawas_id', $pengawas->id)
-        ->where('tanggal', $request->tanggal)
-        ->where(function($query) use ($waktuMulai, $waktuSelesai) {
-            $query->whereBetween('waktu_mulai', [$waktuMulai, $waktuSelesai])
-                  ->orWhereBetween('waktu_selesai', [$waktuMulai, $waktuSelesai]);
-        })
-        ->first();
-    
-    if ($pengawasBentrok) {
-        return redirect()->back()->withErrors([
-            'error' => "Pengawas sudah memiliki jadwal ujian di waktu yang sama"
-        ])->withInput();
-    }
-    $kelas = Kelas::with("siswa")->get();
-    
-    // Buat jadwal baru
     $jads = Jadwal::create([
         "jam_mapel" => $request->jam_mapel,
         "tanggal" => $request->tanggal,
@@ -362,14 +401,153 @@ for($i = 1; $i <= 12; $i++) {
         "waktu_mulai" => $waktuMulai,
         "waktu_selesai" => $waktuSelesai,
     ]);
-    
+
     $uji->update([
         "jadwal_id" => $jads->id, 
-        "status"=> "ready",
+        "status" => "ready",
     ]);
-    
+
     return redirect()->route("admin-ops.set", ["id" => $request->kelas_id])
-                     ->with('success', 'Jadwal berhasil dibuat');
+                     ->with('success', "Jadwal berhasil diacak! Pengawas terpilih: {$guruAcak->nama}");
 }
+ 
+
+public function operateDestroy($id)
+{
+    return DB::transaction(function () use ($id) {
+        // Cari Jadwal
+        $jadwal = Jadwal::find($id);
+
+        if (!$jadwal) {
+            // Throw exception agar Rollback otomatis jika ingin, atau return JSON 404
+            throw new \Exception('Jadwal tidak ditemukan');
+        }
+
+        // Ambil Ujian
+        $ujian = $jadwal->ujian;
+
+        // Update Status Ujian terlebih dahulu
+        if ($ujian) {
+            $ujian->jadwal_id = null;
+            $ujian->status = 'draft';
+            $ujian->save();
+        }
+
+        // Hapus Jadwal
+        $jadwal->delete();
+
+        // Jika sampai sini, semua sukses. 
+        // Kembalikan JSON success: true
+        return response()->json([
+            'success' => true,
+            'message' => 'Jadwal berhasil dihapus'
+        ]);
+    });
+}
+
+public function operateUpdate(Request $request, $id)
+{
+    $jadwal = Jadwal::find($id);
+
+    if (!$jadwal) {
+        return response()->json(['success' => false, 'message' => 'Data jadwal tidak ditemukan'], 404);
+    }
+
+    // 1. Ambil Data Ujian Baru
+    $uji = Ujian::find($request->ujian_id);
+    if (!$uji) {
+        return response()->json(['success' => false, 'message' => 'Ujian tidak ditemukan'], 404);
+    }
+
+    // 2. Hitung Waktu Berdasarkan Durasi Ujian Baru
+    $waktuMulai = \Carbon\Carbon::parse($request->tanggal . ' ' . $request->waktu_mulai);
+    $waktuSelesai = $waktuMulai->copy()->addMinutes($uji->durasi);
+
+    // 3. Cek Bentrok Kelas (Period/Jam Mapel) - Kecuali diri sendiri
+    $existingJadwal = Jadwal::where('kelas_id', $request->kelas_id)
+        ->where('tanggal', $request->tanggal)
+        ->where('jam_mapel', $request->jam_mapel)
+        ->where('id', '!=', $jadwal->id) // PENTING: Abaikan jadwal yang sedang diedit
+        ->first();
+
+    if ($existingJadwal) {
+        return response()->json(['success' => false, 'message' => 'Kelas ini sudah memiliki jadwal lain pada jam tersebut.']);
+    }
+
+    // 4. LOGIKA PENENTUAN GURU PENGAWAS (MENGIKUTI REFERENCE CREATE)
+    // Pertama, cek apakah Guru pengawas lama masih tersedia di jam baru
+    $currentGuru = $jadwal->pengawas->guru;
     
+    // Cek ketersediaan guru lama (exclude jadwal sendiri)
+    $isGuruLamaAvailable = !$currentGuru->whereDoesntHave('pengawas.jadwal', function($query) use ($request, $waktuMulai, $waktuSelesai, $id) {
+        $query->where('tanggal', $request->tanggal)
+              ->where('id', '!=', $id) // Abaikan jadwal sendiri
+              ->where(function($q) use ($waktuMulai, $waktuSelesai) {
+                  $q->whereBetween('waktu_mulai', [$waktuMulai, $waktuSelesai])
+                    ->orWhereBetween('waktu_selesai', [$waktuMulai, $waktuSelesai])
+                    ->orWhere(function($inner) use ($waktuMulai, $waktuSelesai) {
+                        $inner->where('waktu_mulai', '<=', $waktuMulai)
+                              ->where('waktu_selesai', '>=', $waktuSelesai);
+                    });
+              });
+    })->exists();
+
+    if ($isGuruLamaAvailable) {
+        $guruAcak = $currentGuru;
+    } else {
+        // Jika guru lama sibuk di jam baru, cari guru baru acak
+        $guruAcak = Guru::whereDoesntHave('pengawas.jadwal', function($query) use ($request, $waktuMulai, $waktuSelesai) {
+            $query->where('tanggal', $request->tanggal)
+                  ->where(function($q) use ($waktuMulai, $waktuSelesai) {
+                      $q->whereBetween('waktu_mulai', [$waktuMulai, $waktuSelesai])
+                        ->orWhereBetween('waktu_selesai', [$waktuMulai, $waktuSelesai])
+                        ->orWhere(function($inner) use ($waktuMulai, $waktuSelesai) {
+                            $inner->where('waktu_mulai', '<=', $waktuMulai)
+                                  ->where('waktu_selesai', '>=', $waktuSelesai);
+                        });
+                  });
+        })
+        ->inRandomOrder() // Langkah krusial: Mengacak urutan database
+        ->first();
+    }
+
+    // 5. Validasi jika tidak ada guru yang tersedia
+    if (!$guruAcak) {
+        return response()->json(['success' => false, 'message' => 'Tidak ada guru yang tersedia di jam tersebut (Semua sedang bertugas).']);
+    }
+
+    // 6. Update Pengawas jika berubah
+    if ($guruAcak->id !== $jadwal->pengawas->guru_id) {
+        $pengawas = Pengawas::firstOrCreate([
+            "guru_id" => $guruAcak->id,
+            "user_id" => $guruAcak->user_id,
+        ]);
+        $jadwal->update(['pengawas_id' => $pengawas->id]);
+    }
+
+    // 7. Update Data Jadwal
+    $jadwal->update([
+        "jam_mapel"   => $request->jam_mapel,
+        "tanggal"     => $request->tanggal,
+        "ujian_id"    => $request->ujian_id,
+        "waktu_mulai" => $waktuMulai,
+        "waktu_selesai"=> $waktuSelesai,
+    ]);
+
+    // 8. Update Status Ujian
+    $uji->update([
+        "jadwal_id" => $jadwal->id,
+        "status"    => "ready",
+    ]);
+
+    return response()->json([
+        'success' => true, 
+        'message' => 'Jadwal berhasil diperbarui!',
+        'teacher_name' => $guruAcak->nama
+    ]);
+}
+
+
+
+
 }

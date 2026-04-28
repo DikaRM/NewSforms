@@ -7,8 +7,40 @@
 <title>Dashboard Siswa - Sistem Ujian</title>
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulmaswatch/default/bulmaswatch.min.css">
+<style>
+    /* Animasi masuk (Berjalan otomatis saat halaman baru dibuka) */
+    .main-content{
+        animation: pageEnter 0.3s ease-out forwards;
+    }
 
+    @keyframes pageEnter {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Animasi keluar (Ditambahkan oleh JavaScript saat klik link) */
+    .main-content.page-leaving {
+        animation: pageLeave 0.25s ease-in forwards !important;
+    }
+
+    @keyframes pageLeave {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-12px);
+        }
+    }
+</style>
 <style>
 * {
     margin: 0;
@@ -473,7 +505,7 @@ body {
 /* Responsive */
 @media (max-width: 768px) {
     .header h2 span {
-        display: none;
+        display: inline;
     }
     
     .user-name span {
@@ -599,10 +631,10 @@ body {
         </div>
         
         <div class="dropdown-menu-custom">
-            <div class="dropdown-item-custom">
-                <i class="fas fa-user-circle"></i>
-                <span>Profil Saya</span>
-            </div>
+           <a href="{{ route('profile.index') }}" class="dropdown-item-custom">
+        <i class="fas fa-user-circle"></i>
+        <span>Profil Saya</span>
+    </a>
             <div class="dropdown-divider"></div>
             <form action="{{ route('users.logout') }}" method="post">
                 @csrf
@@ -625,19 +657,19 @@ body {
 
 <div class="app-wrapper">
     <!-- Sidebar -->
-   <aside class="sidebar" id="sidebar">
+<aside class="sidebar" id="sidebar">
         <div class="sidebar-menu">
             <a href="{{ route('siswa.index') }}" class="sidebar-item ">
                 <i class="fas fa-home"></i>
                 <span>Dashboard</span>
             </a>
+             <a href="{{ route('siswa.jadwal') }}" class="sidebar-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Jadwal Ujian</span>
+            </a>
              <a href="{{ route('siswa.uji') }}" class="sidebar-item active">
                 <i class="fas fa-book"></i>
                 <span>Ujian</span>
-            </a>
-            <a href="{{ route('siswa.jadwal') }}" class="sidebar-item">
-                <i class="fas fa-calendar-alt"></i>
-                <span>Jadwal Ujian</span>
             </a>
             <a href="{{ route('siswa.riwayat') }}" class="sidebar-item">
                 <i class="fas fa-history"></i>
@@ -898,5 +930,81 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // ==========================================
+    // 1. INTERCEPT LINK KLIK (Smooth Redirect)
+    // ==========================================
+    document.addEventListener('click', function(e) {
+        // Cari elemen <a> yang diklik (berlaku jika klik teks atau icon di dalam <a>)
+        const link = e.target.closest('a');
+        
+        if (!link) return; // Bukan link, abaikan
+        
+        const href = link.getAttribute('href');
+        const target = link.getAttribute('target');
+        
+        // Abaikan jika:
+        // - Link kosong / # / javascript
+        // - Link untuk buka tab baru (target="_blank")
+        // - Link eksternal (mailto, tel, http lain)
+        if (!href || 
+            href.startsWith('#') || 
+            href.startsWith('javascript:') || 
+            href.startsWith('mailto:') || 
+            href.startsWith('tel:') || 
+            target === '_blank') {
+            return;
+        }
+        
+        // Abaikan link khusus jika ada (misal: tombol yang buat modal, dll)
+        if (link.classList.contains('no-transition') || link.getAttribute('data-turbolinks') === 'false') {
+            return;
+        }
+        
+        // Cek apakah link internal (domain yang sama atau relative path /)
+        const isLocal = href.startsWith(window.location.origin) || href.startsWith('/');
+        const mainContent = document.querySelector(".main-content")
+        if (isLocal) {
+            e.preventDefault(); // Cegah pindah halaman secara langsung
+            
+            // Tambahkan class animasi keluar
+            
+            mainContent.classList.add("page-leaving");
+            // Tunggu animasi selesai, baru redirect
+            setTimeout(function() {
+                window.location.href = href;
+            }, 250); // 250ms harus sama dengan durasi CSS pageLeave
+        }
+    });
+
+    // ==========================================
+    // 2. INTERCEPT FORM SUBMIT (Smooth Post/Logout)
+    // ==========================================
+    // Khusus untuk form biasa (misal: form logout, form cari)
+    document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function() {
+           mainContent.add("page-leaving");
+            // Jangan pakai e.preventDefault() biar Laravel tetap proses data/CSRF dengan normal
+        });
+    });
+
+    // Khusus untuk AJAX/Fetch (misal: form absensi, hapus jadwal yang pakai fetch)
+    const originalFetch = window.fetch;
+    window.fetch = function() {
+        mainContent.add("page-leaving");
+        
+        // Tunggu 150ms lalu hilangkan animasi (supaya tidak menghitam saat loading AJAX lama)
+        setTimeout(function() {
+           mainContent.add("page-leaving");
+
+        }, 150);
+        
+        return originalFetch.apply(this, arguments);
+    };
+});
+</script>
 </body>
 </html>

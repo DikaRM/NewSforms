@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\SiswaController;
 Route::post('/siswa/login', [SiswaAuthController::class, 'login']);
 
 // Protected routes (hanya untuk siswa)
-Route::middleware(['auth:sanctum', 'ability:siswa'])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
     // Auth
     Route::get('/siswa/dashboard', [SiswaAuthController::class, 'dashboard']);
     Route::post('/siswa/logout', [SiswaAuthController::class, 'logout']);

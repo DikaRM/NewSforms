@@ -19,4 +19,7 @@ class Guru extends Model
     {
       return $this->belongsToMany(Mapel::class,"guru_mapel");
     }
+    public function pengawas(){
+        return $this->hasMany(Pengawas::class);
+    }
 }

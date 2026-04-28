@@ -17,4 +17,7 @@ class Pengawas extends Model
     public function guru(){
         return $this->belongsTo(Guru::class);
     }
+    public function jadwal(){
+        return $this->hasMany(Jadwal::class);
+    }
 }

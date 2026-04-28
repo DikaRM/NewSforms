@@ -1,703 +1,421 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-<meta name="csrf-token" content="{{ csrf_token() }}">
-<title>Dashboard Siswa - Sistem Ujian</title>
-
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
-
-<style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', system-ui, sans-serif;
-}
-
-body {
-    background: #f3f5f9;
-    overflow-x: hidden;
-}
-
-/* ===== HEADER ===== */
-.header {
-    background: #2e5b9a;
-    color: white;
-    padding: 12px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.header h2 {
-    font-size: 1rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.header h2 i {
-    font-size: 1.2rem;
-}
-
-/* User Dropdown */
-.user-dropdown {
-    position: relative;
-    cursor: pointer;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    transition: background 0.3s ease;
-}
-
-.user-info:hover {
-    background: rgba(255,255,255,0.15);
-}
-
-.user-avatar {
-    width: 34px;
-    height: 34px;
-    background: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #2e5b9a;
-    font-weight: bold;
-}
-
-.user-name {
-    font-weight: 500;
-    font-size: 0.85rem;
-}
-
-.user-name i {
-    font-size: 0.7rem;
-    margin-left: 5px;
-}
-
-/* Dropdown Menu */
-.dropdown-menu-custom {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: 8px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    min-width: 180px;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
-    z-index: 1001;
-}
-
-.user-dropdown.active .dropdown-menu-custom {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-.dropdown-item-custom {
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: #333;
-    text-decoration: none;
-    transition: background 0.2s ease;
-    border-bottom: 1px solid #eee;
-    font-size: 0.85rem;
-}
-
-.dropdown-item-custom:last-child {
-    border-bottom: none;
-}
-
-.dropdown-item-custom:hover {
-    background: #f5f5f5;
-}
-
-.dropdown-item-custom i {
-    width: 18px;
-    color: #2e5b9a;
-}
-
-.dropdown-divider {
-    height: 1px;
-    background: #eee;
-    margin: 4px 0;
-}
-
-.logout-btn {
-    color: #dc3545;
-}
-
-.logout-btn i {
-    color: #dc3545;
-}
-
-/* ===== LAYOUT ===== */
-.app-wrapper {
-    display: flex;
-    margin-top: 56px;
-    min-height: calc(100vh - 56px);
-}
-
-/* ===== SIDEBAR ===== */
-.sidebar {
-    width: 260px;
-    background: #53629E;
-    position: fixed;
-    left: 0;
-    top: 56px;
-    bottom: 0;
-    z-index: 99;
-    transition: transform 0.3s ease;
-    overflow-y: auto;
-}
-
-.sidebar-menu {
-    padding: 20px 0;
-}
-
-.sidebar-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 20px;
-    margin: 4px 12px;
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.sidebar-item i {
-    width: 22px;
-    font-size: 1rem;
-}
-
-.sidebar-item span {
-    font-size: 0.85rem;
-    font-weight: 500;
-}
-
-.sidebar-item:hover {
-    background: rgba(255,255,255,0.2);
-}
-
-.sidebar-item.active {
-    background: rgba(255,255,255,0.25);
-    border-left: 3px solid white;
-}
-
-.sidebar-logout {
-    position: absolute;
-    bottom: 20px;
-    left: 0;
-    right: 0;
-    padding: 0 12px;
-}
-
-.sidebar-logout .sidebar-item {
-    color: white;
-}
-
-.sidebar-logout .sidebar-item:hover {
-    background: #dc3545;
-}
-
-/* ===== MAIN CONTENT ===== */
-.main-content {
-    flex: 1;
-    margin-left: 260px;
-    padding: 24px;
-    transition: margin-left 0.3s ease;
-    width: calc(100% - 260px);
-}
-
-/* Mobile Menu Toggle */
-.mobile-toggle {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 50px;
-    height: 50px;
-    background: #2e5b9a;
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 100;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    border: none;
-    color: white;
-}
-
-.mobile-toggle i {
-    font-size: 22px;
-}
-
-/* Overlay untuk mobile */
-.sidebar-overlay {
-    display: none;
-    position: fixed;
-    top: 56px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 98;
-}
-
-.sidebar-overlay.active {
-    display: block;
-}
-
-/* ===== IDENTITAS SISWA CARD ===== */
-.identity-card {
-    background: #2e5b9a;
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 24px;
-    color: white;
-    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-}
-
-.identity-header {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 20px;
-}
-
-.identity-avatar {
-    width: 70px;
-    height: 70px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    border: 3px solid white;
-}
-
-.identity-info h2 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 5px;
-}
-
-.identity-info p {
-    opacity: 0.9;
-    font-size: 0.9rem;
-}
-
-.identity-details {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-    margin-top: 15px;
-}
-
-.detail-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(255,255,255,0.15);
-    padding: 12px;
-    border-radius: 10px;
-    backdrop-filter: blur(10px);
-}
-
-.detail-item i {
-    font-size: 1.2rem;
-    opacity: 0.8;
-}
-
-.detail-item div {
-    display: flex;
-    flex-direction: column;
-}
-
-.detail-label {
-    font-size: 0.75rem;
-    opacity: 0.7;
-}
-
-.detail-value {
-    font-weight: 600;
-    font-size: 0.95rem;
-}
-
-/* ===== STATS CARDS ===== */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 24px;
-}
-
-.stat-card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    transition: transform 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.stat-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-}
-
-.stat-icon.blue {
-    background: #e3f2fd;
-    color: #1976d2;
-}
-
-.stat-icon.green {
-    background: #e8f5e9;
-    color: #388e3c;
-}
-
-.stat-icon.orange {
-    background: #fff3e0;
-    color: #f57c00;
-}
-
-.stat-icon.purple {
-    background: #f3e5f5;
-    color: #7b1fa2;
-}
-
-.stat-content h3 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 4px;
-}
-
-.stat-content p {
-    font-size: 0.85rem;
-    color: #666;
-}
-
-/* ===== DATE DISPLAY ===== */
-.date-display {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-}
-
-.date-display h2 {
-    color: #2e5b9a;
-    font-size: 1.3rem;
-    font-weight: 600;
-}
-
-.date-badge {
-    background: #e3f2fd;
-    color: #1976d2;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-weight: 500;
-    font-size: 0.9rem;
-}
-
-/* ===== EXAM CARD ===== */
-.exam-container {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
-
-.section-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #2e5b9a;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #e5e7eb;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.exam-card {
-    margin-bottom: 20px;
-    border-radius: 12px !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
-    transition: all 0.3s ease;
-    border: 1px solid #f0f0f0;
-}
-
-.exam-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.12) !important;
-}
-
-.exam-card .card-content {
-    padding: 20px;
-}
-
-.exam-card .media {
-    border-bottom: 2px solid #f5f5f5;
-    padding-bottom: 15px;
-    margin-bottom: 15px;
-}
-
-.exam-card .title.is-4 {
-    color: #2e5b9a;
-    font-weight: 700;
-    font-size: 1rem;
-    margin-bottom: 5px !important;
-}
-
-.exam-card .subtitle.is-6 {
-    color: #7f8c8d;
-    font-size: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-/* Upcoming Schedule */
-.upcoming-schedule {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-}
-
-.schedule-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 15px 0;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.schedule-item:last-child {
-    border-bottom: none;
-}
-
-.schedule-date {
-    background: #f5f5f5;
-    padding: 8px 12px;
-    border-radius: 8px;
-    text-align: center;
-    min-width: 60px;
-}
-
-.schedule-date .day {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #2e5b9a;
-}
-
-.schedule-date .month {
-    font-size: 0.75rem;
-    color: #666;
-}
-
-.schedule-info h4 {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 4px;
-}
-
-.schedule-info p {
-    font-size: 0.8rem;
-    color: #666;
-}
-
-/* Notification */
-.notification-toast {
-    position: fixed;
-    top: 70px;
-    right: 20px;
-    padding: 12px 18px;
-    border-radius: 8px;
-    color: white;
-    z-index: 1100;
-    animation: slideInRight 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.85rem;
-}
-
-.notification-success {
-    background: #28a745;
-}
-
-.notification-error {
-    background: #dc3545;
-}
-
-@keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .header h2 span {
-        display: none;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Dashboard Siswa - Sistem Ujian</title>
     
-    .user-name span {
-        display: none;
-    }
+    <!-- Font Awesome & Google Fonts -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
     
-    .user-name i {
-        display: none;
-    }
-    
-    .user-avatar {
-        width: 32px;
-        height: 32px;
-    }
-    
-    .sidebar {
-        transform: translateX(-100%);
-    }
-    
-    .sidebar.open {
-        transform: translateX(0);
-    }
-    
-    .main-content {
-        margin-left: 0 !important;
-        width: 100% !important;
-        padding: 16px;
-    }
-    
-    .mobile-toggle {
-        display: flex;
-    }
-    
-    .identity-card {
-        padding: 16px;
-    }
-    
-    .identity-header {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .identity-details {
-        grid-template-columns: 1fr;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .date-display {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-}
+    <style>
+        /* ================= RESET & DASAR ================= */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        
+        :root {
+            --primary: #2e5b9a;       /* Warna Header & Tombol (Asli) */
+            --sidebar-bg: #53629E;   /* Warna Sidebar (Asli) */
+            --bg-body: #f3f5f9;      /* Background Body (Asli) */
+            --text-light: #ffffff;
+            --text-dark: #333333;
+            --border-color: #e2e8f0;
+        }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-    width: 5px;
-}
+        body {
+            background: var(--bg-body);
+            color: var(--text-dark);
+            overflow-x: hidden;
+            /* Animasi Masuk */
+            
+        }
+        .main-content{
+            animation: pageEnter 0.3s ease-out forwards;
+        }
+        /* Animasi Transisi Halaman */
+        @keyframes pageEnter {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .main-content.page-leaving {
+            animation: pageLeave 0.25s ease-in forwards !important;
+            pointer-events: none;
+        }
 
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
-}
+        @keyframes pageLeave {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-12px); }
+        }
 
-::-webkit-scrollbar-thumb {
-    background: #5c6fa6;
-    border-radius: 3px;
-}
-.cards {
-    display: flex;
-    gap: 25px;
-    flex-wrap: wrap;
-    margin-bottom: 30px;
-}
+        a { text-decoration: none; color: inherit; transition: 0.2s; }
+        ul { list-style: none; }
 
-.card {
-    width: 300px;
-    padding: 25px;
-    border-radius: 15px;
-    color: #333;
-    position: relative;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-    transition: 0.3s;
-    text-decoration: none;
-    display: block;
-}
-.card.pink{
-background:#EBF1FA;
-}
-.card.yellow{
-background:#D3DFF5;
-}
-.card:hover {
-    transform: translateY(-5px);
-}
+        /* ================= LAYOUT UTAMA ================= */
+        .app-wrapper {
+            display: flex;
+            margin-top: 0; /* Header fixed jadi margin-top 0 di body wrapper */
+            min-height: 100vh;
+        }
 
-.card h3 {
-    margin-bottom: 10px;
-}
+        /* ================= HEADER ================= */
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            height: 60px;
+        }
 
-.card p {
-    font-size: 14px;
-    color: #555;
-}
+        .header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-.card .arrow {
-    position: absolute;
-    right: 20px;
-    bottom: 20px;
-    font-size: 20px;
-}
-</style>
+        .header img { height: 30px; object-fit: contain; }
+
+        /* User Dropdown */
+        .user-dropdown {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+        }
+
+        .user-info:hover { background: rgba(255,255,255,0.15); }
+
+        .user-avatar {
+            width: 34px;
+            height: 34px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .user-name { font-weight: 500; font-size: 0.85rem; }
+        .user-name i { font-size: 0.7rem; margin-left: 5px; }
+
+        /* Dropdown Menu */
+        .dropdown-menu-custom {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            min-width: 180px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .user-dropdown.active .dropdown-menu-custom {
+            opacity: 1; visibility: visible; transform: translateY(0);
+        }
+
+        .dropdown-item-custom {
+            padding: 10px 16px;
+            display: flex; align-items: center; gap: 12px;
+            color: #333; text-decoration: none;
+            transition: background 0.2s ease;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+            background: none; border: none; width: 100%; text-align: left; cursor: pointer;
+        }
+        
+        .dropdown-item-custom:last-child { border-bottom: none; }
+        .dropdown-item-custom:hover { background: #f5f5f5; }
+        .dropdown-item-custom i { width: 18px; color: var(--primary); }
+        .logout-btn { color: #dc3545; }
+        .logout-btn i { color: #dc3545; }
+
+        /* ================= SIDEBAR ================= */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            position: fixed;
+            left: 0;
+            top: 60px; /* Height of header */
+            bottom: 0;
+            z-index: 99;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            padding-top: 20px;
+        }
+
+        .sidebar-menu { padding-bottom: 60px; }
+
+        .sidebar-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 20px;
+            margin: 4px 12px;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .sidebar-item i { width: 22px; font-size: 1rem; text-align: center; }
+        
+        .sidebar-item:hover { background: rgba(255,255,255,0.2); }
+        .sidebar-item.active {
+            background: rgba(255,255,255,0.25);
+            border-left: 3px solid white;
+        }
+
+        .sidebar-logout {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: rgba(0,0,0,0.1);
+            padding: 15px 12px;
+        }
+
+        /* ================= MAIN CONTENT ================= */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 24px;
+            padding-top: 80px; /* Space for fixed header */
+            transition: margin-left 0.3s ease;
+            width: calc(100% - 260px);
+        }
+
+        /* ================= COMPONENTS ================= */
+        
+        /* Identity Card */
+        .identity-card {
+            background: var(--primary);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            color: white;
+            box-shadow: 0 10px 25px rgba(46, 91, 154, 0.3);
+        }
+
+        .identity-header { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+        
+        .identity-avatar {
+            width: 70px; height: 70px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; border: 3px solid white;
+        }
+
+        .identity-info h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 5px; }
+        .identity-info p { opacity: 0.9; font-size: 0.9rem; }
+
+        .identity-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(255,255,255,0.15);
+            padding: 12px; border-radius: 10px;
+        }
+        .detail-label { font-size: 0.75rem; opacity: 0.7; display: block; }
+        .detail-value { font-weight: 600; font-size: 0.95rem; }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white; padding: 20px; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex; align-items: center; gap: 15px;
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover { transform: translateY(-3px); }
+
+        .stat-icon {
+            width: 50px; height: 50px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+        }
+        /* Warna Stat (Sama dengan asli) */
+        .stat-icon.blue { background: #e3f2fd; color: #1976d2; }
+        .stat-icon.green { background: #e8f5e9; color: #388e3c; }
+        .stat-icon.orange { background: #fff3e0; color: #f57c00; }
+        .stat-icon.purple { background: #f3e5f5; color: #7b1fa2; }
+
+        .stat-content h3 { font-size: 1.5rem; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .stat-content p { font-size: 0.85rem; color: #666; }
+
+        /* Tanggal */
+        .date-display {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .date-display h2 { color: var(--primary); font-size: 1.3rem; font-weight: 600; }
+        .date-badge {
+            background: #e3f2fd; color: #1976d2;
+            padding: 8px 16px; border-radius: 20px; font-weight: 500; font-size: 0.9rem;
+        }
+
+        /* Custom Cards (Jadwal & Riwayat) - Flexbox replacement for Bulma Columns */
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card-custom {
+            width: 320px; /* Lebih lebar sedikit agar rapi */
+            padding: 25px;
+            border-radius: 15px;
+            color: #333;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+            transition: 0.3s;
+            text-decoration: none;
+            display: block;
+        }
+
+        /* Warna Card Asli */
+        .card-custom.pink { background: #EBF1FA; border: 1px solid #dbeafe; }
+        .card-custom.yellow { background: #D3DFF5; border: 1px solid #bfdbfe; }
+        
+        .card-custom:hover { transform: translateY(-5px); }
+
+        .card-layout {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .card-img-col img { height: 60px; width: auto; object-fit: contain; }
+        
+        .card-text-col h3 { margin-bottom: 8px; color: var(--primary); font-weight: 700; font-size: 1.1rem; }
+        .card-text-col p { font-size: 0.85rem; color: #555; margin-bottom: 12px; }
+        
+        .card-arrow {
+            display: inline-flex;
+            align-items: center; justify-content: center;
+            width: 35px; height: 35px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 50%;
+            color: var(--sidebar-bg);
+        }
+
+        /* Ujian Container */
+        .exam-container {
+            background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .section-title {
+            font-size: 1.1rem; font-weight: 600; color: var(--primary);
+            margin-bottom: 20px; padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb; display: flex; align-items: center; gap: 10px;
+        }
+
+        .exam-card {
+            margin-bottom: 20px; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s ease; border: 1px solid #f0f0f0;
+            background: white;
+        }
+        .exam-card:hover { transform: translateY(-2px); }
+
+        .exam-card-content { padding: 20px; }
+        
+        .exam-card .media { border-bottom: 2px solid #f5f5f5; padding-bottom: 15px; margin-bottom: 15px; }
+        .exam-card .title-4 { color: var(--primary); font-weight: 700; font-size: 1rem; margin-bottom: 5px; }
+        .exam-card .subtitle-6 { color: #7f8c8d; font-size: 0.75rem; display: flex; align-items: center; gap: 5px; }
+
+        /* Tombol & Status */
+        .btn-custom {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 16px; border-radius: 6px;
+            font-size: 0.9rem; font-weight: 600;
+            transition: 0.2s; cursor: pointer; border: none; text-decoration: none;
+        }
+        .btn-primary-custom { background: var(--primary); color: white; }
+        .btn-primary-custom:hover { background: #244a82; }
+        
+        .btn-warning-custom { background: #f59e0b; color: white; }
+        .btn-success-custom { background: #28a745; color: white; border: 1px solid #28a745; }
+        .btn-success-custom:hover { background: #218838; }
+
+        .status-badge {
+            padding: 5px 15px; border-radius: 20px; font-size: 0.85rem;
+            background: #e5e7eb; color: #6b7280; display: inline-block;
+        }
+
+        /* Upcoming Schedule */
+        .upcoming-schedule { background: white; border-radius: 12px; padding: 20px; }
+        .schedule-item { display: flex; align-items: center; gap: 15px; padding: 15px 0; border-bottom: 1px solid #f0f0f0; }
+        .schedule-item:last-child { border-bottom: none; }
+        .schedule-date { background: #f5f5f5; padding: 8px 12px; border-radius: 8px; text-align: center; min-width: 60px; }
+        .schedule-day { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+        .schedule-month { font-size: 0.75rem; color: #666; }
+        .schedule-info h4 { font-weight: 600; color: #333; margin-bottom: 4px; }
+        .schedule-info p { font-size: 0.8rem; color: #666; }
+
+        /* ================= RESPONSIVE ================= */
+        .mobile-toggle {
+            display: none;
+            position: fixed; bottom: 20px; right: 20px;
+            width: 50px; height: 50px; background: var(--primary);
+            border-radius: 50%; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: none; color: white;
+        }
+        .sidebar-overlay { display: none; position: fixed; top: 60px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 98; }
+
+        @media (max-width: 768px) {
+            .header h2 span, .user-name span, .user-name i { display: inline; }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0 !important; width: 100% !important; padding: 80px 16px 16px 16px; }
+            .mobile-toggle { display: flex; }
+            .sidebar-overlay.active { display: block; }
+            .cards-container { flex-direction: column; }
+            .card-custom { width: 100%; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .identity-header { flex-direction: column; text-align: center; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: var(--sidebar-bg); border-radius: 3px; }
+    </style>
 </head>
 
 <body>
@@ -705,7 +423,7 @@ background:#D3DFF5;
 <!-- Header -->
 <header class="header">
     <h2>
-       <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px;"/>
+       <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" alt="Logo" style="height:30px;"/>
         <span class="has-text-light">SMK NEGERI 1 CIOMAS</span>
     </h2>
     
@@ -725,14 +443,14 @@ background:#D3DFF5;
         </div>
         
         <div class="dropdown-menu-custom">
-            <div class="dropdown-item-custom">
-                <i class="fas fa-user-circle"></i>
-                <span>Profil Saya</span>
-            </div>
-            <div class="dropdown-divider"></div>
+            <a href="{{ route('profile.index') }}" class="dropdown-item-custom">
+        <i class="fas fa-user-circle"></i>
+        <span>Profil Saya</span>
+    </a>
+            <div class="dropdown-divider" style="height:1px; background:#eee; margin:4px 0;"></div>
             <form action="{{ route('users.logout') }}" method="post">
                 @csrf
-                <button type="submit" class="dropdown-item-custom logout-btn" style="width: 100%; background: none; border: none; cursor: pointer;">
+                <button type="submit" class="dropdown-item-custom logout-btn">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -769,7 +487,6 @@ background:#D3DFF5;
                 <i class="fas fa-history"></i>
                 <span>Riwayat Ujian</span>
             </a>
-           
         </div>
         
         <div class="sidebar-logout">
@@ -787,27 +504,27 @@ background:#D3DFF5;
     <main class="main-content" id="mainContent">
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-@if(session('success'))
-<script>
-    Swal.fire({
-        icon: 'success',
-        title: 'Berhasil!',
-        text: '{{ session('success') }}',
-        confirmButtonColor: '#3085d6'
-    });
-</script>
-@endif
+        @if(session('success'))
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: '{{ session('success') }}',
+                confirmButtonColor: '#2e5b9a'
+            });
+        </script>
+        @endif
 
-@if(session('error'))
-<script>
-    Swal.fire({
-        icon: 'error',
-        title: 'Gagal!',
-        text: '{{ session('error') }}',
-        confirmButtonColor: '#d33'
-    });
-</script>
-@endif
+        @if(session('error'))
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal!',
+                text: '{{ session('error') }}',
+                confirmButtonColor: '#d33'
+            });
+        </script>
+        @endif
         
         <!-- IDENTITAS SISWA CARD -->
         <div class="identity-card">
@@ -899,36 +616,39 @@ background:#D3DFF5;
                 <span id="liveTime"></span>
             </div>
         </div>
-                <div class="cards">
-            <a href="{{ route('siswa.jadwal') }}" class="card pink">
-       <div class="columns">
-        <div class="column">
-            <img src="{{asset('Siswa/Jadwal-ujian.png')}}">
-        </div>
-      <div class="column">
-           <h3>Jadwal Ujian</h3>
-          <p>Halaman untuk melihat jadwal ujian siswa.</p>
-          <br>
-      <div class="arrow" style="color:#EBF1FA;background:#9BACD4;padding:5px 10px;border-radius:5px;"><i class="fa fa-arrow-right"></i>
+
+        <!-- QUICK LINKS (Jadwal & Riwayat) - REPLACEMENT FOR BULMA COLUMNS -->
+        <div class="cards-container">
+            <!-- Jadwal Card -->
+            <a href="{{ route('siswa.jadwal') }}" class="card-custom pink">
+               <div class="card-layout">
+                    <div class="card-img-col">
+                        <img src="{{asset('Siswa/Jadwal-ujian.png')}}" alt="Jadwal" onerror="this.style.display='none'">
+                    </div>
+                    <div class="card-text-col">
+                        <h3>Jadwal Ujian</h3>
+                        <p>Halaman untuk melihat jadwal ujian siswa.</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fa fa-arrow-right"></i>
+                    </div>
                 </div>
-                
-              </div>
-              </div>
             </a>
             
-            <a href="{{ route('siswa.riwayat') }}" class="card yellow">
-          <div class="columns">
-        <div class="column">
-            <img src="{{asset('Siswa/RIWAYAT.png')}}">
-        </div>
-        <div class="column"
-          <h3>Riwayat</h3>
-          <p>Halaman  melihat riwayat ujian.</p>
-        <div class="arrow" style="color:#EBF1FA;background:#9BACD4;padding:5px 10px;border-radius:5px;"><i class="fa fa-arrow-right"></i>
+            <!-- Riwayat Card -->
+            <a href="{{ route('siswa.riwayat') }}" class="card-custom yellow">
+                <div class="card-layout">
+                    <div class="card-img-col">
+                        <img src="{{asset('Siswa/RIWAYAT.png')}}" alt="Riwayat" onerror="this.style.display='none'">
+                    </div>
+                    <div class="card-text-col">
+                        <h3>Riwayat</h3>
+                        <p>Halaman melihat riwayat ujian.</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fa fa-arrow-right"></i>
+                    </div>
                 </div>
-                
-                </div>
-              </div>
             </a>
         </div>
         
@@ -955,17 +675,15 @@ background:#D3DFF5;
                     $isUjianOngoing = ($uj->status === "ongoing");
                 @endphp
                 
-                <div class="card exam-card">
-                    <div class="card-content">
+                <div class="exam-card">
+                    <div class="exam-card-content">
                         <div class="media">
                             <div class="media-content">
-                                <p class="title is-4">
+                                <p class="title-4">
                                     {{ $uj->mapels->nama_mapel ?? $uj->nama_ujian }}
                                 </p>
-                                <p class="subtitle is-6">
-                                    <span class="icon">
-                                        <i class="fas fa-clock"></i>
-                                    </span>
+                                <p class="subtitle-6">
+                                    <span class="icon"><i class="fas fa-clock"></i></span>
                                     @if(isset($uj->jadwal))
                                         {{ \Carbon\Carbon::parse($uj->jadwal->waktu_mulai)->format('H:i') }} WIB
                                     @else
@@ -977,43 +695,40 @@ background:#D3DFF5;
                         
                         <div class="content">
                             @if($statusUjian == 'selesai')
-                                <div class="has-text-centered">
+                                <div style="text-align: center;">
                                     <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 20px; border-radius: 8px;">
                                         <i class="fas fa-check-circle" style="color: #22c55e; font-size: 2rem;"></i>
                                         <div style="font-size: 2rem; font-weight: 700; color: #22c55e; margin: 10px 0;">
                                             {{ round($nilaiSiswa) ?? 0 }}
                                         </div>
-                                        <span style="background: #22c55e; color: white; margin: 5px 30px; border-radius: 20px; font-size: 0.85rem;display:block;">
+                                        <span style="background: #22c55e; color: white; margin: 5px 0; border-radius: 20px; font-size: 0.85rem; display:inline-block; padding: 4px 12px;">
                                             Ujian Selesai
                                         </span>
-                          <a class="button is-success is-outlined block" href="{{route('siswa.detail',$peserta->id)}}">Detail</a>          </div>
-         </div>
-            @elseif($statusUjian == 'mulai')
-                                <div class="has-text-centered">
-                                    <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                                        <i class="fas fa-hourglass-half" style="color: #d97706;"></i> 
-                                        Ujian sedang berjalan
+                                        <br><br>
+                                        <a class="btn-custom btn-success-custom" href="{{route('siswa.detail',$peserta->id)}}">Detail Nilai</a>
                                     </div>
-                                    <a href="{{ route('siswa.resume', $uj->id) }}" class="button is-warning is-medium">
-                                        <span class="icon">
-                                            <i class="fas fa-play-circle"></i>
-                                        </span>
+                                </div>
+                            @elseif($statusUjian == 'mulai')
+                                <div style="text-align: center;">
+                                    <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-bottom: 15px; color: #d97706; font-weight: 600;">
+                                        <i class="fas fa-hourglass-half"></i> Ujian sedang berjalan
+                                    </div>
+                                    <a href="{{ route('siswa.resume', $uj->id) }}" class="btn-custom btn-warning-custom" style="width: 100%; justify-content: center;">
+                                        <span><i class="fas fa-play-circle"></i></span>
                                         <span>Lanjutkan Ujian</span>
                                     </a>
                                 </div>
                             @else
                                 @if($isUjianReady)
-                                    <div class="has-text-centered">
-                                        <a href="{{ route('siswa.shop', $uj->id) }}" class="button is-medium has-text-light" style="background:#2e5b9a;">
-                                            <span class="icon">
-                                                <i class="fas fa-play"></i>
-                                            </span>
+                                    <div style="text-align: center;">
+                                        <a href="{{ route('siswa.shop', $uj->id) }}" class="btn-custom btn-primary-custom" style="width: 100%; justify-content: center;">
+                                            <span><i class="fas fa-play"></i></span>
                                             <span>Mulai Ujian</span>
                                         </a>
                                     </div>
                                 @else
-                                    <div class="has-text-centered">
-                                        <span style="background: #e5e7eb; color: #6b7280; padding: 5px 15px; border-radius: 20px;">
+                                    <div style="text-align: center;">
+                                        <span class="status-badge">
                                             <i class="fas fa-info-circle"></i> Belum tersedia
                                         </span>
                                     </div>
@@ -1024,13 +739,14 @@ background:#D3DFF5;
                 </div>
                 @endforeach
             @else
-                <div class="has-text-centered" style="padding: 40px; color: #999;">
+                <div style="text-align: center; padding: 40px; color: #999;">
                     <i class="fas fa-inbox fa-3x" style="margin-bottom: 15px;"></i>
                     <p>Tidak ada ujian untuk hari ini</p>
                     <p style="font-size: 0.85rem;">Silakan cek jadwal ujian untuk informasi lebih lanjut</p>
                 </div>
             @endif
         </div>
+        
         @if(isset($jadwalMendatang) && count($jadwalMendatang) > 0)
         <div class="upcoming-schedule">
             <div class="section-title">
@@ -1055,7 +771,7 @@ background:#D3DFF5;
         </div>
         @endif
       @else
-      <h5>Belum Di Absen</h5>
+      <h5 style="text-align: center; margin-top: 50px; color: var(--primary);">Belum Di Absen</h5>
       @endif
       
     </main>
@@ -1115,47 +831,49 @@ document.addEventListener('DOMContentLoaded', function() {
         sidebarOverlay.addEventListener('click', toggleSidebar);
     }
     
-    // Auto hide notification
-    var notification = document.getElementById('notification');
-    if (notification) {
-        setTimeout(function() {
-            notification.style.opacity = '0';
-            setTimeout(function() {
-                notification.style.display = 'none';
-            }, 300);
-        }, 5000);
-    }
-    
-    // Handle window resize
-    var resizeTimer;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(function() {
-            if (window.innerWidth > 768) {
-                sidebar.classList.remove('open');
-                if (sidebarOverlay) sidebarOverlay.classList.remove('active');
-                var icon = mobileToggle.querySelector('i');
-                if (icon) {
-                    icon.classList.remove('fa-times');
-                    icon.classList.add('fa-bars');
-                }
-            }
-        }, 250);
-    });
-    
     // Close sidebar on mobile after clicking link
     var sidebarItems = document.querySelectorAll('.sidebar-item');
     for (var i = 0; i < sidebarItems.length; i++) {
         sidebarItems[i].addEventListener('click', function() {
-            if (window.innerWidth <= 768) {
-                setTimeout(function() {
-                    if (sidebar.classList.contains('open')) toggleSidebar();
-                }, 150);
+            if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+                toggleSidebar();
             }
         });
     }
 });
-</script>
 
+// Page Transition Script (Original logic preserved)
+document.addEventListener('click', function(e) {
+    const link = e.target.closest('a');
+    if (!link) return;
+    
+    const href = link.getAttribute('href');
+    const target = link.getAttribute('target');
+    
+    if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:') || target === '_blank') {
+        return;
+    }
+    
+    if (link.classList.contains('no-transition') || link.getAttribute('data-turbolinks') === 'false') {
+        return;
+    }
+     
+    const isLocal = href.startsWith(window.location.origin) || href.startsWith('/');
+    const mainContent = document.querySelector(".main-content")
+    if (isLocal) {
+        e.preventDefault();
+       mainContent.classList.add("page-leaving")
+        setTimeout(function() {
+            window.location.href = href;
+        }, 250);
+    }
+});
+
+document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+        mainContent.classList.add("page-leaving")
+    });
+});
+</script>
 </body>
 </html>

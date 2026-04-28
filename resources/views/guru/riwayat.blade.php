@@ -7,543 +7,777 @@
     <title>Riwayat Ujian - Guru | Sistem Ujian</title>
     
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-        }
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulmaswatch/default/bulmaswatch.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+    /* ===== TAMBAHKAN INI DI STYLE CSS ANDA ===== */
 
-        body {
-            background: #f3f5f9;
-            overflow-x: hidden;
-        }
+/* Animasi Lonceng Notifikasi (Shake) */
+@keyframes bellShake {
+    0% { transform: rotate(0); }
+    15% { transform: rotate(15deg); }
+    30% { transform: rotate(-10deg); }
+    45% { transform: rotate(5deg); }
+    60% { transform: rotate(-5deg); }
+    75% { transform: rotate(2deg); }
+    100% { transform: rotate(0); }
+}
 
-        /* ===== HEADER ===== */
-        .header {
-            background: #2e5b9a;
-            color: white;
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
+.has-new-notif .fa-bell {
+    animation: bellShake 2s ease-in-out infinite;
+    color: #ffd700; /* Warna emas jika ada notif baru */
+}
 
-        .header h2 {
-            font-size: 1rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+/* Wrapper Notifikasi */
+.notif-wrapper {
+    position: relative;
+}
 
-        .header h2 i {
-            font-size: 1.2rem;
-        }
+.notif-btn {
+    position: relative;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
 
-        /* User Dropdown */
-        .user-dropdown {
-            position: relative;
-            cursor: pointer;
-        }
+.notif-btn:hover {
+    background: rgba(255,255,255,0.15);
+}
 
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 12px;
-            border-radius: 8px;
-            transition: background 0.3s ease;
-        }
+.notif-btn i {
+    font-size: 1.2rem;
+    color: white;
+}
 
-        .user-info:hover {
-            background: rgba(255,255,255,0.15);
-        }
+.notif-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: #dc3545;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: bold;
+    height: 18px;
+    min-width: 18px;
+    padding: 0 4px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #2e5b9a;
+    z-index: 2;
+}
 
-        .user-avatar {
-            width: 34px;
-            height: 34px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #2e5b9a;
-            font-weight: bold;
-        }
+.notif-badge.hidden {
+    display: none;
+}
 
-        .user-name {
-            font-weight: 500;
-            font-size: 0.85rem;
-        }
+/* Dropdown Notifikasi */
+.notif-dropdown {
+    position: absolute;
+    top: 120%;
+    right: -10px;
+    width: 320px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 1002;
+}
 
-        .user-name i {
-            font-size: 0.7rem;
-            margin-left: 5px;
-        }
+.notif-wrapper.active .notif-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
 
-        /* Dropdown Menu */
-        .dropdown-menu-custom {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            margin-top: 8px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            min-width: 180px;
+.notif-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notif-header h4 {
+    font-size: 0.9rem;
+    color: #2e5b9a;
+    font-weight: 700;
+}
+
+.notif-header .mark-read {
+    font-size: 0.75rem;
+    color: #5c6fa6;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.notif-body {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.notif-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f5f5f5;
+    display: flex;
+    gap: 12px;
+    transition: background 0.2s;
+    cursor: pointer;
+    color: inherit;
+    text-decoration: none;
+}
+
+.notif-item:hover {
+    background: #f8f9fa;
+}
+
+.notif-item.unread {
+    background: #f0f7ff;
+    border-left: 3px solid #2e5b9a;
+}
+
+.notif-icon-box {
+    width: 36px;
+    height: 36px;
+    background: #e3eaf5;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2e5b9a;
+    flex-shrink: 0;
+}
+
+.notif-content {
+    flex: 1;
+}
+
+.notif-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 2px;
+    line-height: 1.3;
+}
+
+.notif-desc {
+    font-size: 0.75rem;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.notif-time {
+    font-size: 0.7rem;
+    color: #999;
+}
+
+.notif-footer {
+    padding: 10px;
+    text-align: center;
+    border-top: 1px solid #eee;
+}
+
+.notif-footer a {
+    font-size: 0.8rem;
+    color: #2e5b9a;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.empty-notif {
+    padding: 30px;
+    text-align: center;
+    color: #999;
+}
+
+.empty-notif i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    color: #ddd;
+}
+    /* Animasi masuk */
+    .main-content {
+        animation: pageEnter 0.3s ease-out forwards;
+    }
+
+    @keyframes pageEnter {
+        from {
             opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.3s ease;
-            z-index: 1001;
+            transform: translateY(12px);
         }
-
-        .user-dropdown.active .dropdown-menu-custom {
+        to {
             opacity: 1;
-            visibility: visible;
             transform: translateY(0);
         }
+    }
 
-        .dropdown-item-custom {
-            padding: 10px 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #333;
-            text-decoration: none;
-            transition: background 0.2s ease;
-            border-bottom: 1px solid #eee;
-            font-size: 0.85rem;
+    /* Animasi keluar */
+    .main-content.page-leaving {
+        animation: pageLeave 0.25s ease-in forwards !important;
+    }
+
+    @keyframes pageLeave {
+        from {
+            opacity: 1;
+            transform: translateY(0);
         }
-
-        .dropdown-item-custom:last-child {
-            border-bottom: none;
+        to {
+            opacity: 0;
+            transform: translateY(-12px);
         }
+    }
 
-        .dropdown-item-custom:hover {
-            background: #f5f5f5;
+    /* Variables & Reset */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    body {
+        background: #f3f5f9;
+        overflow-x: hidden;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+        background: #2e5b9a;
+        color: white;
+        padding: 12px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .header h2 {
+        font-size: 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .header h2 i {
+        font-size: 1.2rem;
+    }
+
+    /* User Dropdown */
+    .user-dropdown {
+        position: relative;
+        cursor: pointer;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        transition: background 0.3s ease;
+    }
+
+    .user-info:hover {
+        background: rgba(255,255,255,0.15);
+    }
+
+    .user-avatar {
+        width: 34px;
+        height: 34px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #2e5b9a;
+        font-weight: bold;
+    }
+
+    .user-name {
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+
+    .user-name i {
+        font-size: 0.7rem;
+        margin-left: 5px;
+    }
+
+    /* Dropdown Menu */
+    .dropdown-menu-custom {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 8px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        min-width: 180px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        z-index: 1001;
+    }
+
+    .user-dropdown.active .dropdown-menu-custom {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .dropdown-item-custom {
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #333;
+        text-decoration: none;
+        transition: background 0.2s ease;
+        border-bottom: 1px solid #eee;
+        font-size: 0.85rem;
+    }
+
+    .dropdown-item-custom:last-child {
+        border-bottom: none;
+    }
+
+    .dropdown-item-custom:hover {
+        background: #f5f5f5;
+    }
+
+    .dropdown-item-custom i {
+        width: 18px;
+        color: #2e5b9a;
+    }
+
+    .dropdown-divider {
+        height: 1px;
+        background: #eee;
+        margin: 4px 0;
+    }
+
+    .logout-btn {
+        color: #dc3545;
+    }
+
+    .logout-btn i {
+        color: #dc3545;
+    }
+
+    /* ===== LAYOUT ===== */
+    .app-wrapper {
+        display: flex;
+        margin-top: 56px;
+        min-height: calc(100vh - 56px);
+    }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+        width: 260px;
+        background: #5c6fa6;
+        position: fixed;
+        left: 0;
+        top: 56px;
+        bottom: 0;
+        z-index: 99;
+        transition: transform 0.3s ease;
+        overflow-y: auto;
+    }
+
+    .sidebar-menu {
+        padding: 20px 0;
+    }
+
+    .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        margin: 4px 12px;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .sidebar-item i {
+        width: 22px;
+        font-size: 1rem;
+    }
+
+    .sidebar-item span {
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .sidebar-item:hover { background: rgba(255,255,255,0.25);  color:#2e5b9a;border-left: 4px solid white;}
+    .sidebar-item.active { background: rgba(255,255,255,0.25); border-left: 4px solid white; }
+    
+
+    .sidebar-logout {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        padding: 0 12px;
+    }
+
+    .sidebar-logout .sidebar-item {
+        color: white;
+    }
+
+    .sidebar-logout .sidebar-item:hover {
+        background: #dc3545;
+    }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content {
+        flex: 1;
+        margin-left: 260px;
+        padding: 24px;
+        transition: margin-left 0.3s ease;
+        width: calc(100% - 260px);
+    }
+
+    /* Mobile Menu Toggle */
+    .mobile-toggle {
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        background: #2e5b9a;
+        border-radius: 50%;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 100;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        border: none;
+        color: white;
+    }
+
+    .mobile-toggle i {
+        font-size: 22px;
+    }
+
+    /* Overlay untuk mobile */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 56px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 98;
+    }
+
+    .sidebar-overlay.active {
+        display: block;
+    }
+
+    /* ===== CARD STYLES ===== */
+    .history-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+        border: 1px solid #eef2f6;
+    }
+
+    .history-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+
+    .history-card .card-header {
+        background: white;
+        border-bottom: 1px solid #f0f2f5;
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .history-card .card-header-title {
+        font-weight: 600;
+        color: #2e5b9a;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+    }
+
+    .history-card .card-content {
+        padding: 20px;
+    }
+
+    /* Stat Card */
+    .stat-badge {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 15px;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #f8f9fc;
+        padding: 8px 16px;
+        border-radius: 30px;
+        font-size: 0.8rem;
+    }
+
+    .stat-item i {
+        color: #2e5b9a;
+        font-size: 0.9rem;
+    }
+
+    /* Tag Status */
+    .tag-status {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    /* Tag Warna Berdasarkan Status */
+    .tag-draft {
+        background: #e2e8f0; /* Abu-abu muda */
+        color: #64748b;
+    }
+    .tag-ready {
+        background: #dbeafe; /* Biru muda */
+        color: #0369a1;
+    }
+    .tag-done {
+        background: #d1fae5; /* Hijau muda */
+        color: #065f46;
+    }
+
+    /* Button */
+    .btn-outline-sm {
+        background: transparent;
+        border: 1px solid #2e5b9a;
+        color: #2e5b9a;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-outline-sm:hover {
+        background: #2e5b9a;
+        color: white;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: #adb5bd;
+        margin-bottom: 16px;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb-custom {
+        margin-bottom: 20px;
+    }
+
+    .breadcrumb-custom ul {
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .breadcrumb-custom li {
+        display: flex;
+        align-items: center;
+    }
+
+    .breadcrumb-custom li:not(:last-child):after {
+        content: "/";
+        margin-left: 8px;
+        color: #adb5bd;
+    }
+
+    .breadcrumb-custom a {
+        color: #5c6fa6;
+        text-decoration: none;
+        font-size: 0.85rem;
+    }
+
+    .breadcrumb-custom a:hover {
+        color: #2e5b9a;
+    }
+
+    .breadcrumb-custom .is-active a {
+        color: #2e5b9a;
+        font-weight: 600;
+    }
+
+    /* Filter Tabs */
+    .filter-tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+    }
+
+    .filter-tab {
+        padding: 8px 20px;
+        border-radius: 30px;
+        background: white;
+        color: #5c6fa6;
+        border: 1px solid #e5e7eb;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .filter-tab:hover {
+        border-color: #2e5b9a;
+        color: #2e5b9a;
+    }
+
+    .filter-tab.active {
+        background: #2e5b9a;
+        color: white;
+        border-color: #2e5b9a;
+    }
+
+    /* Year Selector */
+    .year-selector {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .year-selector select {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        background: white;
+        font-size: 0.85rem;
+        color: #333;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .notif-dropdown{right: -100px;} 
+        .header h2 span {
+            display: inline;
         }
-
-        .dropdown-item-custom i {
-            width: 18px;
-            color: #2e5b9a;
+        
+        .user-name span {
+            display: none;
         }
-
-        .dropdown-divider {
-            height: 1px;
-            background: #eee;
-            margin: 4px 0;
-        }
-
-        .logout-btn {
-            color: #dc3545;
-        }
-
-        .logout-btn i {
-            color: #dc3545;
-        }
-
-        /* ===== LAYOUT ===== */
-        .app-wrapper {
-            display: flex;
-            margin-top: 56px;
-            min-height: calc(100vh - 56px);
-        }
-
-        /* ===== SIDEBAR ===== */
+        
         .sidebar {
-            width: 260px;
-            background: #5c6fa6;
-            position: fixed;
-            left: 0;
-            top: 56px;
-            bottom: 0;
-            z-index: 99;
-            transition: transform 0.3s ease;
-            overflow-y: auto;
+            transform: translateX(-100%);
         }
-
-        .sidebar-menu {
-            padding: 20px 0;
+        
+        .sidebar.open {
+            transform: translateX(0);
         }
-
-        .sidebar-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 20px;
-            margin: 4px 12px;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .sidebar-item i {
-            width: 22px;
-            font-size: 1rem;
-        }
-
-        .sidebar-item span {
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .sidebar-item:hover {
-            background: rgba(255,255,255,0.2);
-        }
-
-        .sidebar-item.active {
-            background: rgba(255,255,255,0.25);
-            border-left: 3px solid white;
-        }
-
-        .sidebar-logout {
-            position: absolute;
-            bottom: 20px;
-            left: 0;
-            right: 0;
-            padding: 0 12px;
-        }
-
-        .sidebar-logout .sidebar-item {
-            color: white;
-        }
-
-        .sidebar-logout .sidebar-item:hover {
-            background: #dc3545;
-        }
-
-        /* ===== MAIN CONTENT ===== */
+        
         .main-content {
-            flex: 1;
-            margin-left: 260px;
-            padding: 24px;
-            transition: margin-left 0.3s ease;
-            width: calc(100% - 260px);
+            margin-left: 0 !important;
+            width: 100% !important;
+            padding: 16px;
         }
-
-        /* Mobile Menu Toggle */
+        
         .mobile-toggle {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            background: #2e5b9a;
-            border-radius: 50%;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 100;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            border: none;
-            color: white;
+            display: flex;
         }
-
-        .mobile-toggle i {
-            font-size: 22px;
-        }
-
-        /* Overlay untuk mobile */
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 56px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 98;
-        }
-
-        .sidebar-overlay.active {
-            display: block;
-        }
-
-        /* ===== CARD STYLES ===== */
-        .history-card {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
-            border: 1px solid #eef2f6;
-        }
-
-        .history-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-        }
-
+        
         .history-card .card-header {
-            background: white;
-            border-bottom: 1px solid #f0f2f5;
-            padding: 16px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
+            flex-direction: column;
+            align-items: flex-start;
         }
-
-        .history-card .card-header-title {
-            font-weight: 600;
-            color: #2e5b9a;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 0;
-        }
-
-        .history-card .card-content {
-            padding: 20px;
-        }
-
-        /* Stat Card */
+        
         .stat-badge {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-        }
-
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #f8f9fc;
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 0.8rem;
-        }
-
-        .stat-item i {
-            color: #2e5b9a;
-            font-size: 0.9rem;
-        }
-
-        .tag-status {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .tag-completed {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .tag-done {
-            background: #cfe2ff;
-            color: #2e5b9a;
-        }
-
-        /* Button */
-        .btn-outline-sm {
-            background: transparent;
-            border: 1px solid #2e5b9a;
-            color: #2e5b9a;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-weight: 500;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn-outline-sm:hover {
-            background: #2e5b9a;
-            color: white;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6c757d;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-
-        .empty-state i {
-            font-size: 3rem;
-            color: #adb5bd;
-            margin-bottom: 16px;
-        }
-
-        /* Breadcrumb */
-        .breadcrumb-custom {
-            margin-bottom: 20px;
-        }
-
-        .breadcrumb-custom ul {
-            list-style: none;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .breadcrumb-custom li {
-            display: flex;
-            align-items: center;
-        }
-
-        .breadcrumb-custom li:not(:last-child):after {
-            content: "/";
-            margin-left: 8px;
-            color: #adb5bd;
-        }
-
-        .breadcrumb-custom a {
-            color: #5c6fa6;
-            text-decoration: none;
-            font-size: 0.85rem;
-        }
-
-        .breadcrumb-custom a:hover {
-            color: #2e5b9a;
-        }
-
-        .breadcrumb-custom .is-active a {
-            color: #2e5b9a;
-            font-weight: 600;
-        }
-
-        /* Filter Tabs */
-        .filter-tabs {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 24px;
-        }
-
-        .filter-tab {
-            padding: 8px 20px;
-            border-radius: 30px;
-            background: white;
-            color: #5c6fa6;
-            border: 1px solid #e5e7eb;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .filter-tab:hover {
-            border-color: #2e5b9a;
-            color: #2e5b9a;
-        }
-
-        .filter-tab.active {
-            background: #2e5b9a;
-            color: white;
-            border-color: #2e5b9a;
-        }
-
-        /* Year Selector */
-        .year-selector {
-            display: flex;
-            align-items: center;
             gap: 10px;
         }
-
-        .year-selector select {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-            background: white;
-            font-size: 0.85rem;
-            color: #333;
+        
+        .stat-item {
+            padding: 4px 12px;
+            font-size: 0.7rem;
         }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .header h2 span {
-                display: none;
-            }
-            
-            .user-name span {
-                display: none;
-            }
-            
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            
-            .sidebar.open {
-                transform: translateX(0);
-            }
-            
-            .main-content {
-                margin-left: 0 !important;
-                width: 100% !important;
-                padding: 16px;
-            }
-            
-            .mobile-toggle {
-                display: flex;
-            }
-            
-            .history-card .card-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .stat-badge {
-                gap: 10px;
-            }
-            
-            .stat-item {
-                padding: 4px 12px;
-                font-size: 0.7rem;
-            }
-            
-            .filter-tabs {
-                overflow-x: auto;
-                flex-wrap: nowrap;
-                padding-bottom: 8px;
-            }
-            
-            .filter-tab {
-                white-space: nowrap;
-            }
+        
+        .filter-tabs {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            padding-bottom: 8px;
         }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 5px;
+        
+        .filter-tab {
+            white-space: nowrap;
         }
+    }
 
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+        width: 5px;
+    }
 
-        ::-webkit-scrollbar-thumb {
-            background: #5c6fa6;
-            border-radius: 3px;
-        }
-    </style>
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #5c6fa6;
+        border-radius: 3px;
+    }
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+</style>
 </head>
 <body>
 
@@ -552,9 +786,27 @@
     <h2>
         <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px"/>
         <span>SMK NEGERI 1 CIOMAS</span>
-        <span>SMK NEGERI 1 CIOMAS</span>
     </h2>
-    
+    <div class="header-actions">
+        <div class="notif-wrapper" id="notifWrapper">
+        <div class="notif-btn" id="notifBtn">
+            <i class="fas fa-bell"></i>
+            <span class="notif-badge" id="notifCount">0</span>
+        </div>
+        
+        <div class="notif-dropdown">
+            <div class="notif-header">
+                <h4><i class="fas fa-bell"></i> Notifikasi</h4>
+                <span class="mark-read" onclick="markAllRead()">Tandai dibaca</span>
+            </div>
+            <div class="notif-body" id="notifList">
+                <!-- Data Notifikasi akan dimuat via JS -->
+            </div>
+            <div class="notif-footer">
+                <a href="{{ route('pengawas.index', isset($dt) ? $dt->id : '') }}">Lihat Semua Jadwal</a>
+            </div>
+        </div>
+    </div>
     <div class="user-dropdown" id="userDropdown">
         <div class="user-info">
             <div class="user-avatar">
@@ -585,6 +837,8 @@
             </form>
         </div>
     </div>
+    </div>
+     
 </header>
 
 <!-- Mobile Menu Toggle -->
@@ -667,24 +921,42 @@
             </div>
         </div>
         
-        <!-- Filter Tabs -->
+        <!-- Filter Tabs (DIUPDATE) -->
         <div class="filter-tabs">
             <button class="filter-tab active" data-filter="all">Semua</button>
-            <button class="filter-tab" data-filter="completed">Selesai</button>
-            <button class="filter-tab" data-filter="done">Terselesaikan</button>
+            <button class="filter-tab" data-filter="draft">Draft</button>
+            <button class="filter-tab" data-filter="ready">Terjadwal (Ready)</button>
+            <button class="filter-tab" data-filter="done">Selesai</button>
         </div>
         
         <!-- Riwayat Cards -->
         <div id="riwayatContainer">
             @forelse($data ?? [] as $index => $dt)
             @php
-                $status = $dt->status ?? 'completed';
-                $statusClass = $status == 'completed' || $status == 'selesai' ? 'tag-completed' : 'tag-done';
-                $statusText = $status == 'completed' || $status == 'selesai' ? 'Selesai' : 'Terselesaikan';
-                $waktuSelesai = isset($dt->waktu_selesai) ? \Carbon\Carbon::parse($dt->waktu_selesai) : null;
+                // Logika Fix Status
+                $statusRaw = $dt->status ?? 'draft'; // Nilai dari DB: draft, ready, done
+                
+                // Tentukan CSS Class & Tampilan Teks
+                if ($statusRaw == 'draft') {
+                    $statusText = 'Draft';
+                    $statusClass = 'tag-draft';
+                    $filterVal = 'draft';
+                } elseif ($statusRaw == 'ready') {
+                    $statusText = 'Terjadwal'; // atau Ready
+                    $statusClass = 'tag-ready';
+                    $filterVal = 'ready';
+                } else { // done
+                    $statusText = 'Selesai';
+                    $statusClass = 'tag-done';
+                    $filterVal = 'done';
+                }
+
+                // Hitung Tahun
+                $waktuSelesai = isset($dt->jadwal->waktu_selesai) ? \Carbon\Carbon::parse($dt->jadwal->waktu_selesai) : null;
                 $tahun = $waktuSelesai ? $waktuSelesai->format('Y') : date('Y');
             @endphp
-            <div class="history-card" data-status="{{ strtolower($statusText) }}" data-tahun="{{ $tahun }}">
+            
+            <div class="history-card" data-status="{{ $filterVal }}" data-tahun="{{ $tahun }}">
                 <div class="card-header">
                     <div class="card-header-title">
                         <i class="fas fa-file-alt" style="color: #2e5b9a;"></i>
@@ -694,8 +966,10 @@
                         <span class="tag-status {{ $statusClass }}">
                             @if($statusText == 'Selesai')
                                 <i class="fas fa-check-circle"></i>
+                            @elseif($statusText == 'Terjadwal')
+                                <i class="fas fa-clock"></i>
                             @else
-                                <i class="fas fa-flag-checkered"></i>
+                                <i class="fas fa-pen-fancy"></i>
                             @endif
                             {{ $statusText }}
                         </span>
@@ -745,7 +1019,7 @@
                     
                     @if(isset($dt->catatan) && $dt->catatan)
                     <div class="mt-2 mb-3">
-                        <span class="tag is-light">
+                        <span class="tag is-light" style="background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0;">
                             <i class="fas fa-sticky-note"></i> {{ $dt->catatan }}
                         </span>
                     </div>
@@ -821,6 +1095,97 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // User Dropdown Toggle
+        // ... kode JS yang sudah ada ...
+
+    // ==========================================
+    // TAMBAHKAN LOGIKA NOTIFIKASI INI
+    // ==========================================
+    
+    // Ambil data dari Controller ($notifData)
+    // Pastikan controller Anda melempar variabel $notifData
+    var notifData = @json($notifData ?? []);
+
+    const notifWrapper = document.getElementById('notifWrapper');
+    const notifBtn = document.getElementById('notifBtn');
+    const notifList = document.getElementById('notifList');
+    const notifCountBadge = document.getElementById('notifCount');
+
+    // Fungsi Render Notifikasi
+    function renderNotifications() {
+        // Hitung yang unread
+        const unreadCount = notifData.filter(n => n.unread).length;
+        
+        // Update badge
+        notifCountBadge.innerText = unreadCount;
+        if (unreadCount > 0) {
+            notifCountBadge.classList.remove('hidden');
+            notifWrapper.classList.add('has-new-notif');
+        } else {
+            notifCountBadge.classList.add('hidden');
+            notifWrapper.classList.remove('has-new-notif');
+        }
+
+        // Render List
+        if (notifData.length === 0) {
+            notifList.innerHTML = `
+                <div class="empty-notif">
+                    <i class="fas fa-check-circle"></i>
+                    <p>Tidak ada notifikasi baru</p>
+                </div>`;
+            return;
+        }
+
+        let html = '';
+        notifData.forEach(notif => {
+            html += `
+            <a href="{{ route('pengawas.index', isset($dt) ? $dt->id : '') }}" class="notif-item ${notif.unread ? 'unread' : ''}" onclick="openNotif(${notif.id})">
+                <div class="notif-icon-box">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+                <div class="notif-content">
+                    <div class="notif-title">${notif.title}</div>
+                    <div class="notif-desc">${notif.desc}</div>
+                    <div class="notif-time">${notif.time}</div>
+                </div>
+            </a>
+            `;
+        });
+        notifList.innerHTML = html;
+    }
+
+    // Toggle Notifikasi (Klik Tombol Lonceng)
+    if (notifBtn) {
+        notifBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            notifWrapper.classList.toggle('active');
+            
+            // Tutup user dropdown jika terbuka
+            const userDropdown = document.getElementById('userDropdown');
+            if(userDropdown) userDropdown.classList.remove('active');
+        });
+    }
+
+    // Klik item notif (Opsional: Bisa diarahkan ke link tertentu)
+    window.openNotif = function(id) {
+        console.log("Membuka notif ID: " + id);
+        
+        // Hilangkan status unread lokal saat diklik
+        const notif = notifData.find(n => n.id === id);
+        if(notif) notif.unread = false;
+        renderNotifications();
+    }
+
+    // Tandai semua dibaca
+    window.markAllRead = function() {
+        notifData.forEach(n => n.unread = false);
+        renderNotifications();
+    }
+
+    // Jalankan render pertama kali
+    renderNotifications();
+    // ==========================================
+    // SELESAI LOGIKA NOTIFIKASI
+    // ==========================================
     const userDropdown = document.getElementById('userDropdown');
     if (userDropdown) {
         userDropdown.addEventListener('click', function(e) {
@@ -858,7 +1223,9 @@ document.addEventListener('DOMContentLoaded', function() {
         sidebarOverlay.addEventListener('click', toggleSidebar);
     }
     
-    // Filter Tabs Functionality
+    // ==========================================
+    // LOGIKA FILTER TABS (DIUPDATE)
+    // ==========================================
     const filterTabs = document.querySelectorAll('.filter-tab');
     const historyCards = document.querySelectorAll('.history-card');
     const yearFilter = document.getElementById('yearFilter');
@@ -871,7 +1238,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let visibleCount = 0;
         
         historyCards.forEach(card => {
-            const cardStatus = card.getAttribute('data-status');
+            const cardStatus = card.getAttribute('data-status'); // draft, ready, done
             const cardYear = card.getAttribute('data-tahun');
             
             let statusMatch = filterValue === 'all' || cardStatus === filterValue;
@@ -949,6 +1316,35 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let mainContent = document.querySelector(".main-content")
+    // ==========================================
+    // 1. INTERCEPT LINK KLIK (Smooth Redirect)
+    // ==========================================
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a');
+        if (!link) return; 
+        const href = link.getAttribute('href');
+        const target = link.getAttribute('target');
+        
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:') || target === '_blank') return;
+        if (link.classList.contains('no-transition') || link.getAttribute('data-turbolinks') === 'false') return;
+        
+        const isLocal = href.startsWith(window.location.origin) || href.startsWith('/');
+        if (isLocal) {
+            e.preventDefault();
+            mainContent.classList.add('page-leaving');
+            setTimeout(function() { window.location.href = href; }, 250);
+        }
+    });
 
+    document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function() {
+            document.body.classList.add('page-leaving');
+        });
+    });
+});
+</script>
 </body>
 </html>

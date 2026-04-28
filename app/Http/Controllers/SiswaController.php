@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use App\Models\Siswa;
 use App\Models\User;
@@ -46,8 +47,8 @@ class SiswaController
 {
     $request->validate([
         'nama' => 'required',
-        'nisn' => 'required|unique:siswa',
-        'password' => 'required',
+        'nisn' => 'required|digits:10',
+        'password' => 'required|min:6',
         'kelas_id' => 'required'
     ]);
     $katapertama = Str::of($request->nama)->before(' ')->toString();
@@ -92,9 +93,9 @@ class SiswaController
 
     $request->validate([
         "nama" => "required",
-        "nisn" => "required",
+        "nisn" => "required|digits:10",
         // Hapus 'required' dari password
-        "password" => "nullable", // optional, dengan minimal 6 karakter
+        "password" => "nullable|min:6", // optional, dengan minimal 6 karakter
     ]);
     
     // 2. Proses update data
@@ -256,61 +257,93 @@ class SiswaController
 }
     
     public function Saved(Request $request)
-    {
-        $request->validate([
-            "jawaban" => "required|array"
-        ]);
-        $sis = Siswa::findOrFail($request->siswa_id);
+{
+    // 1. VALIDASI
+    $request->validate([
+        "ujian_id" => "required|integer|exists:ujian,id",
+        "siswa_id" => "required|integer|exists:siswa,id_siswa", // Pastikan siswa valid
+        "jawaban" => "required|array",
+    ]);
+
+    // 2. AMBIL DATA SISWA (Untuk redirect aman)
+    $siswa = Siswa::findOrFail($request->siswa_id);
+
+    $ujianId = $request->ujian_id;
+    $jawabanSiswa = $request->jawaban;
+    $soal_ids = array_keys($jawabanSiswa);
+    
+    // 3. AMBIL DATA SOAL
+    $soals = banksoal::whereIn("id", $soal_ids)->get()->keyBy("id");
+    
+    $score = 0;
+    $total_soal = count($jawabanSiswa);
+    
+    $jawabanData = []; // Siapkan array untuk batch insert (opsional tapi disarankan)
+    
+    foreach($jawabanSiswa as $soal_id => $jawabans) {
+        $soal = $soals[$soal_id] ?? null;
+        if (!$soal) continue;
         
-        $jawabanSiswa = $request->jawaban;
-        $soal_ids = array_keys($jawabanSiswa);
-        $soals = banksoal::whereIn("id", $soal_ids)->get()->keyBy("id");
+        $benar = 0;
         
-        $score = 0;
-        $total_soal = count($jawabanSiswa);
-        
-        foreach($jawabanSiswa as $soal_id => $jawabans) {
-            $soal = $soals[$soal_id] ?? null;
-            if (!$soal) continue;
-            
-            $benar = 0;
-            
-            if($soal->opsi_a != null) {
-                // SOAL PILIHAN GANDA
-                $benar = (strtoupper(trim($jawabans)) == strtoupper(trim($soal->jawaban_benar))) ? 1 : 0;
-            } else {
-                // SOAL ESSAY - panggil method terpisah
-                $nilai = $this->hitungNilaiEssay($jawabans, $soal->jawaban_benar);
-                $benar = ($nilai >= 80) ? 1 : 0; // Anggap benar jika nilai >= 80
-            }
-            
-            if($benar) {
-                $score += 1;
-            }
-            
-            Jawaban_Siswa::updateOrCreate([
-                "ujian_id" => $request->ujian_id,
-                "siswa_id" => $request->siswa_id,
-                "bank_id" => $soal->id,
-            ], [
-                "jawaban" => $jawabans,
-                "benar" => $benar,
-            ]);
+        if($soal->opsi_a != null) {
+            // PILIHAN GANDA
+            $benar = (strtoupper(trim($jawabans)) == strtoupper(trim($soal->jawaban_benar))) ? 1 : 0;
+        } else {
+            // ESSAY
+            $nilai = $this->hitungNilaiEssay($jawabans, $soal->jawaban_benar);
+            $benar = ($nilai >= 80) ? 1 : 0; 
         }
         
-        $nilai = ($total_soal > 0) ? ($score / $total_soal) * 100 : 0;
+        if($benar) {
+            $score += 1;
+        }
         
-        Peserta_ujian::updateOrCreate([
-            "ujian_id" => $request->ujian_id,
-            "siswa_id" => $request->siswa_id,
-        ], [
-            "nilai" => $nilai,
-            "status" => "selesai",
-        ]);
-        $siswa = Siswa::find($request->siswa_id);
-        $siswa->update(["status"=>"unready"]);
-        return redirect()->route("siswa.index")->with("success", "Ujian selesai!");
+        // SIMPAN DATA KE ARRAY (Lebih aman dari error query per loop)
+        $jawabanData[] = [
+            "ujian_id" => $ujianId,
+            "siswa_id" => $siswa->id_siswa,
+            "bank_id" => $soal->id,
+            "jawaban" => $jawabans,
+            "benar" => $benar,
+            "updated_at" => now(),
+        ];
     }
+
+    // 4. MASS INSERT (Upsert) agar tidak lambat
+    // Pastikan di migration ada: $table->unique(['ujian_id', 'siswa_id', 'bank_id']);
+    if (!empty($jawabanData)) {
+        Jawaban_Siswa::upsert(
+            $jawabanData,
+            ['ujian_id', 'siswa_id', 'bank_id'], 
+            ['jawaban', 'benar', 'updated_at']   
+        );
+    }
+    
+    // 5. HITUNG NILAI AKHIR
+    $nilai = ($total_soal > 0) ? round(($score / $total_soal) * 100, 2) : 0;
+    
+    // 6. UPDATE PESERTA UJIAN
+    Peserta_ujian::updateOrCreate([
+        "ujian_id" => $ujianId,
+        "siswa_id" => $siswa->id_siswa,
+    ], [
+        "nilai" => $nilai,
+        "status" => "done", // Pastikan konsisten dengan database (done/selesai)
+        "selesai_pengerjaan" => now(),
+    ]);
+    
+    // 7. UPDATE STATUS SISWA (HANYA JIKA KOLOMNYA ADA)
+    // Kode ini "Aman" karena mengecek dulu kolomnya ada atau tidak.
+    // Jika tabel siswa tidak punya kolom status, maka baris ini tidak dijalankan.
+    if (Schema::hasColumn('siswa', 'status')) {
+        $siswa->update(["status" => "unready"]);
+    }
+
+    // 8. REDIRECT KE HOME / HASIL
+    // Menggunakan route 'siswa.index' atau route dashboard
+    return redirect()->route("siswa.index")->with("success", "Ujian selesai! Nilai: $nilai");
+}
     
     /**
      * Fungsi terpisah untuk menghitung nilai essay

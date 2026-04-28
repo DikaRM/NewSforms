@@ -5,813 +5,675 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>Pengawasan Ujian - Sistem Ujian</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
   
+  <!-- Fonts & Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Library CSS (Bulma) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulmaswatch/default/bulmaswatch.min.css">
+  
+  <!-- Library JS (SweetAlert2) -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', system-ui, sans-serif;
+    /* --- 1. CONFIGURATION & VARIABLES --- */
+    :root {
+      --primary: #2e5b9a;
+      --primary-hover: #264a82;
+      --primary-soft: #ebf1f9;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --bg-page: #f8fafc;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --shadow-card: 0 10px 25px -5px rgba(46, 91, 154, 0.15);
+      --focus-ring: 0 0 0 3px rgba(46, 91, 154, 0.2);
     }
+
+    * { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
 
     body {
-      background: #f3f5f9;
-      overflow-x: hidden;
+      background: var(--bg-page);
+      color: var(--text-main);
+      margin: 0;
+      min-height: 100vh;
     }
 
-    /* ===== NAVBAR ===== */
-    .navbar {
-      background: #2e5b9a;
-      padding: 0 24px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
+    /* --- 2. LOGIN RUANGAN UI --- */
+    .login-wrapper {
       display: flex;
-      justify-content: space-between;
-    }
-
-    .navbar-brand {
-      padding: 8px 0;
-    }
-
-    .navbar-item {
-      color: white !important;
-      font-weight: 600;
-      font-size: 1rem;
-    }
-
-    .navbar-item i {
-      margin-right: 8px;
-    }
-
-    .navbar-end {
-      padding: 8px 0;
-    }
-
-    .navbar-end .button {
-      background: #dc3545;
-      border: none;
-      color: white;
-      transition: all 0.3s ease;
-    }
-
-    .navbar-end .button:hover {
-      background: #c82333;
-      transform: translateY(-2px);
-    }
-
-    /* ===== MAIN CONTAINER ===== */
-    .main-container {
-      margin-top: 70px;
-      padding: 24px;
-      max-width: 1400px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    /* ===== BREADCRUMB ===== */
-    .breadcrumb-custom {
-      background: white;
-      padding: 12px 20px;
-      border-radius: 12px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    .breadcrumb-custom a {
-      color: #2e5b9a;
-      text-decoration: none;
-    }
-
-    .breadcrumb-custom a:hover {
-      text-decoration: underline;
-    }
-
-    /* ===== INFO CARD ===== */
-    .info-card {
-      background: linear-gradient(135deg, #2e5b9a 0%, #5c6fa6 100%);
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 24px;
-      color: white;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .info-card h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .info-card .exam-name {
-      font-size: 1.1rem;
-      opacity: 0.95;
-      margin-bottom: 16px;
-      display: flex;
+      justify-content: center;
       align-items: center;
-      gap: 10px;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      padding: 20px;
     }
 
-    .info-stats {
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
-      margin-top: 16px;
-    }
-
-    .stat-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(255,255,255,0.15);
-      padding: 8px 16px;
-      border-radius: 30px;
-    }
-
-    .stat-item i {
-      font-size: 1rem;
-    }
-
-    .stat-item span {
-      font-size: 0.85rem;
-    }
-
-    /* ===== TABLE STYLES ===== */
-    .table-container {
+    .login-card {
       background: white;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      margin-bottom: 24px;
-    }
-
-    .table {
-      margin-bottom: 0 !important;
-    }
-
-    .table thead {
-      background: #f8f9fc;
-    }
-
-    .table thead th {
-      color: #2e5b9a;
-      font-weight: 700;
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 16px;
-      border-bottom: 2px solid #e5e7eb;
-    }
-
-    .table tbody td {
-      padding: 14px 16px;
-      vertical-align: middle;
-      font-size: 0.9rem;
-    }
-
-    .table tbody tr:hover {
-      background: #fafbff;
-    }
-
-    /* Badge Status */
-    .badge-aman {
-      display: inline-block;
-      padding: 4px 12px;
-      background: #d4edda;
-      color: #155724;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .badge-pelanggaran {
-      display: inline-block;
-      padding: 4px 12px;
-      background: #f8d7da;
-      color: #721c24;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    /* ===== FORM CARD ===== */
-    .form-card {
-      background: white;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      margin-bottom: 24px;
-    }
-
-    .form-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #2e5b9a;
-      margin-bottom: 20px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid #e5e7eb;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #2c3e50;
-      margin-bottom: 8px;
-    }
-
-    .input-custom,
-    .select-custom select,
-    .textarea-custom {
       width: 100%;
-      padding: 10px 14px;
-      border: 1px solid #e2e8f0;
+      max-width: 400px;
+      padding: 40px;
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      text-align: center;
+      animation: slideUp 0.5s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-icon {
+      width: 80px; height: 80px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; margin: 0 auto 24px;
+    }
+
+    /* --- 3. DASHBOARD UI --- */
+    .navbar {
+      background: var(--primary);
+      padding: 0.8rem 1.5rem;
+      box-shadow: 0 2px 10px rgba(46, 91, 154, 0.2);
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display:flex;
+      flex-direction:row;
+      justify-content : space-between;
+    }
+    .navbar-item { color: white !important; font-weight: 600; font-size: 1.1rem; }
+    .btn-logout {
+      background: rgba(255,255,255,0.15); border: none; color: white;
+      transition: all 0.2s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,0.25); }
+
+    .main-container {
+      margin-top: 90px;
+      padding: 24px;
+      max-width: 1000px;
+      margin-left: auto; margin-right: auto;
+      padding-bottom: 50px;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- 4. COMPONENTS --- */
+    .info-card {
+      background: linear-gradient(135deg, var(--primary) 0%, #4a76bc 100%);
+      color: white;
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(46, 91, 154, 0.3);
+      position: relative; overflow: hidden;
+    }
+    .info-card::after {
+      content: ''; position: absolute; right: -30px; top: -30px;
+      width: 180px; height: 180px; background: rgba(255,255,255,0.1);
+      border-radius: 50%; pointer-events: none;
+    }
+
+    .section-card {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+    
+    .section-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px; padding-bottom: 16px;
+      border-bottom: 2px solid var(--primary-soft);
+    }
+    .section-title {
+      font-size: 1.25rem; font-weight: 700; color: var(--primary);
+    }
+    .section-icon {
+      width: 40px; height: 40px;
+      background: var(--primary-soft);
+      color: var(--primary);
       border-radius: 10px;
-      font-size: 0.9rem;
-      transition: all 0.3s ease;
-      background: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
     }
 
-    .input-custom:focus,
-    .select-custom select:focus,
-    .textarea-custom:focus {
-      outline: none;
-      border-color: #2e5b9a;
-      box-shadow: 0 0 0 3px rgba(46, 91, 154, 0.1);
+    /* --- 5. TABLES & BADGES --- */
+    .table thead th {
+      background: #f8fafc; color: var(--text-muted);
+      font-weight: 700; font-size: 0.8rem; text-transform: uppercase;
+      padding: 12px 16px; border: none;
+    }
+    .table tbody td {
+      vertical-align: middle; padding: 14px 16px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .table tbody tr:hover { background: #f8fafc; }
+    
+    .badge {
+      padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .badge-success { background: #dcfce7; color: #166534; }
+    .badge-danger { background: #fee2e2; color: #991b1b; }
+
+    /* --- 6. FORMS & BUTTONS --- */
+    .form-control {
+      width: 100%; padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.95rem; color: var(--text-main);
+      outline: none; transition: all 0.2s;
+      background: #fff;
+    }
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: var(--focus-ring);
     }
 
-    .input-custom[readonly] {
-      background: #f8f9fc;
-      cursor: not-allowed;
+    .btn {
+      border: none; padding: 12px 24px; border-radius: var(--radius-md);
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     }
+    
+    .btn-primary { background: var(--primary); color: white; width: 100%; }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    
+    .btn-secondary { background: #f1f5f9; color: var(--text-main); }
+    .btn-secondary:hover { background: #e2e8f0; }
 
-    .select-custom {
-      position: relative;
+    .status-box {
+      padding: 20px; border-radius: var(--radius-md); text-align: center;
+      background: #f8fafc; border: 2px dashed var(--border);
     }
+    .status-done { background: #f0fdf4; border-color: #86efac; color: #14532d; }
+    .status-warning { background: #fffbeb; border-color: #fde68a; color: #78350f; }
 
-    .select-custom select {
-      appearance: none;
-      background: white;
-      cursor: pointer;
-    }
-
-    .select-custom::after {
-      content: '\f107';
-      font-family: 'Font Awesome 6 Free';
-      font-weight: 900;
-      position: absolute;
-      right: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      pointer-events: none;
-      color: #94a3b8;
-    }
-
-    .textarea-custom {
-      resize: vertical;
-      min-height: 80px;
-    }
-
-    .btn-report {
-      background: #dc3545;
-      color: white;
-      border: none;
-      padding: 12px 28px;
-      border-radius: 30px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn-report:hover {
-      background: #c82333;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
-    }
-
-    .btn-report:disabled {
-      background: #6c757d;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* Back Button */
-    .btn-back {
-      background: #6c757d;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 25px;
-      font-weight: 500;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      text-decoration: none;
-    }
-
-    .btn-back:hover {
-      background: #5a6268;
-      transform: translateY(-2px);
-      color: white;
-    }
-
-    /* Info Alert */
-    .info-alert {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-
-    .info-alert i {
-      font-size: 1.2rem;
-      margin-right: 10px;
-    }
-
-    .info-alert.warning {
-      background: #fff3cd;
-      color: #856404;
-      border-color: #ffeeba;
-    }
-
-    .disabled-form {
-      pointer-events: none;
-      opacity: 0.6;
-    }
-
-    /* Notification */
-    .notification-toast {
-      position: fixed;
-      top: 80px;
-      right: 20px;
-      padding: 12px 18px;
-      border-radius: 8px;
-      color: white;
-      z-index: 1100;
-      animation: slideInRight 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.85rem;
-    }
-
-    @keyframes slideInRight {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    /* Mobile Responsive */
     @media (max-width: 768px) {
-      .main-container {
-        margin-top: 60px;
-        padding: 16px;
-      }
-
-      .info-card {
-        padding: 18px;
-      }
-
-      .info-card h1 {
-        font-size: 1.2rem;
-      }
-
-      .buttons-group {
-        flex-direction: column;
-        gap: 10px;
-      }
-      
-      .btn-report, .btn-back {
-        width: 100%;
-        justify-content: center;
-      }
+      .main-container { padding: 16px; margin-top: 70px; }
+      .section-card { padding: 16px; }
+      .login-card { padding: 24px; }
     }
   </style>
 </head>
 <body>
 
+  <!-- ========================================== -->
+  <!-- BAGIAN 1: LOGIN RUANGAN (BELUM VALID)     -->
+  <!-- ========================================== -->
+  @if(!$ruanganValid)
+    
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="login-icon">
+        <i class="fas fa-door-open"></i>
+      </div>
+      
+      <h2 style="color: var(--primary); margin-bottom: 8px;">Akses Ruangan</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">
+        Masukkan kode ruangan untuk memulai pengawasan.
+      </p>
+
+      <form id="formRuangan">
+        @csrf
+        <div style="margin-bottom: 16px; text-align: left;">
+          <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; display: block;">Kode Ruangan</label>
+          <div style="position: relative;">
+            <span style="position: absolute; left: 12px; top: 12px; color: var(--text-muted);">
+              <i class="fas fa-key"></i>
+            </span>
+            <input type="text" name="kode_ruangan" placeholder="Contoh: R-101" required
+                   style="width: 100%; padding: 12px 12px 12px 40px; border: 1px solid var(--border); border-radius: 10px; font-size: 1rem; outline: none; transition: 0.2s;"
+                   onfocus="this.style.borderColor='var(--primary)'" 
+                   onblur="this.style.borderColor='var(--border)'">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="btnLoginRuangan">
+          <span class="text">Masuk Ruangan</span>
+          <i class="fas fa-arrow-right icon"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- BAGIAN 2: DASHBOARD (SUDAH VALID)          -->
+  <!-- ========================================== -->
+  @else
+
   <!-- Navbar -->
   <nav class="navbar">
     <div class="navbar-brand">
       <a href="#" class="navbar-item">
-        <i class="fas fa-chalkboard-user"></i>
-        Pengawas Ujian
+        <i class="fas fa-chalkboard-user"></i> &nbsp; Pengawas Ujian
       </a>
     </div>
-
     <div class="navbar-end">
       <form action="{{ route('users.logout') }}" method="post">
         @csrf
-        <button type="submit" class="button is-danger">
-          <i class="fas fa-sign-out-alt"></i>
-          <span>Logout</span>
+        <button type="submit" class="btn-logout" style="padding: 8px 16px; border-radius: 8px; font-size: 0.9rem;">
+          <i class="fas fa-sign-out-alt"></i> Logout
         </button>
       </form>
     </div>
   </nav>
 
-  <!-- Main Container -->
   <div class="main-container">
     
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+    <!-- Flash Message Success -->
     @if(session('success'))
     <script>
-        Swal.fire({
-            icon: 'success',
-            title: 'Berhasil!',
-            text: '{{ session('success') }}',
-            confirmButtonColor: '#3085d6'
+        document.addEventListener("DOMContentLoaded", function() {
+            Swal.fire({ 
+                icon: 'success', 
+                title: 'Berhasil!', 
+                text: '{{ session('success') }}', 
+                confirmButtonColor: '#2e5b9a',
+                timer: 2000,
+                showConfirmButton: false
+            });
         });
     </script>
     @endif
 
-    @if(session('error'))
-    <script>
-        Swal.fire({
-            icon: 'error',
-            title: 'Gagal!',
-            text: '{{ session('error') }}',
-            confirmButtonColor: '#d33'
-        });
-    </script>
-    @endif
-
-    <div class="breadcrumb-custom">
-      <a href="{{route('pengawas.index',$da->guru->id)}}">
-        <i class="fas fa-arrow-left"></i> {{$da->guru->id}}Kembali ke Daftar Ujian
-      </a>
-    </div>
-
+    <!-- Info Card -->
     <div class="info-card">
-      <h1>
-        <i class="fas fa-users"></i> 
-        Kelas : {{ $jadk->kelas->nama_kelas ?? 'Tidak diketahui' }}
-      </h1>
-      <div class="exam-name">
-        <i class="fas fa-book-open"></i>
-        {{ $jadk->ujian->nama_ujian ?? 'Ujian' }}
-      </div>
-      <div class="info-stats">
-        <div class="stat-item">
-          <i class="fas fa-user-graduate"></i>
-          <span>Jumlah Peserta: {{ $data->count() }} Siswa</span>
+      <div style="display: flex; justify-content: space-between; align-items: start; position: relative; z-index: 2;">
+        <div>
+          <h2 style="font-size: 1.5rem; margin-bottom: 5px;">{{ $jadk->kelas->nama_kelas ?? '-' }}</h2>
+          <div style="opacity: 0.9; margin-bottom: 12px; font-weight: 500; font-size: 1.1rem;">
+            <i class="fas fa-book-open"></i> {{ $jadk->ujian->nama_ujian ?? '-' }}
+          </div>
+          <div style="font-size: 0.9rem; display: flex; gap: 15px; flex-wrap: wrap; opacity: 0.85;">
+            <span><i class="fas fa-user-graduate"></i> {{ $data->count() }} Peserta</span>
+            <span><i class="fas fa-clock"></i> {{ \Carbon\Carbon::parse($jadk->waktu_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($jadk->waktu_selesai)->format('H:i') }} WIB</span>
+          </div>
         </div>
-        @if(isset($jadk->waktu_mulai))
-        <div class="stat-item">
-          <i class="fas fa-clock"></i>
-          <span>{{ \Carbon\Carbon::parse($jadk->waktu_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($jadk->waktu_selesai)->format('H:i') }} WIB</span>
-        </div>
-        @endif
+        <a href="{{route('pengawas.index',$da->guru->id)}}" style="color: white; opacity: 0.8; text-decoration: none; background: rgba(0,0,0,0.2); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.3)'" onmouseout="this.style.background='rgba(0,0,0,0.2)'">
+          <i class="fas fa-arrow-left"></i>
+        </a>
       </div>
     </div>
 
-    <!-- Tabel Status Pelanggaran -->
-    <div class="table-container">
-      <table class="table is-fullwidth">
-        <thead>
-          <tr>
-            <th>No</th>
-            <th>ID Siswa</th>
-            <th>Nama Siswa</th>
-            <th>NISN</th>
-            <th>Status Pelanggaran</th>
-          </tr>
-        </thead>
-        <tbody>
-          @php $no = 1; @endphp
-          @foreach($data as $dt)
+    <!-- Tabel Pelanggaran -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-icon"><i class="fas fa-exclamation-circle"></i></div>
+        <h3 class="section-title">Status Pelanggaran</h3>
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="table is-fullwidth is-hoverable">
+          <thead>
+            <tr>
+              <th style="width: 50px;">No</th>
+              <th>Nama Siswa</th>
+              <th>NISN</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @php $no = 1; @endphp
+            @foreach($data as $dt)
             <tr>
               <td>{{ $no++ }}</td>
-              <td>{{ $dt->id_siswa }}</td>
               <td><strong>{{ $dt->nama }}</strong></td>
-              <td>{{ $dt->nisn }}</td>
+              <td style="color: var(--text-muted);">{{ $dt->nisn }}</td>
               <td>
                 @php
-                  $pelanggaranSiswa = $pelan->where('siswa_id', $dt->id_siswa)->where("ujian_id", $jadk->ujian->id ?? 0)->first();
+                  $pelanSiswa = $pelan->where('siswa_id', $dt->id_siswa)->where("ujian_id", $jadk->ujian->id ?? 0)->first();
                 @endphp
-                @if($pelanggaranSiswa)
-                  <span class="badge-pelanggaran">
-                    <i class="fas fa-exclamation-triangle"></i> 
-                    {{ $pelanggaranSiswa->jenis_pelanggaran }}
+                @if($pelanSiswa)
+                  <span class="badge badge-danger">
+                    <i class="fas fa-exclamation-triangle"></i> {{ $pelanSiswa->jenis_pelanggaran }}
                   </span>
                 @else
-                  <span class="badge-aman">
-                    <i class="fas fa-check-circle"></i> Aman
+                  <span class="badge badge-success">
+                    <i class="fas fa-check"></i> Aman
                   </span>
                 @endif
               </td>
             </tr>
-          @endforeach
-        </tbody>
-      </table>
+            @endforeach
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- ========== FORM ABSENSI ========== -->
+    <!-- Form Absensi -->
     @php
-      $absensiKey = 'absensi_' . ($jadk->id ?? 0);
-      $sudahAbsen = session()->has($absensiKey);
+      $sudahAbsen = \App\Models\Absensi::where('ujian_id', $jadk->ujian_id)
+                                        ->where('kelas_id', $jadk->kelas_id)
+                                        ->exists();
     @endphp
 
     @if(!$sudahAbsen)
-      <form method="post" action="{{ route('pengawas.abcent.store') }}" id="formAbsensi">
-        @csrf
-        <input type="hidden" name="ujian_id" value="{{ $jadk->ujian_id ?? '' }}">
-        <input type="hidden" name="kelas_id" value="{{ $jadk->kelas_id ?? '' }}">
-        
-        <div class="table-container">
-          <table class="table is-fullwidth is-striped">
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Nama</th>
-                <th>Kehadiran</th>
-              </tr>
-            </thead>
-            <tbody>
-              @foreach($data as $index => $dt)
-              <tr>
-                <td>{{ $loop->iteration }}</td>
-                <td>
-                  {{ $dt->nama }}
-                  <input type="hidden" name="siswa_id[{{ $index }}]" value="{{ $dt->id_siswa }}">
-                </td>
-                <td>
-                  <div class="select">
-                    <select name="status[{{ $index }}]" class="status-select" required>
-                      <option value="">Pilih Status</option>
+      <div class="section-card" id="section-absensi">
+        <div class="section-header">
+          <div class="section-icon"><i class="fas fa-clipboard-check"></i></div>
+          <div style="flex: 1;">
+            <h3 class="section-title">Input Absensi</h3>
+            <small style="color: var(--text-muted);">Pastikan status kehadiran siswa sesuai.</small>
+          </div>
+          <button type="button" onclick="setAllHadir()" style="color: var(--primary); background: none; border: none; font-weight: 600; cursor: pointer; font-size: 0.9rem;">
+            <i class="fas fa-mouse-pointer"></i> Set Semua Hadir
+          </button>
+        </div>
+
+        <form action="{{ route('pengawas.abcent.store') }}" method="post" id="formAbsensi">
+          @csrf
+          <input type="hidden" name="ujian_id" value="{{ $jadk->ujian_id ?? '' }}">
+          <input type="hidden" name="kelas_id" value="{{ $jadk->kelas_id ?? '' }}">
+          
+          <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 20px;">
+            <table class="table is-fullwidth is-striped" style="margin-bottom: 0;">
+              <tbody>
+                @foreach($data as $index => $dt)
+                <tr>
+                  <td style="width: 40px; text-align: center;">{{ $loop->iteration }}</td>
+                  <td>
+                    <div style="font-weight: 600;">{{ $dt->nama }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ $dt->nisn }}</div>
+                    <input type="hidden" name="siswa_id[{{ $index }}]" value="{{ $dt->id_siswa }}">
+                  </td>
+                  <td style="width: 140px;">
+                    <select name="status[{{ $dt->id_siswa }}]" class="form-control" style="padding: 8px; font-size: 0.85rem;" required>
                       <option value="hadir">Hadir</option>
                       <option value="sakit">Sakit</option>
                       <option value="izin">Izin</option>
                       <option value="alfa">Alfa</option>
                     </select>
-                  </div>
-                </td>
-              </tr>
-              @endforeach
-            </tbody>
-          </table>
-        </div>
-        
-        <div class="buttons my-3 is-centered">
-          <button type="submit" class="button is-info is-dark" id="btnSimpan">
-            <span class="has-text-light">Simpan Absensi</span>
-          </button>
-          <button type="button" class="button is-link is-light" id="btnHadirSemua">
-            <span class="has-text-info has-text-dark">Set Semua Hadir</span>
-          </button>
-        </div>
-      </form>
-    @else
-      <div class="info-alert">
-        <i class="fas fa-check-circle"></i>
-        <strong>✓ Absensi Sudah Dilakukan</strong>
-        <p style="margin-top: 8px;">Absensi untuk ujian ini sudah disimpan sebelumnya. Tidak dapat mengisi ulang.</p>
-      </div>
-    @endif
-
-    <!-- ========== FORM BERITA ACARA ========== -->
-    @php
-      $beritaKey = 'berita_' . ($jadk->id ?? 0);
-      $sudahBerita = session()->has($beritaKey);
-    @endphp
-
-    @if(!$sudahBerita)
-      <div class="form-card">
-        <div class="form-title">
-          <i class="fas fa-flag"></i>
-          Berita Acara
-        </div>
-        
-        <form action="{{ route('pengawas.store') }}" method="post" id="formBeritaAcara">
-          @csrf
-          
-          <div class="form-group">
-            <label><i class="fas fa-tag"></i> Mata Pelajaran</label>
-            <input type="hidden" name="ujian_id" value="{{ $jadk->ujian_id ?? '' }}">
-            <input type="hidden" name="kelas_id" value="{{ $jadk->kelas_id ?? '' }}">
-            <input type="text" class="input-custom" value="{{ $jadk->ujian->mapels->nama_mapel ?? '-' }}" readonly>
+                  </td>
+                </tr>
+                @endforeach
+              </tbody>
+            </table>
           </div>
-          
-          <div class="form-group">
-            <label><i class="fas fa-pen"></i> Catatan Kelas</label>
-            <textarea name="catatan" id="catatanBerita" rows="3" class="textarea-custom" 
-                      placeholder="Isikan catatan pelaksanaan ujian (contoh: Ada siswa yang terlambat, suasana kelas kondusif, dll)" required></textarea>
-          </div>
-          
-          <div class="buttons-group" style="display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap;">
-            <a href="#" class="btn-back">
-              <i class="fas fa-times"></i> Batal
-            </a>
-            <button class="btn-report" type="submit">
-              <i class="fas fa-flag"></i> Simpan Berita Acara
+
+          <div style="display: flex; gap: 10px;">
+            <button type="reset" class="btn btn-secondary" style="flex: 1;">Reset</button>
+            <button type="submit" class="btn btn-primary" style="flex: 2;">
+              <i class="fas fa-save"></i> Simpan Absensi
             </button>
           </div>
         </form>
       </div>
     @else
-      <div class="info-alert warning">
-        <i class="fas fa-file-alt"></i>
-        <strong>📋 Berita Acara Sudah Dibuat</strong>
-        <p style="margin-top: 8px;">Berita acara untuk ujian ini sudah disimpan sebelumnya. Tidak dapat mengisi ulang.</p>
+      <div class="status-box status-done">
+        <i class="fas fa-check-circle fa-2x" style="margin-bottom: 10px;"></i>
+        <h4 style="margin-bottom: 5px; font-weight: 700;">Absensi Selesai</h4>
+        <p style="font-size: 0.9rem;">Data absensi untuk ujian ini telah disimpan di sistem.</p>
       </div>
     @endif
-    
-  </div>
 
+    <!-- Form Berita Acara -->
+    @php
+      $sudahBerita = \App\Models\Berita::where('ujian_id', $jadk->ujian_id)
+                                             ->where('kelas_id', $jadk->kelas_id)
+                                             ->exists();
+    @endphp
+
+    @if(!$sudahBerita)
+      <div class="section-card" id="section-berita">
+        <div class="section-header">
+          <div class="section-icon"><i class="fas fa-file-signature"></i></div>
+          <h3 class="section-title">Berita Acara</h3>
+        </div>
+
+        <form action="{{ route('pengawas.store') }}" method="post" id="formBeritaAcara">
+          @csrf
+          <input type="hidden" name="ujian_id" value="{{ $jadk->ujian_id ?? '' }}">
+          <input type="hidden" name="kelas_id" value="{{ $jadk->kelas_id ?? '' }}">
+
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem;">Mata Pelajaran</label>
+            <input type="text" class="form-control" value="{{ $jadk->ujian->mapels->nama_mapel ?? '-' }}" readonly style="background: #f1f5f9; cursor: not-allowed;">
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem;">Catatan Kelas</label>
+            <textarea name="catatan" class="form-control" rows="4" 
+                      placeholder="Tuliskan kondisi ujian, kendala teknis, atau catatan penting lainnya..." required></textarea>
+          </div>
+          
+          <div style="text-align: right;">
+            <button type="submit" class="btn btn-primary" style="width: auto; padding-left: 32px; padding-right: 32px;">
+              <i class="fas fa-paper-plane"></i> Kirim Laporan
+            </button>
+          </div>
+        </form>
+      </div>
+    @else
+      <div class="status-box status-warning">
+        <i class="fas fa-file-alt fa-2x" style="margin-bottom: 10px;"></i>
+        <h4 style="margin-bottom: 5px; font-weight: 700;">Laporan Terkirim</h4>
+        <p style="font-size: 0.9rem;">Berita acara ujian ini sudah dibuat dan tersimpan.</p>
+      </div>
+    @endif
+
+  </div> <!-- End Container -->
+  @endif <!-- End Else RuanganValid -->
+
+
+  <!-- JAVASCRIPT LOGIC (FULL FIX) -->
   <script>
-    // Key untuk localStorage (menggunakan ID jadwal)
-    const absensiKey = 'absensi_{{ $jadk->id ?? 0 }}';
-    const beritaKey = 'berita_{{ $jadk->id ?? 0 }}';
-    
-    // Cek localStorage saat load
     document.addEventListener('DOMContentLoaded', function() {
-      // Cek absensi
-      if (localStorage.getItem(absensiKey) === 'done') {
-        const absensiForm = document.getElementById('formAbsensi');
-        if (absensiForm) {
-          absensiForm.style.display = 'none';
-          // Tampilkan pesan jika belum ada
-          if (!document.querySelector('.absensi-message')) {
-            const container = document.getElementById('formAbsensi')?.parentNode;
-            if (container) {
-              const msgDiv = document.createElement('div');
-              msgDiv.className = 'info-alert absensi-message';
-              msgDiv.innerHTML = `
-                <i class="fas fa-check-circle"></i>
-                <strong>Absensi Sudah Dilakukan</strong>
-                <p>Absensi untuk ujian ini sudah disimpan sebelumnya.</p>
-              `;
-              container.insertBefore(msgDiv, document.getElementById('formAbsensi'));
-            }
-          }
+        
+        // ==========================================
+        // 1. HANDLE LOGIN RUANGAN
+        // ==========================================
+        const formRuangan = document.getElementById('formRuangan');
+        if (formRuangan) {
+            formRuangan.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const btn = document.getElementById('btnLoginRuangan');
+                const originalText = btn.innerHTML;
+                
+                // Set tombol ke mode loading
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memeriksa...';
+                btn.disabled = true;
+                btn.style.opacity = "0.7";
+
+                let formData = new FormData(this);
+                
+                // Ambil URL Route (Pastikan $jadk->id tersedia dari Controller)
+                // Jika $jadk id error, ganti string di bawah dengan URL hardcode sementara untuk test
+                const urlCheck = "{{ route('ruangan.check', $jadk->id ?? 'ID_MISSING') }}";
+
+                fetch(urlCheck, {
+                    method: "POST",
+                    body: formData,
+                    headers: {
+                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
+                    }
+                })
+                .then(async res => {
+                    // Cek apakah response JSON valid atau Error HTML
+                    const text = await res.text();
+                    try {
+                        return JSON.parse(text);
+                    } catch (err) {
+                        console.error("Server Error (Non-JSON):", text);
+                        throw new Error("Server Error 500. Cek tab Console/Network.");
+                    }
+                })
+                .then(data => {
+                    // Jika sukses
+                    if(data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Akses Diterima',
+                            text: 'Selamat bertugas, Pengawas.',
+                            timer: 1500,
+                            showConfirmButton: false,
+                            background: '#fff',
+                            iconColor: '#2e5b9a'
+                        }).then(() => {
+                            location.reload(); 
+                        });
+                    } else {
+                        // Jika kode salah/error dari validasi backend
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: data.message || 'Kode ruangan salah.',
+                            confirmButtonColor: '#2e5b9a'
+                        });
+                        
+                        // Reset tombol
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        btn.style.opacity = "1";
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    Swal.fire('Error System', error.message, 'error');
+                    
+                    // Reset tombol
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    btn.style.opacity = "1";
+                });
+            });
         }
-      }
-      
-      // Cek berita acara
-      if (localStorage.getItem(beritaKey) === 'done') {
-        const beritaForm = document.getElementById('formBeritaAcara');
-        if (beritaForm) {
-          beritaForm.style.display = 'none';
-          if (!document.querySelector('.berita-message')) {
-            const container = document.getElementById('formBeritaAcara')?.parentNode;
-            if (container) {
-              const msgDiv = document.createElement('div');
-              msgDiv.className = 'info-alert warning berita-message';
-              msgDiv.innerHTML = `
-                <i class="fas fa-file-alt"></i>
-                <strong>Berita Acara Sudah Dibuat</strong>
-                <p>Berita acara untuk ujian ini sudah disimpan sebelumnya.</p>
-              `;
-              container.insertBefore(msgDiv, document.getElementById('formBeritaAcara'));
+
+        // ==========================================
+        // 2. FUNGSI SET SEMUA HADIR (Global Scope)
+        // ==========================================
+        window.setAllHadir = function() {
+            const selects = document.querySelectorAll('#formAbsensi select');
+            selects.forEach(select => {
+                select.value = 'hadir';
+            });
+            
+            // Efek visual pada tombol
+            const btn = document.querySelector('button[onclick="setAllHadir()"]');
+            if(btn) {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Selesai';
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                }, 1000);
             }
-          }
+        };
+
+        // ==========================================
+        // 3. HANDLE SUBMIT ABSENSI
+        // ==========================================
+        const formAbsensi = document.getElementById('formAbsensi');
+        if (formAbsensi) {
+            formAbsensi.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const btn = this.querySelector('button[type="submit"]');
+                const originalHtml = btn.innerHTML;
+                
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+                btn.disabled = true;
+
+                const formData = new FormData(this);
+                
+                fetch('{{ route("pengawas.abcent.store") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                })
+                .then(async res => {
+                    const text = await res.text();
+                    try { return JSON.parse(text); } 
+                    catch (e) { throw new Error("Server Error"); }
+                })
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Tersimpan!',
+                            text: 'Data absensi berhasil diupdate.',
+                            confirmButtonColor: '#2e5b9a'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Gagal', data.message || 'Terjadi kesalahan', 'error');
+                        btn.innerHTML = originalHtml;
+                        btn.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire('Error', 'Koneksi bermasalah', 'error');
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                });
+            });
         }
-      }
+
+        // ==========================================
+        // 4. HANDLE SUBMIT BERITA ACARA
+        // ==========================================
+        const formBerita = document.getElementById('formBeritaAcara');
+        if (formBerita) {
+            formBerita.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const btn = this.querySelector('button[type="submit"]');
+                const originalHtml = btn.innerHTML;
+                
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+                btn.disabled = true;
+
+                const formData = new FormData(this);
+                
+                fetch('{{ route("pengawas.store") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                })
+                .then(async res => {
+                    const text = await res.text();
+                    try { return JSON.parse(text); } 
+                    catch (e) { throw new Error("Server Error"); }
+                })
+                .then(data => {
+                    if(data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Laporan Terkirim',
+                            text: 'Terima kasih atas laporannya.',
+                            confirmButtonColor: '#2e5b9a'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Gagal', data.message || 'Terjadi kesalahan', 'error');
+                        btn.innerHTML = originalHtml;
+                        btn.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire('Error', 'Gagal mengirim data', 'error');
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                });
+            });
+        }
+
     });
-    
-    // Handle submit absensi
-    const formAbsensi = document.getElementById('formAbsensi');
-    if (formAbsensi) {
-      formAbsensi.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        let allFilled = true;
-        const selects = document.querySelectorAll('.status-select');
-        
-        selects.forEach(select => {
-          if (select.value === '') {
-            allFilled = false;
-          }
-        });
-        
-        if (!allFilled) {
-          Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan!',
-            text: 'Harap pilih status kehadiran untuk semua siswa!',
-            confirmButtonColor: '#3085d6'
-          });
-          return;
-        }
-        
-        Swal.fire({
-          title: 'Konfirmasi',
-          text: 'Apakah yakin ingin menyimpan absensi?',
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonColor: '#28a745',
-          cancelButtonColor: '#d33',
-          confirmButtonText: 'Ya, Simpan!',
-          cancelButtonText: 'Batal'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            // Simpan ke localStorage
-            localStorage.setItem(absensiKey, 'done');
-            
-            Swal.fire({
-              icon: 'success',
-              title: 'Berhasil!',
-              text: 'Absensi berhasil disimpan!',
-              confirmButtonColor: '#28a745'
-            }).then(() => {
-              location.reload();
-            });
-          }
-        });
-      });
-    }
-    
-    // Handle submit berita acara
-    const formBerita = document.getElementById('formBeritaAcara');
-    if (formBerita) {
-      formBerita.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const catatan = document.getElementById('catatanBerita');
-        
-        if (!catatan.value.trim()) {
-          Swal.fire({
-            icon: 'warning',
-            title: 'Peringatan!',
-            text: 'Harap isi catatan berita acara!',
-            confirmButtonColor: '#3085d6'
-          });
-          return;
-        }
-        
-        Swal.fire({
-          title: 'Konfirmasi',
-          text: 'Apakah yakin ingin menyimpan berita acara?',
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonColor: '#28a745',
-          cancelButtonColor: '#d33',
-          confirmButtonText: 'Ya, Simpan!',
-          cancelButtonText: 'Batal'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            // Simpan ke localStorage
-            localStorage.setItem(beritaKey, 'done');
-            localStorage.setItem(beritaKey + '_catatan', catatan.value);
-            
-            Swal.fire({
-              icon: 'success',
-              title: 'Berhasil!',
-              text: 'Berita acara berhasil disimpan!',
-              confirmButtonColor: '#28a745'
-            }).then(() => {
-              location.reload();
-            });
-          }
-        });
-      });
-    }
-    
-    // Tombol set semua hadir
-    const btnHadirSemua = document.getElementById('btnHadirSemua');
-    if (btnHadirSemua) {
-      btnHadirSemua.addEventListener('click', function() {
-        const selects = document.querySelectorAll('.status-select');
-        selects.forEach(select => {
-          select.value = 'hadir';
-        });
-        
-        Swal.fire({
-          icon: 'info',
-          title: 'Informasi',
-          text: 'Semua siswa diatur menjadi HADIR',
-          timer: 1500,
-          showConfirmButton: false
-        });
-      });
-    }
   </script>
 </body>
 </html>

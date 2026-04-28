@@ -75,26 +75,23 @@
         text: '{{ session('error') }}',
         confirmButtonColor: '#d33'
     });
+
 </script>
 @endif
+@error('password')
+<script>
+Swal.fire({
+        icon: 'error',
+        title: 'Gagal!',
+        text: 'Password Minimal 6',
+        confirmButtonColor: '#d33'
+    });
+</script>
+
+@enderror
 
 {{-- DASHBOARD HEADER --}}
-<div class="dashboard-header">
-    <div class="level">
-        <div class="level-left">
-            <div>
-                <h1 class="title has-text-white">Dashboard</h1>
-                <p class="subtitle has-text-white">Sforms</p>
-            </div>
-        </div>
-        <div class="level-right">
-            <div class="has-text-right">
-                <p class="heading has-text-white">Terakhir Update</p>
-                <p class="has-text-white">{{ now()->format('d/m/Y H:i:s') }}</p>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 {{-- STATISTIK CARD DENGAN ICON --}}
 <div class="columns is-multiline mb-5">
@@ -631,7 +628,7 @@ $(document).ready(function() {
             labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
             datasets: [{
                 label: 'Jumlah Pelanggaran',
-                data: [{{ $pelanggaranPerBulan ?? '0,0,0,0,0,0,0,0,0,0,0,0' }}],
+               data: {{ json_encode($pelanggaranPerBulan ?? [0,0,0,0,0,0,0,0,0,0,0,0]) }},
                 borderColor: '#ff6b6b',
                 backgroundColor: 'rgba(255, 107, 107, 0.1)',
                 borderWidth: 3,

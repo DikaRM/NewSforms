@@ -22,7 +22,7 @@ class Jadwal extends Model
         return $this->belongsTo(Pengawas::class);
     }
     public function ujian(){
-        return $this->belongsTo(Ujian::class);
+        return $this->hasOne(Ujian::class);
     }
     public function kelas(){
         return $this->belongsTo(Kelas::class);

@@ -13,52 +13,38 @@ return new class extends Migration
     {
         Schema::create('jawaban_siswa', function (Blueprint $table) {
             $table->id();
-            $table->string('ujian_id');
-            $table->string('siswa_id');
-            $table->string('bank_id');
-            $table->string('jawaban')->nullable();
-            $table->boolean("benar");
+
+            // ✅ PERBAIKAN 1: Gunakan unsignedBigInteger (Integer)
+            // Karena ID di tabel ujian, siswa, dan banksoal biasanya Integer
+            $table->unsignedBigInteger('ujian_id');
+            $table->unsignedBigInteger('siswa_id'); 
+            $table->unsignedBigInteger('bank_id');
+            
+            // Gunakan 'text' saja untuk jawaban agar bisa menampung jawaban panjang
+            $table->text('jawaban')->nullable();
+            $table->boolean("benar")->default(false);
+            
             $table->timestamps();
             
-            // Foreign keys (dipertahankan)
+            // --- Foreign Keys ---
+            
+            // Pastikan tabel 'siswa' memang bernama 'siswa' (biasanya 'siswas' jika pakai plural)
             $table->foreign("siswa_id")->references("id_siswa")->on("siswa")->onDelete("cascade");
             $table->foreign("ujian_id")->references("id")->on("ujian")->onDelete("cascade");
-            $table->foreign("bank_id")->references("id")->on("bank")->onDelete("cascade");
             
-            // ============ TAMBAHAN INDEX (OPTIMASI) ============
+            // ✅ PERBAIKAN 2: Cek nama tabel referensi 'bank'
+            // Jika tabel soal Anda bernama 'banksoals', ganti on('bank') menjadi on('banksoals')
+            // Jika tabel Anda memang bernama 'bank', biarkan seperti ini.
+            $table->foreign("bank_id")->references("id")->on("bank")->onDelete("cascade"); 
             
-            // Single column indexes
-            $table->index('ujian_id');
-            $table->index('siswa_id');
-            $table->index('bank_id');
-            $table->index('benar');
-            $table->index('created_at');
+            // ============ INDEX ============
             
-            // Composite indexes (untuk query kombinasi)
-            
-            // Query: WHERE ujian_id = ? AND siswa_id = ? (semua jawaban siswa di ujian tertentu)
-            $table->index(['ujian_id', 'siswa_id']);
-            
-            // Query: WHERE ujian_id = ? AND siswa_id = ? AND bank_id = ? (jawaban spesifik)
-            $table->index(['ujian_id', 'siswa_id', 'bank_id']);
-            
-            // Query: WHERE ujian_id = ? AND benar = ? (rekap jawaban benar/salah per ujian)
-            $table->index(['ujian_id', 'benar']);
-            
-            // Query: WHERE siswa_id = ? AND benar = ? (statistik kebenaran per siswa)
-            $table->index(['siswa_id', 'benar']);
-            
-            // Query: WHERE ujian_id = ? AND bank_id = ? (analisis soal per ujian)
-            $table->index(['ujian_id', 'bank_id']);
-            
-            // Query: WHERE siswa_id = ? AND bank_id = ? (riwayat siswa untuk soal tertentu)
-            $table->index(['siswa_id', 'bank_id']);
-            
-            // Query untuk koreksi otomatis (berdasarkan bank_id dan jawaban)
-            $table->index(['bank_id', 'jawaban']);
-            
-            // Composite unique untuk mencegah duplikasi jawaban
+            // Unique Key (Wajib untuk Upsert) -> Ini SUDAH BENAR 👍
             $table->unique(['ujian_id', 'siswa_id', 'bank_id'], 'unique_jawaban_siswa');
+            
+            // Index Optimasi (Opsional tapi bagus)
+            $table->index(['ujian_id', 'siswa_id']);
+            $table->index(['bank_id', 'jawaban']);
         });
     }
 
