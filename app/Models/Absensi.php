@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Absensi extends Model
 {
 protected $table ="absen";
-    protected $fillable = ["ujian_id","kelas_id","siswa_id","status_kehadiran"];
+    protected $fillable = ["ujian_id","kelas_id","siswa_id","status_kehadiran","waktu_absen","created_at"];
     public function siswa(){
         return $this->belongsTo(Siswa::class,'siswa_id','id_siswa');
     }

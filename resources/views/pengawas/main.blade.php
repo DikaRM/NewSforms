@@ -205,7 +205,60 @@
       .main-container { padding: 16px; margin-top: 70px; }
       .section-card { padding: 16px; }
       .login-card { padding: 24px; }
+      .user-name span{
+        display:none;
+      }
     }
+    /* ===== USER DROPDOWN ===== */
+.user-dropdown { position: relative; cursor: pointer; }
+.user-info { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-radius: 8px; }
+.user-info:hover { background: rgba(255, 255, 255, 0.38); }
+.user-avatar { width: 34px; height: 34px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #2e5b9a; }
+.user-name { font-weight: 500; font-size: 0.85rem; color: white; }
+
+.dropdown-menu-custom { 
+    position: absolute; top: 100%; right: 0; margin-top: 8px;
+    background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    min-width: 180px; opacity: 0; visibility: hidden; transform: translateY(-10px);
+    transition: all 0.3s ease; z-index: 1001;
+   
+}
+.user-dropdown.active .dropdown-menu-custom { opacity: 1; visibility: visible; transform: translateY(0); }
+
+.dropdown-item-custom { 
+    padding: 10px 16px; display: flex; align-items: center; gap: 12px;
+    color: #2e5b9a; text-decoration: none; border-bottom: 1px solid #eee;
+}
+.dropdown-item-custom:hover { background: #f5f5f5; color:#2e5b9a;}
+.logout-btn { color: #dc3545; border:none;width:100%;}
+
+/* ===== NOTIFIKASI ===== */
+.notif-wrapper { position: relative; }
+.notif-btn { cursor: pointer; padding: 8px; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+.notif-btn:hover { background: rgba(255,255,255,0.15); }
+.notif-badge { position: absolute; top: 2px; right: 2px; background: #dc3545; color: white; font-size: 0.65rem; border-radius: 10px; padding: 0 4px; min-width: 18px; text-align: center; }
+.notif-badge.hidden { display: none; }
+
+.notif-dropdown {
+    position: absolute; top: 120%; right: -10px; width: 320px;
+    background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    opacity: 0; visibility: hidden; transform: translateY(-10px);
+    transition: all 0.3s ease; z-index: 1002;
+}
+.notif-wrapper.active .notif-dropdown { opacity: 1; visibility: visible; transform: translateY(0); }
+/* Tambahan style untuk tombol unblock */
+.btn-unblock {
+    transition: all 0.2s ease;
+}
+
+.btn-unblock:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-unblock:active {
+    transform: translateY(0);
+}
   </style>
 </head>
 <body>
@@ -255,21 +308,39 @@
   @else
 
   <!-- Navbar -->
-  <nav class="navbar">
-    <div class="navbar-brand">
-      <a href="#" class="navbar-item">
-        <i class="fas fa-chalkboard-user"></i> &nbsp; Pengawas Ujian
-      </a>
+  <header class="header" style="background: #2e5b9a; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; z-index: 1000;">
+    <h2 style="display: flex; align-items: center; gap: 10px; color: white;">
+        <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" style="height:30px">
+        <span>SMK NEGERI 1 CIOMAS</span>
+    </h2>
+    
+    <div class="header-actions" style="display: flex; align-items: center; gap: 15px;">
+        <!-- NOTIFIKASI DROPDOWN -->
+        
+
+        <!-- USER DROPDOWN -->
+        <div class="user-dropdown" id="userDropdown">
+            <div class="user-info">
+                <div class="user-avatar"><i class="fas fa-user-tie"></i></div>
+                <div class="user-name">
+                    <span>{{ Auth::user()->name ?? 'Pengawas' }}</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            <div class="dropdown-menu-custom">
+                <a href="{{ route('profile.index') }}" class="dropdown-item-custom">
+                    <i class="fas fa-user-circle"></i> Profil Saya
+                </a>
+                <form action="{{ route('users.logout') }}" method="post" class="logout-form">
+                    @csrf
+                    <button type="submit" class="dropdown-item-custom logout-btn logout-button">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+</button>
+                </form>
+            </div>
+        </div>
     </div>
-    <div class="navbar-end">
-      <form action="{{ route('users.logout') }}" method="post">
-        @csrf
-        <button type="submit" class="btn-logout" style="padding: 8px 16px; border-radius: 8px; font-size: 0.9rem;">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
-      </form>
-    </div>
-  </nav>
+</header>
 
   <div class="main-container">
     
@@ -309,48 +380,76 @@
     </div>
 
     <!-- Tabel Pelanggaran -->
-    <div class="section-card">
-      <div class="section-header">
-        <div class="section-icon"><i class="fas fa-exclamation-circle"></i></div>
-        <h3 class="section-title">Status Pelanggaran</h3>
-      </div>
-      <div style="overflow-x: auto;">
-        <table class="table is-fullwidth is-hoverable">
-          <thead>
-            <tr>
-              <th style="width: 50px;">No</th>
-              <th>Nama Siswa</th>
-              <th>NISN</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            @php $no = 1; @endphp
-            @foreach($data as $dt)
-            <tr>
-              <td>{{ $no++ }}</td>
-              <td><strong>{{ $dt->nama }}</strong></td>
-              <td style="color: var(--text-muted);">{{ $dt->nisn }}</td>
-              <td>
-                @php
-                  $pelanSiswa = $pelan->where('siswa_id', $dt->id_siswa)->where("ujian_id", $jadk->ujian->id ?? 0)->first();
-                @endphp
-                @if($pelanSiswa)
-                  <span class="badge badge-danger">
-                    <i class="fas fa-exclamation-triangle"></i> {{ $pelanSiswa->jenis_pelanggaran }}
-                  </span>
-                @else
-                  <span class="badge badge-success">
-                    <i class="fas fa-check"></i> Aman
-                  </span>
-                @endif
-              </td>
-            </tr>
-            @endforeach
-          </tbody>
-        </table>
-      </div>
-    </div>
+<!-- Tabel Pelanggaran -->
+<div class="section-card">
+  <div class="section-header">
+    <div class="section-icon"><i class="fas fa-exclamation-circle"></i></div>
+    <h3 class="section-title">Status Pelanggaran & Aksi</h3>
+  </div>
+  <div style="overflow-x: auto;">
+    <table class="table is-fullwidth is-hoverable">
+      <thead>
+        <tr>
+          <th style="width: 50px;">No</th>
+          <th>Nama Siswa</th>
+          <th>NISN</th>
+          <th>Status</th>
+          <th style="width: 120px;">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        @php $no = 1; @endphp
+        @foreach($data as $dt)
+        <tr id="row-siswa-{{ $dt->id_siswa }}">
+          <td>{{ $no++ }}</td>
+          <td><strong>{{ $dt->nama }}</strong></td>
+          <td style="color: var(--text-muted);">{{ $dt->nisn }}</td>
+          <td id="status-{{ $dt->id_siswa }}">
+            @php
+              $pelanSiswa = $pelan->where('siswa_id', $dt->id_siswa)->where("ujian_id", $jadk->ujian->id ?? 0)->first();
+              $isBlocked = \App\Models\BlockSiswa::where('siswa_id', $dt->id_siswa)
+    ->where('ujian_id', $jadk->ujian->id ?? 0)
+    ->where('violation_count', '>=', 3)
+    ->exists();
+            @endphp
+            
+            @if($pelanSiswa)
+              <span class="badge badge-danger">
+                <i class="fas fa-exclamation-triangle"></i> {{ $pelanSiswa->jenis_pelanggaran }}
+              </span>
+              @if($isBlocked)
+                <span class="badge badge-danger has-text-light" style="background: #991b1b; margin: 5px;">
+                  <i class="fas fa-ban"></i> Diblokir
+                </span>
+              @endif
+            @else
+              <span class="badge badge-success">
+                <i class="fas fa-check"></i> Aman
+              </span>
+            @endif
+          </td>
+          <td>
+            @if($pelanSiswa && $isBlocked)
+              <button type="button" 
+                      class="btn-unblock" 
+                      data-siswa-id="{{ $dt->id_siswa }}"
+                      data-siswa-nama="{{ $dt->nama }}"
+                      data-ujian-id="{{ $jadk->ujian->id ?? 0 }}"
+                      style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; font-weight: 600;">
+                <i class="fas fa-unlock-alt"></i> Unblock
+              </button>
+            @else
+              <span class="badge" style="background: #e2e8f0; color: #64748b;">
+                <i class="fas fa-check-circle"></i> Aktif
+              </span>
+            @endif
+          </td>
+        </tr>
+        @endforeach
+      </tbody>
+    </table>
+  </div>
+</div>
 
     <!-- Form Absensi -->
     @php
@@ -372,7 +471,7 @@
           </button>
         </div>
 
-        <form action="{{ route('pengawas.abcent.store') }}" method="post" id="formAbsensi">
+        <form action="{{ route('pengawas.abcent.store') }}" method="post" id="formAbsensi" 
           @csrf
           <input type="hidden" name="ujian_id" value="{{ $jadk->ujian_id ?? '' }}">
           <input type="hidden" name="kelas_id" value="{{ $jadk->kelas_id ?? '' }}">
@@ -469,11 +568,162 @@
 
   <!-- JAVASCRIPT LOGIC (FULL FIX) -->
   <script>
+    
     document.addEventListener('DOMContentLoaded', function() {
+      // ==========================================
+// 5. HANDLE UNBLOCK SISWA
+// ==========================================
+document.querySelectorAll('.btn-unblock').forEach(button => {
+    button.addEventListener('click', async function(e) {
+        e.preventDefault();
         
+        const siswaId = this.getAttribute('data-siswa-id');
+        const siswaNama = this.getAttribute('data-siswa-nama');
+        const ujianId = this.getAttribute('data-ujian-id');
+        
+        // Konfirmasi dengan SweetAlert
+        const result = await Swal.fire({
+            title: 'Konfirmasi Unblock',
+            html: `Apakah Anda yakin ingin <strong>membuka blokir</strong> siswa:<br><br>
+                   <span style="font-size: 1.2rem; font-weight: 700; color: #2e5b9a;">${siswaNama}</span><br><br>
+                   Siswa akan dapat melanjutkan ujian kembali.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#dc3545',
+            confirmButtonText: '<i class="fas fa-unlock-alt"></i> Ya, Unblock',
+            cancelButtonText: '<i class="fas fa-times"></i> Batal'
+        });
+        
+        if (!result.isConfirmed) return;
+        
+        // Tampilkan loading pada tombol
+        const originalHtml = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+        this.disabled = true;
+        
+        try {
+            const response = await fetch(`/pengawas/unblock/${siswaId}/${ujianId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({})
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Update tombol menjadi tidak perlu unblock lagi
+                const statusCell = document.getElementById(`status-${siswaId}`);
+                const row = document.getElementById(`row-siswa-${siswaId}`);
+                
+                // Update status menjadi Aman
+                if (statusCell) {
+                    statusCell.innerHTML = `
+                        <span class="badge badge-success">
+                            <i class="fas fa-check"></i> Aman (Sudah Diunblock)
+                        </span>
+                    `;
+                }
+                
+                // Ganti tombol dengan badge
+                const actionCell = this.parentElement;
+                actionCell.innerHTML = `
+                    <span class="badge" style="background: #dcfce7; color: #166534;">
+                        <i class="fas fa-check-circle"></i> Diunblock
+                    </span>
+                `;
+                
+                // Tampilkan notifikasi sukses
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: data.message,
+                    confirmButtonColor: '#2e5b9a',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+                // Optional: reload data atau update status
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+                
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    text: data.message || 'Terjadi kesalahan saat unblock',
+                    confirmButtonColor: '#2e5b9a'
+                });
+                
+                // Reset tombol
+                this.innerHTML = originalHtml;
+                this.disabled = false;
+            }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Gagal terhubung ke server',
+                confirmButtonColor: '#2e5b9a'
+            });
+            
+            // Reset tombol
+            this.innerHTML = originalHtml;
+            this.disabled = false;
+        }
+    });
+});
+         document.querySelectorAll('.logout-form').forEach(function(form) {
+
+        let submitted = false;
+
+        form.addEventListener('submit', function(e) {
+
+            if (submitted) {
+                e.preventDefault();
+                return;
+            }
+
+            submitted = true;
+
+            const btn = form.querySelector('.logout-button');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+                btn.style.pointerEvents = 'none';
+            }
+        });
+    });
         // ==========================================
         // 1. HANDLE LOGIN RUANGAN
         // ==========================================
+        // Contoh data notifikasi dari server
+        // ===== USER DROPDOWN TOGGLE =====
+var userDropdown = document.getElementById('userDropdown');
+if(userDropdown) {
+    userDropdown.addEventListener('click', function(e) {
+        e.stopPropagation();
+        userDropdown.classList.toggle('active');
+        // Tutup notif dropdown jika terbuka
+        document.getElementById('notifWrapper')?.classList.remove('active');
+    });
+}
+
+
+// ===== TUTUP DROPDOWN SAAT KLIK DI LUAR =====
+document.addEventListener('click', function() {
+    userDropdown?.classList.remove('active');
+   
+});
+
+
         const formRuangan = document.getElementById('formRuangan');
         if (formRuangan) {
             formRuangan.addEventListener('submit', function(e) {

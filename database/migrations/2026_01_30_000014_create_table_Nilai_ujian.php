@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('nilai', function (Blueprint $table) {
             $table->id();
             $table->string('nilai');
-            $table->string('ujian_id');
-            $table->string('mapel_id');
-            $table->string('siswa_id');
+            $table->unsignedBigInteger('ujian_id');
+            $table->unsignedBigInteger('mapel_id');
+            $table->unsignedBigInteger('siswa_id');
             
 
             $table->timestamps();

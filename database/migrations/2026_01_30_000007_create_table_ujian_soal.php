@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('ujian_soals', function (Blueprint $table) {
             $table->id();
-            $table->string('ujian_id');
-            $table->string('bank_id');
+            $table->unsignedBigInteger('ujian_id');
+            $table->unsignedBigInteger('bank_id');
             $table->timestamps();
             
             // Foreign keys (dipertahankan)

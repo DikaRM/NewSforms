@@ -15,6 +15,24 @@
     /* ===== TAMBAHKAN INI DI STYLE CSS ANDA ===== */
 
 /* Animasi Lonceng Notifikasi (Shake) */
+.main-content {
+        animation: pageEnter 0.3s ease-out forwards;
+    }
+
+    @keyframes pageEnter {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Animasi keluar */
+    .main-content.page-leaving {
+        animation: pageLeave 0.25s ease-in forwards !important;
+    }
+
+    @keyframes pageLeave {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-12px); }
+    }
 @keyframes bellShake {
     0% { transform: rotate(0); }
     15% { transform: rotate(15deg); }
@@ -229,12 +247,18 @@
     .dropdown-item-custom:hover { background: #f5f5f5; }
     
     /* --- SIDEBAR --- */
-    .sidebar { width: 260px; background: #5c6fa6; position: fixed; left: 0; top: 56px; bottom: 0; z-index: 99; transition: transform 0.3s ease; overflow-y: auto; }
-    .sidebar-menu { padding: 20px 0; }
-    .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; margin: 4px 12px; color: white; text-decoration: none; border-radius: 8px; transition: all 0.3s ease; }
-    .sidebar-item:hover { background: rgba(255,255,255,0.2); }
-    .sidebar-item.active { background: rgba(255,255,255,0.25); border-left: 3px solid white; }
-    
+    /* ===== SIDEBAR ===== */
+.sidebar { width: 260px; background: #5c6fa6; position: fixed; left: 0; top: 56px; bottom: 0; z-index: 99; transition: transform 0.3s ease; overflow-y: auto; }
+.sidebar-menu { padding: 20px 0; }
+.sidebar-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; margin: 4px 12px; color: white; text-decoration: none; border-radius: 8px; transition: all 0.3s ease; }
+.sidebar-item i { width: 22px; font-size: 1rem; }
+.sidebar-item span { font-size: 0.85rem; font-weight: 500; }
+.sidebar-item:hover { background: rgba(255,255,255,0.25); color: white; border-left: 4px solid white; }
+.sidebar-item.active { background: rgba(255,255,255,0.25); border-left: 4px solid white; }
+
+.sidebar-logout { position: absolute; bottom: 20px; left: 0; right: 0; padding: 0 12px; }
+.sidebar-logout .sidebar-item { color: white; }
+.sidebar-logout .sidebar-item:hover { background: #dc3545; }
     /* --- MOBILE --- */
     .mobile-toggle { display: none; position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; background: #2e5b9a; border-radius: 50%; align-items: center; justify-content: center; cursor: pointer; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: none; color: white; }
     .sidebar-overlay { display: none; position: fixed; top: 56px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 98; }
@@ -311,11 +335,72 @@
         align-items: center;
         gap: 15px;
     }
+    #jadwalSusulanModal,#reviewJawabanModal,#curangModal{
+        max-height:700px;
+        margin-left:200px;
+        margin-top:60px;
+    }
 </style>
 </head>
 <body>
 
 <!-- Header -->
+ {{-- Di bagian head atau sebelum closing body --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+{{-- Tampilkan error dari Laravel --}}
+@if($errors->any())
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Validasi Gagal!',
+        html: `
+            <ul style="text-align: left;">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        `,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'OK'
+    });
+</script>
+@endif
+
+{{-- Tampilkan session error --}}
+@if(session('error'))
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Error!',
+        text: '{{ session('error') }}',
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'OK'
+    });
+</script>
+@endif
+@if($errors->has('error'))
+<script>
+    Swal.fire({
+        icon: 'error',
+        title: 'Error!',
+        text: '{{ $errors->first('error') }}',
+        confirmButtonColor: '#dc3545'
+    });
+</script>
+@endif
+{{-- Tampilkan session success --}}
+@if(session('success'))
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: '{{ session('success') }}',
+        confirmButtonColor: '#2e5b9a',
+        confirmButtonText: 'OK'
+    });
+</script>
+@endif
 <header class="header">
     <h2>
         <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px"/>
@@ -355,9 +440,9 @@
         <span>Profil Saya</span>
     </a>
             <div class="dropdown-divider"></div>
-            <form action="{{ route('users.logout') }}" method="post">
+            <form action="{{ route('users.logout') }}" method="post" class="logout-form">
                 @csrf
-                <button type="submit" class="dropdown-item-custom logout-btn" style="width:100%; background:none; border:none; cursor:pointer;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button>
+                <button type="submit" class="dropdown-item-custom logout-btn logout-button" style="width:100%; background:none; border:none; cursor:pointer;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button>
             </form>
         </div>
     </div>
@@ -370,20 +455,40 @@
 
 <div class="app-wrapper">
     <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-menu">
-            <a href="{{ route('guru.index') }}" class="sidebar-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
-            <a href="{{ route('guru.jadwal') }}" class="sidebar-item"><i class="fas fa-calendar-alt"></i><span>Jadwal Ujian</span></a>
-            <a href="{{ route('guru.riwayat') }}" class="sidebar-item"><i class="fas fa-history"></i><span>Riwayat Ujian</span></a>
-            <a href="{{ route('guru.result') }}" class="sidebar-item active"><i class="fas fa-file-alt"></i><span>Hasil Ujian</span></a>
-        </div>
-        <div class="sidebar-logout">
-            <form action="{{ route('users.logout') }}" method="post">
-                @csrf
-                <button type="submit" class="sidebar-item" style="width:100%; background:none; border:none; cursor:pointer;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button>
-            </form>
-        </div>
-    </aside>
+   <aside class="sidebar" id="sidebar">
+    <div class="sidebar-menu">
+        <a href="{{ route('guru.index') }}" class="sidebar-item">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="{{ route('guru.jadwal') }}" class="sidebar-item">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Jadwal Ujian</span>
+        </a>
+        <a href="{{ route('guru.riwayat') }}" class="sidebar-item">
+            <i class="fas fa-history"></i>
+            <span>Riwayat Ujian</span>
+        </a>
+        <a href="{{ route('guru.result') }}" class="sidebar-item active">
+            <i class="fas fa-file-alt"></i>
+            <span>Hasil Ujian</span>
+        </a>
+         <a href="{{ route('pengawas.index', isset($dt) ? $dt->id : '') }}" class="sidebar-item @request()->is('pengawas/*') ? 'active' : ''">
+                    <i class="fas fa-users"></i>
+                    <span>Pengawas</span>
+                </a>
+    </div>
+    
+    <div class="sidebar-logout">
+        <form action="{{ route('users.logout') }}" method="post" class="logout-form">
+            @csrf
+            <button type="submit" class="sidebar-item logout-button" style="width: 100%; background: none; border: none; cursor: pointer;">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </form>
+    </div>
+</aside>
 
     <!-- Main Content -->
     <main class="main-content" id="mainContent">
@@ -406,14 +511,12 @@
                 <h1 style="color: #2e5b9a; font-size: 1.5rem; font-weight: 700;"><i class="fas fa-chart-line"></i> Hasil Ujian</h1>
                 <h2 style="color: #6c757d; font-size: 1rem; font-weight: 400;">{{ $ujian->nama_ujian ?? 'Ujian' }}</h2>
                 <p style="color: #6c757d; font-size: 0.85rem; margin-top: 5px;">
-                    <i class="fas fa-calendar"></i> {{ \Carbon\Carbon::parse($ujian->tanggal_ujian)->format('d M Y') }} 
+                    <i class="fas fa-calendar"></i> {{ \Carbon\Carbon::parse($ujian->tanggal_ujian)->locale('id')->translatedformat('d M Y') }} 
                     <span style="margin: 0 5px;">|</span>
-                    <i class="fas fa-users"></i> {{ $pesertaUjian->count() }} Peserta
+                    <i class="fas fa-check"></i> {{ $pesertaUjian->count() }} Ngerjain 
                 </p>
             </div>
-            <a href="{{ route('guru.result') }}" class="button" style="border-radius: 8px; border: 1px solid #e5e7eb;">
-                <i class="fas fa-arrow-left"></i> Kembali
-            </a>
+           
         </div>
 
         <!-- 1. Statistik Ringkas -->
@@ -454,7 +557,7 @@
         @endphp
 
         <h3 style="font-size: 1.2rem; font-weight: 600; color: #2e5b9a; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb;">Rekap Per Kelas</h3>
-        
+         
         <div class="class-grid">
             @foreach($kelompokKelas as $namaKelas => $siswaPerKelas)
             <div class="class-card">
@@ -482,6 +585,7 @@
                                     <th style="width: 50px;">No</th>
                                     <th>Nama Siswa</th>
                                     <th>Nilai</th>
+                                    <th>Keterangan</th>
                                     <th>Status</th>
                                     <th>Aksi</th>
                                 </tr>
@@ -524,24 +628,62 @@
                                         <div style="font-size: 0.75rem; color: #6c757d;">{{ $siswaItem->nisn }}</div>
                                     </td>
                                     <td>
-                                        @if($nilai) 
-                                            <div style="display:flex; align-items:center; gap:8px;">
-                                                <span class="tag-score {{ $scoreClass }}">{{ round($nilai) }}</span>
-                                                <!-- FITUR: TOMBOL EDIT NILAI -->
-                                                <button class="btn-edit" onclick="openEditNilaiModal({{ $peserta->id }}, {{ $nilai }}, '{{ $siswaItem->nama }}')">
-                                                    <i class="fas fa-pencil-alt"></i>
-                                                </button>
-                                            </div>
-                                        @else <span class="tag is-light">0</span> @endif
+   @if($nilai) 
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span class="tag-score {{ $scoreClass }}">{{ round($nilai) }}</span>
+        
+        <!-- Tombol Edit Nilai -->
+        <button class="btn-edit" onclick="openEditNilaiModal({{ $peserta->id }}, {{ $nilai }}, '{{ $siswaItem->nama }}')">
+            <i class="fas fa-pencil-alt"></i>
+        </button>
+
+        <!-- Tombol Review untuk Mode Praktik (hanya jika punya peserta) -->
+        @if($ujian->mode === 'praktik' && $peserta)
+            <button class="button is-info is-small" style="height:28px; font-size:0.75rem;" onclick="openReviewModal({{ $peserta->id }}, '{{ $siswaItem->nama }}')">
+                <i class="fas fa-file-alt"></i>
+            </button>
+        @endif
+    </div>
+@else 
+    <span class="tag is-light">0</span> 
+    {{-- HANYA TAMPILKAN REVIEW JIKA PESERTA ADA (SUDAH MENGERJAKAN) --}}
+    @if($ujian->mode === 'praktik' && $peserta)
+        <button class="button is-info is-small" style="height:28px; font-size:0.75rem;" onclick="openReviewModal({{ $peserta->id }}, '{{ $siswaItem->nama }}')">
+            <i class="fas fa-file-alt"></i>
+        </button>
+    @endif
+@endif
                                     </td>
                                     <td>
+                                        @php
+    $kkm = 75;
+    $statusAkademik = '-';
+
+    if($nilai !== null) {
+        $statusAkademik = $nilai >= $kkm ? 'Lulus' : 'Remedial';
+    }
+@endphp
+                                    @if($statusAkademik == 'Lulus')
+                                        <span class="tag is-success">Lulus</span>
+                                    @elseif($statusAkademik == 'Remedial')
+                                        <span class="tag is-warning">Remedial</span>
+                                    @else
+                                        <span class="tag is-light">Belum Ngerjain</span>
+                                    @endif
+                                    </td>
+                                    <td>
+                                    @if($ujian->mode === "cbt")
                                         @if($hasPelanggaran) 
                                             <span class="badge-cheat"><i class="fas fa-exclamation-triangle"></i> Curang</span>
                                         @else 
                                             <span class="badge-safe"><i class="fas fa-check-circle"></i> Aman</span>
                                         @endif
+                                    @else
+                                        -
+                                    @endif
                                     </td>
                                     <td>
+                                    @if($ujian->mode === "cbt")
                                         @if(!$hasPelanggaran && !$susulan && $statusKehadiran == 'hadir')
                                             <button class="action-btn" onclick="showCurangModal({{ $ujian->id }}, {{ $siswaItem->id_siswa }}, '{{ $siswaItem->nama }}', {{ $nilai ?? 0 }})">
                                                 <i class="fas fa-gavel"></i> Curang
@@ -549,6 +691,9 @@
                                         @else 
                                             <span class="tag is-light">-</span>
                                         @endif
+                                    @else
+                                     -
+                                    @endif
                                     </td>
                                 </tr>
                                 @empty
@@ -580,7 +725,7 @@
         <div class="class-card" style="border-left: 4px solid #ffc107;">
             <div class="class-header" style="background: #ffc107; color: #856404;">
                 <h3>Daftar Siswa Susulan</h3>
-                <span class="tag is-white has-text-warning-dark">{{ $siswaSusulan->count() }} Orang</span>
+                <span class="tag is-white has-text-warning-dark">{{ $siswaSusulan->count() }}</span>
             </div>
             <div class="class-body">
                 <div style="overflow-x: auto;">
@@ -603,16 +748,15 @@
                                 <td>{{ $susulan->alasan ?? '-' }}</td>
                                 <td>
                                     @php
-                                        $jadwalSusulan = \App\Models\Jadwal::where('ujian_id', $ujian->id)
-                                            ->where('kelas_id', $susulan->kelas_id)
-                                            ->where('untuk_susulan', true)
-                                            ->first();
-                                    @endphp
-                                    
+    $jadwalSusulan = \App\Models\Jadwal::where('ujian_id', $ujian->id)
+        ->where('kelas_id', $susulan->kelas_id)
+        ->whereRaw('"untuk_susulan" = true')  // Langsung tulis true
+        ->first();
+@endphp
                                     @if($jadwalSusulan)
-                                        <span class="tag is-success"><i class="fas fa-check"></i> {{ date('H:i', strtotime($jadwalSusulan->waktu_mulai)) }} WIB</span>
+                                        <span class="tag is-success"><i class="fas fa-check" style="margin-right:6px;"></i> {{ date('H:i', strtotime($jadwalSusulan->waktu_mulai)) }} WIB</span>
                                     @else
-                                        <span class="tag is-warning"><i class="fas fa-hourglass"></i> Belum Dijadwalkan</span>
+                                        <span class="tag is-warning"><i class="fas fa-hourglass" style="margin-right:6px;"></i> Belum Dijadwalkan</span>
                                     @endif
                                 </td>
                             </tr>
@@ -621,18 +765,18 @@
                     </table>
                 </div>
 
-                @php
-                    $sudahAdaJadwal = \App\Models\Jadwal::where('ujian_id', $ujian->id)
-                        ->where('untuk_susulan', true)
-                        ->exists();
-                @endphp
+               @php
+    $sudahAdaJadwal = \App\Models\Jadwal::where('ujian_id', $ujian->id)
+        ->whereRaw('"untuk_susulan" = true')
+        ->exists();
+@endphp
                 
                 @if(!$sudahAdaJadwal)
                 <div style="margin-top: 20px; text-align: right;">
                    <!-- Tombol Buat Jadwal Susulan -->
                     <button class="button is-warning" style="border-radius: 8px;" 
                             onclick='openCreateJadwalSusulanModal("{{ $ujian->id }}", "{{ $ujian->nama_ujian }}")'>
-                        <i class="fas fa-calendar-plus"></i> Buat Jadwal Susulan
+                        <i class="fas fa-calendar-plus" style="margin-right:6px;"></i> Buat Jadwal Susulan
                     </button>
                 </div>
                 @else
@@ -674,25 +818,69 @@
             @endif
 
             <!-- Kolom Kanan: Berita Acara -->
-            <div style="flex: 1; min-width: 300px;">
-                @foreach($berita as $b)
-                @php
-                    $kelasBerita = \App\Models\Kelas::find($b->kelas_id);
-                    $namaKelasBerita = $kelasBerita->nama_kelas ?? 'Tidak Diketahui';
-                @endphp
-                <div class="berita-acara-card">
-                    <div style="margin-bottom: 10px; font-weight: 600;">
-                        <i class="fas fa-file-alt"></i> Berita Acara - {{ $namaKelasBerita }}
-                    </div>
-                    <div style="font-size: 0.9rem; opacity: 0.95;">
-                        {{ $b->catatan ?: 'Tidak ada catatan.' }}
-                    </div>
-                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); font-size: 0.75rem; opacity: 0.8;">
-                        <i class="fas fa-user-check"></i> {{ $b->pengawas->guru->nama ?? Auth::user()->name }}
-                    </div>
-                </div>
-                @endforeach
+           <!-- Kolom Kanan: Berita Acara -->
+<div style="flex: 1; min-width: 300px;">
+    @foreach($berita as $b)
+    @php
+        $kelasBerita = \App\Models\Kelas::find($b->kelas_id);
+        $namaKelasBerita = $kelasBerita->nama_kelas ?? 'Tidak Diketahui';
+    @endphp
+
+    <div class="class-card" style="border: 1px solid #dbeafe; margin-bottom: 16px;">
+        
+        <!-- Header -->
+        <div class="class-header" style="background: #eef4ff; color: #2e5b9a;">
+            <h3 style="font-size: 1rem;">
+                <i class="fas fa-file-alt"></i>
+                Berita Acara
+            </h3>
+
+            <span class="tag is-info is-light">
+                {{ $namaKelasBerita }}
+            </span>
+        </div>
+
+        <!-- Body -->
+        <div class="class-body">
+
+            <!-- Isi Catatan -->
+            <div style="
+               
+                border-radius: 10px;
+                padding: 14px;
+                color: #334155;
+                font-size: 0.9rem;
+                line-height: 1.6;
+            ">
+                {{ $b->catatan ?: 'Tidak ada catatan.' }}
             </div>
+
+            <!-- Footer -->
+            <div style="
+                margin-top: 14px;
+                padding-top: 12px;
+                border-top: 1px solid #edf2f7;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 0.8rem;
+                color: #64748b;
+            ">
+                <div>
+                    <i class="fas fa-user-check"></i>
+                    {{ $b->pengawas->guru->nama ?? Auth::user()->name }}
+                </div>
+
+                <div>
+                    <i class="fas fa-clock"></i>
+                    {{ \Carbon\Carbon::parse($b->created_at)->locale('id')->translatedformat('d M Y H:i') }}
+                </div>
+            </div>
+
+        </div>
+    </div>
+    @endforeach
+</div>
         </div>
 
     </main>
@@ -713,6 +901,7 @@
             <section class="modal-card-body">
                 <input type="hidden" name="ujian_id" id="modal_ujian_id">
                 <input type="hidden" name="siswa_id" id="modal_siswa_id">
+                
                 
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; margin-bottom: 8px; font-size: 0.85rem;">Nama Siswa</label>
@@ -777,7 +966,7 @@
     <div class="modal-background" onclick="closeEditNilaiModal()"></div>
     <div class="modal-card" style="max-width: 400px;">
         <header class="modal-card-head bg-primary">
-            <p class="modal-card-title"><i class="fas fa-pencil-alt"></i> Edit Nilai</p>
+            <p class="modal-card-title has-text-light"><i class="fas fa-pencil-alt"></i> Edit Nilai</p>
             <button class="delete" aria-label="close" onclick="closeEditNilaiModal()"></button>
         </header>
         <form id="editNilaiForm" action="{{ route('guru.update-nilai') }}" method="POST">
@@ -812,7 +1001,7 @@
     <div class="modal-card" style="max-width: 700px;">
         <header class="modal-card-head bg-yellow">
             <p class="modal-card-title" style="color: #856404;">
-                <i class="fas fa-calendar-plus"></i> Buat Jadwal Susulan
+                <i class="fas fa-calendar-plus" style="margin-right:6px;"></i> Buat Jadwal Susulan
             </p>
             <button class="delete" aria-label="close" onclick="closeJadwalSusulanModal()"></button>
         </header>
@@ -825,7 +1014,7 @@
                 
                 <!-- PENTING: HIDDEN INPUT NAME KELAS -->
                 <input type="hidden" name="kelas_id" id="form_kelas_id" value="">
-                <input type="hidden" name="untuk_susulan" value="1">
+                <input type="hidden" name="jam_mapel" value="{{$ujian->jadwal->jam_mapel ?? 0}}" >
                 <input type="hidden" name="tanggal_susulan" id="form_tanggal" value="">
                 <input type="hidden" name="waktu_mulai" id="form_waktu_mulai" value="">
                 <input type="hidden" name="waktu_selesai" id="form_waktu_selesai" value="">
@@ -876,32 +1065,290 @@
                     </div>
                 </div>
 
-                <div style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 8px; font-size: 0.85rem;">Pengawas <span style="color: #dc3545;">*</span></label>
-                    <div style="position: relative;">
-                        <select name="guru_id" id="form_guru_id" required style="width: 100%; border-radius: 8px; border: 1px solid #e2e8f0; padding: 10px;">
-                            <option value="">Pilih Pengawas</option>
-                            @php $guruList = \App\Models\Guru::with('user')->get(); @endphp
-                            @foreach($guruList as $guru)
-                                <option value="{{ $guru->id }}">{{ $guru->nama }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
+                
             </section>
             
             <footer class="modal-card-foot">
-                <button type="button" class="button" onclick="closeJadwalSusulanModal()"><i class="fas fa-times"></i> Batal</button>
-                <button type="submit" class="button is-warning"><i class="fas fa-save"></i> Simpan Jadwal</button>
+                <button type="button" class="button" onclick="closeJadwalSusulanModal()"><i class="fas fa-times" style="margin-right:6px;"></i> Batal</button>
+                <button type="submit" class="button is-warning"><i class="fas fa-save" style="margin-right:6px;"></i> Simpan Jadwal</button>
             </footer>
         </form>
     </div>
 </div>
+<!-- =========================================
+     MODAL 4: REVIEW JAWABAN PRAKTIK
+     ========================================= -->
+<div class="modal" id="reviewJawabanModal">
+    <div class="modal-background" onclick="closeReviewModal()"></div>
+    <div class="modal-card" style="max-width: 900px; width: 95%;">
+        <header class="modal-card-head bg-primary">
+            <p class="modal-card-title has-text-light">
+                <i class="fas fa-laptop-code"></i> Review Jawaban Praktik
+            </p>
+            <button class="delete" aria-label="close" onclick="closeReviewModal()"></button>
+        </header>
 
+        <section class="modal-card-body">
+            <!-- Info Siswa -->
+            <div style="background: #f8f9fa; padding: 10px 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #2e5b9a;">
+                <strong style="color: #2e5b9a;">Siswa:</strong> 
+                <span id="review_siswa_nama" style="font-weight: 600; color: #333;">-</span>
+            </div>
+
+            <!-- Container Soal & Jawaban -->
+            <div id="reviewContainer" style="max-height: 60vh; overflow-y: auto; padding-right: 5px;">
+                <!-- Data akan di-load via AJAX di sini -->
+                <div style="text-align: center; padding: 40px; color: #999;">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p style="margin-top: 10px;">Memuat jawaban...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer: Input Nilai Akhir -->
+        <footer class="modal-card-foot" style="background: #fafafa; border-top: 1px solid #eee;">
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 0.9rem; color: #666;">
+                    <i class="fas fa-info-circle"></i> Cek file jawaban sebelum memberikan nilai.
+                </div>
+                
+                <form id="reviewNilaiForm" action="{{ route('guru.update-nilai') }}" method="POST" style="display: flex; gap: 10px; align-items: center;">
+                    @csrf
+                    <input type="hidden" name="peserta_id" id="review_peserta_id">
+                    
+                    <label style="font-weight: 600; font-size: 0.9rem;">Nilai Akhir:</label>
+                    <input type="number" name="nilai" id="review_nilai_input" required min="0" max="100" 
+                           style="width: 80px; padding: 8px; border: 2px solid #2e5b9a; border-radius: 6px; text-align: center; font-weight: bold; font-size: 1.1rem;">
+                    
+                    <button type="submit" class="button is-success">
+                        <i class="fas fa-save" style="margin-right:6px;"></i> Simpan Nilai
+                    </button>
+                </form>
+            </div>
+        </footer>
+    </div>
+</div>
 <script>
 // Data siswa susulan
 // Logic untuk update tampilan angka saat slider digeser
+function renderJawabanList(jawabans) {
+    const container = document.getElementById('reviewContainer');
+    let html = '';
+
+    jawabans.forEach((item, index) => {
+        // Cek apakah ada file?
+        const hasFile = item.file_path && item.file_path !== null;
+
+const fileUrl = hasFile 
+    ? `/storage/${item.file_path}` 
+    : '#';
+
+const fileExt = hasFile 
+    ? item.file_path.split('.').pop().toLowerCase() 
+    : '';
+
+const isImage = hasFile && ['jpg', 'jpeg', 'png', 'gif'].includes(fileExt);
+
+        html += `
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <span class="tag is-primary">Soal No. ${index + 1}</span>
+                <span class="tag is-light">${item.tipe_soal || 'Praktik'}</span>
+            </div>
+            
+            <div class="columns">
+                <!-- Kolom Kiri: Soal & Teks Jawaban -->
+                <div class="column is-7">
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 700; color: #333; display:block; margin-bottom:5px;">Pertanyaan:</label>
+                        <div style="color: #444; line-height: 1.5;">${item.soal_text}</div>
+                    </div>
+                    
+                    <div style="background: #f1f5f9; padding: 15px; border-radius: 8px;">
+                        <label style="font-weight: 600; color: #555; display:block; margin-bottom:5px;">
+                            <i class="fas fa-pen"></i> Jawaban Teks:
+                        </label>
+                        <p style="color: #333; white-space: pre-wrap; font-size: 0.95rem;">${item.jawaban_teks || '-'}</p>
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: File Upload -->
+                <div class="column is-5" style="border-left: 1px dashed #cbd5e1; padding-left: 20px;">
+                    <label style="font-weight: 700; color: #2e5b9a; display:block; margin-bottom:10px;">
+                        <i class="fas fa-cloud-upload-alt"></i> File Jawaban
+                    </label>
+                    
+                    ${hasFile ? `
+                        ${isImage ? `
+                            <div style="text-align: center; margin-bottom: 10px;">
+                                <a href="${fileUrl}" target="_blank">
+                                    <img src="${fileUrl}" style="max-width: 100%; border-radius: 8px; border: 1px solid #ddd; cursor: zoom-in;" alt="Preview">
+                                </a>
+                            </div>
+                        ` : `
+                            <div style="text-align: center; padding: 20px; background: #eef2ff; border-radius: 8px;">
+                                <i class="fas fa-file-pdf" style="font-size: 3rem; color: #dc3545;"></i>
+                                <p style="margin-top: 10px; font-size: 0.9rem; word-break: break-all;">${item.file_path.split('/').pop()}</p>
+                            </div>
+                        `}
+                        <a href="${fileUrl}" target="_blank" class="button is-info is-small is-fullwidth">
+                            <i class="fas fa-download"></i> Download / Buka File
+                        </a>
+                    ` : `
+                        <div style="text-align: center; padding: 20px; color: #999; background: #f8f9fa; border-radius: 8px;">
+                            <i class="fas fa-times-circle" style="font-size: 2rem; margin-bottom: 5px;"></i>
+                            <p>Tidak ada file diupload</p>
+                        </div>
+                    `}
+                </div>
+            </div>
+        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+function openReviewModal(pesertaId, namaSiswa) {
+    currentReviewPesertaId = pesertaId;
+    document.getElementById('review_peserta_id').value = pesertaId;
+    document.getElementById('review_siswa_nama').innerText = namaSiswa;
+    
+    // Reset container
+    const container = document.getElementById('reviewContainer');
+    container.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #999;">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p style="margin-top: 10px;">Memuat jawaban...</p>
+        </div>`;
+
+    document.getElementById('reviewJawabanModal').classList.add('is-active');
+
+    // Ambil Data Jawaban via AJAX
+    // Pastikan Anda sudah membuat route: Route::get('/guru/get-jawaban/{pesertaId}', [GuruController::class, 'getJawabanSiswa']);
+    fetch(`/guru/get-jawaban/${pesertaId}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            if (data.success && data.jawaban.length > 0) {
+                renderJawabanList(data.jawaban);
+                // Set nilai awal di input jika ada
+                document.getElementById('review_nilai_input').value = data.nilai_akhir || 0;
+            } else {
+                container.innerHTML = '<div class="notification is-warning is-light">Tidak ada jawaban ditemukan atau siswa belum mengupload file.</div>';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            container.innerHTML = '<div class="notification is-danger">Gagal memuat data jawaban.</div>';
+        });
+}
+
+document.getElementById('reviewNilaiForm')
+.addEventListener('submit', submitReviewNilai);
+
+function submitReviewNilai(e) {
+
+    e.preventDefault();
+
+    const form = e.target;
+
+    const btn = form.querySelector('button[type="submit"]');
+
+    const originalText = btn.innerHTML;
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+    btn.disabled = true;
+
+    const formData = new FormData(form);
+
+    fetch('{{ route('guru.update-nilai') }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN':
+                document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.success) {
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil',
+                text: 'Nilai berhasil disimpan.',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => {
+                location.reload();
+            });
+
+        } else {
+
+            Swal.fire(
+                'Gagal',
+                data.message || 'Terjadi kesalahan',
+                'error'
+            );
+
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    })
+    .catch(err => {
+
+        console.error(err);
+
+        Swal.fire(
+            'Error',
+            'Koneksi gagal',
+            'error'
+        );
+
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+function closeReviewModal() {
+    document.getElementById('reviewJawabanModal').classList.remove('is-active');
+}
 document.addEventListener('DOMContentLoaded', function() {
+    let currentReviewPesertaId = null;
+
+
+    // --- 4. FUNGSI REVIEW JAWABAN PRAKTIK ---
+
+
+
+
+
+
+// Handle Submit Nilai dari Modal Review
+
+     document.querySelectorAll('.logout-form').forEach(function(form) {
+
+        let submitted = false;
+
+        form.addEventListener('submit', function(e) {
+
+            if (submitted) {
+                e.preventDefault();
+                return;
+            }
+
+            submitted = true;
+
+            const btn = form.querySelector('.logout-button');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+                btn.style.pointerEvents = 'none';
+            }
+        });
+    });
         // ... kode JS yang sudah ada ...
 
     // ==========================================
@@ -1203,6 +1650,33 @@ document.addEventListener('keydown', function(e) {
     }
 });
 </script>
+<script>
+// Script Intercept Link (Smooth Transition)
+let mainContent = document.querySelector(".main-content")
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a');
+        if (!link) return; 
+        const href = link.getAttribute('href');
+        const target = link.getAttribute('target');
+        
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:') || target === '_blank') return;
+        if (link.classList.contains('no-transition') || link.getAttribute('data-turbolinks') === 'false') return;
+        
+        const isLocal = href.startsWith(window.location.origin) || href.startsWith('/');
+        if (isLocal) {
+            e.preventDefault();
+            mainContent.classList.add('page-leaving');
+            setTimeout(function() { window.location.href = href; }, 250);
+        }
+    });
 
+    document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function() {
+            document.mainContent.classList.add('page-leaving');
+        });
+    });
+});
+</script>
 </body>
 </html>

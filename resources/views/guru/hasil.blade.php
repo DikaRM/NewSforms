@@ -540,6 +540,67 @@
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: #f1f1f1; }
     ::-webkit-scrollbar-thumb { background: #5c6fa6; border-radius: 3px; }
+    .breadcrumb-custom {
+        margin-bottom: 20px;
+    }
+
+    .breadcrumb-custom ul {
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .breadcrumb-custom li {
+        display: flex;
+        align-items: center;
+    }
+
+    .breadcrumb-custom li:not(:last-child):after {
+        content: "/";
+        margin-left: 8px;
+        color: #adb5bd;
+    }
+
+    .breadcrumb-custom a {
+        color: #5c6fa6;
+        text-decoration: none;
+        font-size: 0.85rem;
+    }
+
+    .breadcrumb-custom a:hover {
+        color: #2e5b9a;
+    }
+
+    .breadcrumb-custom .is-active a {
+        color: #2e5b9a;
+        font-weight: 600;
+    }
+    .page-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* biar responsive */
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.date-badge {
+    background: white;
+    padding: 8px 18px;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #2e5b9a;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    white-space: nowrap;
+}
+@media (max-width: 768px) {
+    .page-header-flex {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
 </style>
 
 </head>
@@ -593,9 +654,9 @@
         <span>Profil Saya</span>
     </a>
                 <div style="height: 1px; background: #eee; margin: 4px 0;"></div>
-                <form action="{{ route('users.logout') }}" method="post">
+                <form action="{{ route('users.logout') }}" method="post" class="logout-form">
                     @csrf
-                    <button type="submit" class="dropdown-item-custom logout-btn" style="width: 100%; background: none; border: none; cursor: pointer; text-align: left;">
+                    <button type="submit" class="dropdown-item-custom logout-btn logout-button" style="width: 100%; background: none; border: none; cursor: pointer; text-align: left;">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Logout</span>
                     </button>
@@ -640,9 +701,9 @@
         </div>
         
         <div class="sidebar-logout">
-            <form action="{{ route('users.logout') }}" method="post">
+            <form action="{{ route('users.logout') }}" method="post" class="logout-form">
                 @csrf
-                <button type="submit" class="sidebar-item" style="width: 100%; background: none; border: none; cursor: pointer;">
+                <button type="submit" class="sidebar-item logout-button" style="width: 100%; background: none; border: none; cursor: pointer;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -653,13 +714,22 @@
     <!-- Main Content (Pertahankan Konten Kode 1) -->
     <main class="main-content" id="mainContent">
         <!-- Page Header -->
-        <div class="page-header">
-            <h1 style="font-size: 1.8rem; font-weight: 700; color: #1e2a3e; display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                <i class="fas fa-chalkboard-user"></i>
-                Dashboard Guru
-            </h1>
-            <p style="color: #64748b; font-size: 0.9rem;">Selamat datang, {{$ire->nama}}! Kelola ujian dan pantau hasil belajar siswa</p>
-        </div>
+        <div class="page-header-flex">
+    <div>
+        <h1 style="color: #2e5b9a; font-size: 1.5rem; font-weight: 600; margin-bottom: 4px;">
+            <i class="fas fa-chart-line"></i>
+            Hasil Ujian
+        </h1>
+        <p style="color: #6c757d; font-size: 0.85rem;">
+            Selamat datang, {{$ire->nama}}! Kelola ujian dan pantau hasil belajar siswa
+        </p>
+    </div>
+
+    <div class="date-badge">
+        <i class="fas fa-calendar-alt"></i> 
+        {{ \Carbon\Carbon::parse(now())->locale("id")->isoFormat('dddd, D MMMM YYYY') }}
+    </div>
+</div>
 
         <!-- Stats Cards -->
         <div class="stats-grid">
@@ -674,10 +744,14 @@
                 <div class="stat-icon"><i class="fas fa-users"></i></div>
                 <div class="stat-info">
                     @php
-                        $totalSiswa = 0;
-                        foreach($data as $ujian) { $totalSiswa += $ujian->peserta->count() ?? 0; }
+                        $totalSiswaGlobal = 0;
+                        foreach($data as $ujian) { 
+                            // Hitung total siswa unik per ujian berdasarkan kelas yang diassign
+                            $kelasIds = \App\Models\Kelas_ujian::where("ujian_id", $ujian->id)->pluck('kelas_id');
+                            $totalSiswaGlobal += \App\Models\Siswa::whereIn('kelas_id', $kelasIds)->count();
+                        }
                     @endphp
-                    <h3>{{ $totalSiswa }}</h3>
+                    <h3>{{ $totalSiswaGlobal }}</h3>
                     <p>Total Peserta</p>
                 </div>
             </div>
@@ -714,19 +788,51 @@
         <!-- Daftar Ujian Section -->
         <div class="section-title">
             <h2><i class="fas fa-list-ol"></i> Daftar Ujian</h2>
-            <div class="date-badge" style="background: white; padding: 8px 18px; border-radius: 30px; font-size: 0.85rem; font-weight: 500; color: #2e5b9a; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                <i class="fas fa-calendar-alt"></i> {{ \Carbon\Carbon::now()->isoFormat('dddd, D MMMM YYYY') }}
-            </div>
+            <form method="GET">
+        <div class="select">
+            <select name="mode" onchange="this.form.submit()">
+                <option value="">Semua Mode</option>
+                <option value="cbt" {{ request('mode') == 'cbt' ? 'selected' : '' }}>
+                    CBT
+                </option>
+                <option value="praktik" {{ request('mode') == 'praktik' ? 'selected' : '' }}>
+                    Praktik
+                </option>
+            </select>
+        </div>
+    </form>
         </div>
 
+        <!-- EXAM GRID (REVISI LOGIKA: 1 KARTU PER UJIAN) -->
         <div class="exam-grid">
             @if(isset($data) && $data->count() > 0)
                 @foreach($data as $dt)
                     @php
-                        $pesertaCount = $dt->peserta->count() ?? 0;
-                        $sudahUjian = $dt->peserta->filter(function($p) { return $p->nilai !== null; })->count() ?? 0;
-                        $belumUjian = $pesertaCount - $sudahUjian;
+                        // 1. Ambil semua kelas yang terdaftar untuk ujian ini
+                        $kelasUjianList = \App\Models\Kelas_ujian::where("ujian_id", $dt->id)->get();
                         
+                        // 2. Ambil ID Kelas Unik
+                        $kelasIds = $kelasUjianList->pluck('kelas_id')->unique();
+                        
+                        // 3. Hitung Total Siswa dari Kelas-kelas tersebut
+                        // Menggunakan whereIn agar hanya siswa yang kelasnya ikut ujian yang dihitung
+                        $totalSiswaKelas = \App\Models\Siswa::whereIn('kelas_id', $kelasIds)->count();
+                        
+                        // 4. Hitung yang sudah ujian (berdasarkan tabel peserta)
+                        $sudahUjianCount = $dt->peserta->filter(function($p) { 
+                            return $p->nilai !== null; 
+                        })->count();
+                        
+                        // 5. Hitung yang belum ujian
+                        $belumUjianCount = $totalSiswaKelas - $sudahUjianCount;
+                        
+                        // 6. Buat string nama kelas untuk ditampilkan (Agak-agar rapi)
+                        $listKelasNama = $kelasUjianList->map(function($item) {
+                            // Asumsi ada relasi $item->kelas->nama_kelas. Jika tidak, pakai ID.
+                            return isset($item->kelas) ? $item->kelas->nama_kelas : 'Kelas ' . $item->kelas_id;
+                        })->implode(', ');
+
+                        // Status Badge Logic
                         $statusBadge = ''; $statusColor = '';
                         if($dt->status === 'draft') { $statusBadge = 'Draft'; $statusColor = '#94a3b8'; }
                         elseif($dt->status === 'ready') { $statusBadge = 'Siap'; $statusColor = '#28a745'; }
@@ -734,6 +840,8 @@
                         elseif($dt->status === 'done') { $statusBadge = 'Selesai'; $statusColor = '#6c757d'; }
                         else { $statusBadge = $dt->status; $statusColor = '#2e5b9a'; }
                     @endphp
+                    
+                    <!-- Render HANYA SATU KARTU PER UJIAN -->
                     <div class="exam-card">
                         <div class="card-header-custom">
                             <h3><i class="fas fa-file-alt"></i> {{ $dt->nama_ujian ?? 'Ujian' }}</h3>
@@ -742,21 +850,50 @@
                             <div class="exam-detail">
                                 <p><i class="fas fa-clock"></i> Durasi: {{ $dt->durasi ?? '-' }} Menit</p>
                                 <p><i class="fas fa-tag"></i> Status: <span style="color: {{ $statusColor }}; font-weight: 600;">{{ $statusBadge }}</span></p>
+                                @php
+    $modeColor = $dt->mode === 'praktik'
+        ? '#ff9800'
+        : '#2196f3';
+
+    $modeIcon = $dt->mode === 'praktik'
+        ? 'fa-tools'
+        : 'fa-desktop';
+
+    $modeLabel = $dt->mode === 'praktik'
+        ? 'Praktik'
+        : 'CBT';
+@endphp
+
+<p>
+    <i class="fas {{ $modeIcon }}"></i>
+    Mode:
+    <span style="
+        background: {{ $modeColor }};
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 600;
+    ">
+        {{ $modeLabel }}
+    </span>
+</p>
                                 @if(isset($dt->jadwal))
-                                <p><i class="fas fa-calendar-alt"></i> {{ \Carbon\Carbon::parse($dt->jadwal->waktu_mulai)->format('d F Y H:i') }}</p>
+                                <p><i class="fas fa-calendar-alt"></i> {{ \Carbon\Carbon::parse($dt->jadwal->waktu_mulai)->locale('id')->translatedformat('d F Y H:i') }}</p>
                                 @endif
+                                
                             </div>
                             <div class="exam-stats">
                                 <div class="stat-item-small">
-                                    <div class="stat-value">{{ $pesertaCount }}</div>
+                                    <div class="stat-value">{{ $totalSiswaKelas }}</div>
                                     <div class="stat-label">Total Siswa</div>
                                 </div>
                                 <div class="stat-item-small">
-                                    <div class="stat-value">{{ $sudahUjian }}</div>
+                                    <div class="stat-value">{{ $sudahUjianCount }}</div>
                                     <div class="stat-label">Sudah Ujian</div>
                                 </div>
                                 <div class="stat-item-small">
-                                    <div class="stat-value">{{ $belumUjian }}</div>
+                                    <div class="stat-value">{{ $belumUjianCount }}</div>
                                     <div class="stat-label">Belum Ujian</div>
                                 </div>
                             </div>
@@ -765,6 +902,8 @@
                             </a>
                         </div>
                     </div>
+                    <!-- END CARD -->
+                    
                 @endforeach
             @else
                 <div class="empty-state" style="text-align: center; padding: 60px 20px; background: white; border-radius: 24px; grid-column: 1 / -1;">
@@ -822,10 +961,33 @@
         </form>
     </div>
 </div>
+
 <script>
 // Script Intercept Link (Smooth Transition)
 let mainContent = document.querySelector(".main-content")
 document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.logout-form').forEach(function(form) {
+
+        let submitted = false;
+
+        form.addEventListener('submit', function(e) {
+
+            if (submitted) {
+                e.preventDefault();
+                return;
+            }
+
+            submitted = true;
+
+            const btn = form.querySelector('.logout-button');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+                btn.style.pointerEvents = 'none';
+            }
+        });
+    });
     document.addEventListener('click', function(e) {
         const link = e.target.closest('a');
         if (!link) return; 
@@ -901,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="notif-content">
                     <div class="notif-title">${notif.title}</div>
-                    <div class="notif-desc">${notif.desc}</div>
+                    <div class="notif-desc">${notif.kelas}</div>
                     <div class="notif-time">${notif.time}</div>
                 </div>
             </a>

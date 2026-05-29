@@ -129,6 +129,61 @@
         background-repeat: no-repeat;
         background-size: 1.5em 1.5em;
     }
+    :root {
+        --primary: #3085d6;
+        --primary-soft: #EEF2FF;
+        --text-main: #111827;
+        --text-muted: #6B7280;
+        --border: #E5E7EB;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 20px;
+        --input-height: 48px;
+        --shadow-sheet: 0 -4px 30px rgba(0, 0, 0, 0.1);
+        --focus-ring: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    }
+    * { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    .ft{
+    display:flex;
+    flex-direction:row;
+    justify-content:space-between;
+    align-items: center;
+    margin:20px 10px;
+}
+.btn-neat {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 5px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        margin-top:20px;
+        gap: 8px;
+        transition: all 0.2s;
+    }
+     .btn-net {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 5px 24px;
+        border-radius: 5px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        margin-top:10px;
+       
+        transition: all 0.2s;
+    }
+
+    .btn-neat:hover,.btn-net:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(79, 70, 229, 0.4); }
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -157,11 +212,54 @@
     });
 </script>
 @endif
-
-<!-- Tombol Tambah -->
+<div class="ft">
 <button class="button is-info" style="margin:10px 2px;" onclick="openCreate()">
-    <i class="fas fa-plus"></i> Tambah Kelas
+    <i class="fas fa-plus" style="margin-right:6px;"></i> Tambah Kelas
 </button>
+<form method="GET" action="">
+    <div style="display:flex; gap:10px; margin-top:20px;">
+
+        <input 
+    type="text" 
+    name="search" 
+    value="{{ request('search') }}"
+    placeholder="Cari nama / NISN..."
+    class="form-input"
+ style="margin-top:10px;">
+
+        <button type="submit" class="btn-net">
+            Cari
+        </button>
+
+    </div>
+</form>
+</div>
+@if(request('search') && !request('page'))
+    @if(isset($isSearching))
+        @if($dat->count() > 0)
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Data ditemukan',
+                text: 'Ada {{ $dat->count() }} hasil pencarian',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        </script>
+        @else
+        <script>
+            Swal.fire({
+                icon: 'warning',
+                title: 'Tidak ditemukan',
+                text: 'Data tidak ditemukan!',
+                confirmButtonColor: '#d33'
+            });
+        </script>
+        @endif
+    @endif
+@endif
+<!-- Tombol Tambah -->
+
 
 <!-- Tabel Data -->
 <table class="table is-fullwidth is-hoverable is-stripped">
@@ -189,18 +287,22 @@
           @endif
       </td>
       <td style="text-align: right;">
-        <div class="buttons is-right" style="justify-content: flex-end;">
+        <div class="buttons is-right">
             {{-- Tombol Edit memanggil fungsi openEdit dengan ID, Nama, dan RuanganID --}}
             <button onclick="openEdit('{{ $d->id }}','{{ $d->nama_kelas }}','{{ $d->ruangan_id ?? '' }}')" class="button is-warning is-light is-small">
-                <i class="fas fa-edit"></i> Edit
+                <i class="fas fa-edit" style="margin-right:6px;" ></i> Edit
             </button>
             
             {{-- Form Delete --}}
             <form action="{{route('admin.let', $d->id)}}" method="post" onsubmit="return confirm('Yakin ingin menghapus data ini?');">
                 @csrf
                 @method("DELETE")
-                <button class="button is-danger is-small" type="submit">
-                    <i class="fas fa-trash"></i> Hapus
+                <button type="button"
+    class="button is-danger is-small btn-delete"
+    data-id="{{$d->id}}">
+     <i class="fas fa-trash" style="margin-right:6px;"></i> Hapus
+</button>
+                   
                 </button>
             </form>
         </div>
@@ -209,6 +311,9 @@
    @endforeach
   </tbody>
 </table>
+<div style="margin-top:20px;">
+    {{ $dat->links() }}
+</div>
 
 <!-- Global Bottom Sheet -->
 <div class="overlay" id="global-sheet">
@@ -235,18 +340,33 @@
     // 1. Passing data ruangan (Siswa/Ruang) dari PHP ke JavaScript
     // Asumsi $siswa adalah data ruangan yang akan dijadikan option select
     const ruangData = @json($siswa ?? []);
+const allRuangData = @json($allRuangan ?? []);
 
     // Fungsi helper untuk generate option select
     function getRuanganOptions(selectedId = null) {
-        if (!ruangData || ruangData.length === 0) return '<option value="">Tidak ada ruangan tersedia</option>';
-        
-        let options = '<option value="">Pilih Ruangan</option>';
-        ruangData.forEach(ruang => {
-            const selected = (ruang.id == selectedId) ? 'selected' : '';
-            options += `<option value="${ruang.id}" ${selected}>${ruang.nama_ruang}</option>`;
-        });
-        return options;
+    let data = ruangData;
+
+    // kalau EDIT → pastikan ruangan yang dipakai tetap ada
+    if (selectedId) {
+        const exists = ruangData.find(r => r.id == selectedId);
+
+        if (!exists) {
+            const tambahan = allRuangData.find(r => r.id == selectedId);
+            if (tambahan) {
+                data = [...ruangData, tambahan];
+            }
+        }
     }
+
+    let options = '<option value="">Pilih Ruangan</option>';
+
+    data.forEach(ruang => {
+        const selected = (ruang.id == selectedId) ? 'selected' : '';
+        options += `<option value="${ruang.id}" ${selected}>${ruang.nama_ruang}</option>`;
+    });
+
+    return options;
+}
 
     // 2. Fungsi Buka Sheet
     function openSheet({ title, body, footer }) {
@@ -335,5 +455,26 @@
         }
     });
 </script>
+<script>
+document.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', function () {
+        let form = this.closest('form');
 
+        Swal.fire({
+            title: 'Yakin?',
+            text: "Data tidak bisa dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    });
+});
+</script>
 @endsection

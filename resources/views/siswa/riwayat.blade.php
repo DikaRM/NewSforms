@@ -1,272 +1,43 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-<meta name="csrf-token" content="{{ csrf_token() }}">
-<title>Riwayat Ujian - Dashboard Siswa</title>
+@extends('layouts.siswa')
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulmaswatch/default/bulmaswatch.min.css">
+@section('title', 'Dashboard Siswa')
 
-<style>
-    /* Animasi masuk (Berjalan otomatis saat halaman baru dibuka) */
-    .main-content{
-        animation: pageEnter 0.3s ease-out forwards;
-    }
+@section("content")
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Script Alert dipindah ke sini agar hanya jalan di dashboard -->
+    @if(session('success'))
+    <script>
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: '{{ session('success') }}',
+            confirmButtonColor: '#2e5b9a'
+        });
+    </script>
+    @endif
 
-    @keyframes pageEnter {
-        from {
-            opacity: 0;
-            transform: translateY(12px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
+    @if(session('error'))
+    <script>
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal!',
+            text: '{{ session('error') }}',
+            confirmButtonColor: '#d33'
+        });
+    </script>
+    @endif
 
-    /* Animasi keluar (Ditambahkan oleh JavaScript saat klik link) */
-    .main-content.page-leaving {
-        animation: pageLeave 0.25s ease-in forwards !important;
-    }
 
-    @keyframes pageLeave {
-        from {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        to {
-            opacity: 0;
-            transform: translateY(-12px);
-        }
-    }
-</style>
 
 <style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', system-ui, sans-serif;
-}
 
-body {
-    background: linear-gradient(135deg, #f3f5f9 0%, #eef2f7 100%);
-    min-height: 100vh;
-}
-
-/* ===== HEADER ===== */
-.header {
-    background: #2e5b9a;
-    color: white;
-    padding: 12px 24px;
-    display: flex;
+.page-header {
+   display: flex;
     justify-content: space-between;
     align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.header h2 {
-    font-size: 1rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
+    flex-wrap: wrap; /* biar responsive */
     gap: 10px;
-}
-
-.header h2 i {
-    font-size: 1.2rem;
-}
-
-/* User Dropdown */
-.user-dropdown {
-    position: relative;
-    cursor: pointer;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    transition: background 0.3s ease;
-}
-
-.user-info:hover {
-    background: rgba(255,255,255,0.15);
-}
-
-.user-avatar {
-    width: 34px;
-    height: 34px;
-    background: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #2e5b9a;
-    font-weight: bold;
-}
-
-.user-name {
-    font-weight: 500;
-    font-size: 0.85rem;
-}
-
-.user-name i {
-    font-size: 0.7rem;
-    margin-left: 5px;
-}
-
-/* Dropdown Menu */
-.dropdown-menu-custom {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: 8px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    min-width: 180px;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
-    z-index: 1001;
-}
-
-.user-dropdown.active .dropdown-menu-custom {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-.dropdown-item-custom {
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: #333;
-    text-decoration: none;
-    transition: background 0.2s ease;
-    border-bottom: 1px solid #eee;
-    font-size: 0.85rem;
-}
-
-.dropdown-item-custom:last-child {
-    border-bottom: none;
-}
-
-.dropdown-item-custom:hover {
-    background: #f5f5f5;
-}
-
-.dropdown-item-custom i {
-    width: 18px;
-    color: #2e5b9a;
-}
-
-.dropdown-divider {
-    height: 1px;
-    background: #eee;
-    margin: 4px 0;
-}
-
-.logout-btn {
-    color: #dc3545;
-}
-
-.logout-btn i {
-    color: #dc3545;
-}
-
-/* ===== LAYOUT ===== */
-.app-wrapper {
-    display: flex;
-    min-height: calc(100vh - 70px);
-}
-
-/* ===== SIDEBAR ===== */
-.sidebar {
-    width: 280px;
-    background: #53629E;
-    min-height: 100vh;
-    padding: 25px 0;
-    color: white;
-    position: sticky;
-    top: 70px;
-    height: calc(100vh - 70px);
-    overflow-y: auto;
-    box-shadow: 4px 0 20px rgba(0,0,0,0.08);
-}
-
-.sidebar-menu {
-    padding: 20px 0;
-}
-
-.sidebar-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 20px;
-    margin: 4px 12px;
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.sidebar-item i {
-    width: 22px;
-    font-size: 1rem;
-}
-
-.sidebar-item span {
-    font-size: 0.85rem;
-    font-weight: 500;
-}
-
-.sidebar-item:hover {
-    background: rgba(255,255,255,0.2);
-}
-
-.sidebar-item.active {
-    background: rgba(255,255,255,0.25);
-    border-left: 3px solid white;
-}
-
-.sidebar-logout {
-    position: absolute;
-    bottom: 20px;
-    left: 0;
-    right: 0;
-    padding: 0 12px;
-}
-
-.sidebar-logout .sidebar-item {
-    color: white;
-}
-
-.sidebar-logout .sidebar-item:hover {
-    background: #dc3545;
-}
-/* ===== MAIN CONTENT ===== */
-.main {
-    flex: 1;
-    padding: 30px 35px;
-    background: #f8fafc;
-}
-
-/* Page Header */
-.page-header {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .page-header h1 {
@@ -290,54 +61,7 @@ body {
 }
 
 /* Stats Cards */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
-    margin-bottom: 35px;
-}
 
-.stat-card {
-    background: white;
-    border-radius: 20px;
-    padding: 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    transition: all 0.3s ease;
-    border: 1px solid rgba(0,0,0,0.03);
-}
-
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-}
-
-.stat-icon {
-    width: 55px;
-    height: 55px;
-    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-    border-radius: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #2e5b9a;
-    font-size: 1.5rem;
-}
-
-.stat-info h3 {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: #1e2a3e;
-    line-height: 1.2;
-}
-
-.stat-info p {
-    font-size: 0.8rem;
-    color: #64748b;
-    font-weight: 500;
-}
 
 /* Filter Section */
 .filter-section {
@@ -588,17 +312,26 @@ body {
     flex-wrap: wrap;
     gap: 12px;
     margin-top: 8px;
+    
 }.buttond{
     display: flex;
     align-items: center;
     justify-content: center;
+    
 }
 .buttond a{
-    flex-wrap: wrap;
+    text-align:center;
     gap: 12px;
-    margin-top: 8px;
-    background:#e8f0fe;
+    padding:20px 50px;
+    background: linear-gradient(135deg, #cfe2ff 0%, #b8d4ff 100%);
     color: #2e5b9a;
+    border-radius:50px;
+    transition:0.3s linear;
+}
+.buttond a:hover{
+    background: #2e5b9a;
+    color: #b8d4ff;
+    
 }
 
 .score-badge {
@@ -608,31 +341,35 @@ body {
     padding: 8px 16px;
     border-radius: 30px;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.7rem;
 }
 
 .score-excellent {
     background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
     color: #155724;
+    font-size: 0.9rem;
 }
 
 .score-good {
     background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
     color: #856404;
+    font-size: 0.9rem;
 }
 
 .score-average {
     background: linear-gradient(135deg, #cfe2ff 0%, #b8d4ff 100%);
     color: #2e5b9a;
+    font-size: 0.9rem;
 }
 
 .score-low {
     background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
     color: #721c24;
+    font-size: 0.9rem;
 }
 
 .score-value {
-    font-size: 1.3rem;
+    font-size: 0.9rem;
     font-weight: 800;
 }
 
@@ -675,38 +412,9 @@ body {
 }
 
 /* Mobile Menu Toggle */
-.mobile-toggle {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 50px;
-    height: 50px;
-    background: #2e5b9a;
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 100;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    border: none;
-    color: white;
-}
 
-.mobile-toggle i {
-    font-size: 22px;
-}
 
-.sidebar-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 98;
-}
+
 
 /* Animation */
 @keyframes fadeInUp {
@@ -720,70 +428,48 @@ body {
     }
 }
 
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+/* Card */
+.stat-card {
+    background: linear-gradient(135deg, #2e5b9a 0%, #5c6fa6 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 10px 25px rgba(46, 91, 154, 0.2);
+}
+
+/* Icon */
+.stat-icon {
+    font-size: 2rem;
+    background: rgba(255,255,255,0.2);
+    padding: 12px;
+    border-radius: 12px;
+}
+
+/* Text */
+.stat-info h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.stat-info p {
+    margin: 0;
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
 /* Responsive */
 @media (max-width: 768px) {
-    .header {
-        padding: 12px 16px;
-    }
-    
-    .header h2 span {
-        display: inline;
-    }
-    
-    .user-name span {
-        display: none;
-    }
-    
-    .sidebar {
-        position: fixed;
-        left: -280px;
-        top: 0;
-        z-index: 99;
-        transition: left 0.3s ease;
-        height: 100vh;
-        margin-top:25px;
-    }
-    
-    .sidebar.open {
-        left: 0;
-    }
-    
-    .main {
-        padding: 20px;
-        margin-left: 0;
-    }
-    
-    .mobile-toggle {
-        display: flex;
-    }
-    
-    .sidebar-overlay.active {
-        display: block;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-    }
-    
-    .stat-card {
-        padding: 14px;
-    }
-    
-    .stat-icon {
-        width: 45px;
-        height: 45px;
-        font-size: 1.2rem;
-    }
-    
-    .stat-info h3 {
-        font-size: 1.3rem;
-    }
-    
-    .riwayat-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
-    }
     
     .page-header h1 {
         font-size: 1.4rem;
@@ -836,121 +522,78 @@ body {
     background: #5c6fa6;
     border-radius: 3px;
 }
+/* Filter Mode Buttons */
+.filter-mode-btn {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #475569;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-mode-btn i {
+    font-size: 0.85rem;
+}
+
+.filter-mode-btn:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.filter-mode-btn.active {
+    background: linear-gradient(135deg, #2e5b9a 0%, #5c6fa6 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(46, 91, 154, 0.3);
+}
+
+/* Mode Tag pada Card */
+.mode-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.mode-tag.cbt {
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    color: #0369a1;
+}
+
+.mode-tag.praktik {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    color: #fff;
+}
+
+.mode-tag i {
+    font-size: 0.7rem;
+}
 </style>
-</head>
 
-<body>
-
-<header class="header">
-    <h2>
-       <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px;"/>
-        <span class="has-text-light">SMK NEGERI 1 CIOMAS</span>
-    </h2>
-    
-    <div class="user-dropdown" id="userDropdown">
-        <div class="user-info">
-            <div class="user-avatar">
-                <i class="fas fa-user"></i>
-            </div>
-            <div class="user-name">
-                @if(isset($ire))
-                    <span>{{ $ire->nama }}</span>
-                @else
-                    <span>Siswa</span>
-                @endif
-                <i class="fas fa-chevron-down"></i>
-            </div>
-        </div>
-        
-        <div class="dropdown-menu-custom">
-            <a href="{{ route('profile.index') }}" class="dropdown-item-custom">
-        <i class="fas fa-user-circle"></i>
-        <span>Profil Saya</span>
-    </a>
-            <div class="dropdown-divider"></div>
-            <form action="{{ route('users.logout') }}" method="post">
-                @csrf
-                <button type="submit" class="dropdown-item-custom logout-btn" style="width: 100%; background: none; border: none; cursor: pointer;">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </button>
-            </form>
-        </div>
-    </div>
-</header>
-
-<!-- Mobile Menu Toggle -->
-<button class="mobile-toggle" id="mobileToggle">
-    <i class="fas fa-bars"></i>
-</button>
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-<div class="app-wrapper">
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-menu">
-            <a href="{{ route('siswa.index') }}" class="sidebar-item">
-                <i class="fas fa-home"></i>
-                <span>Dashboard</span>
-            </a>
-             <a href="{{ route('siswa.jadwal') }}" class="sidebar-item">
-                <i class="fas fa-calendar-alt"></i>
-                <span>Jadwal Ujian</span>
-            </a>
-             <a href="{{ route('siswa.uji') }}" class="sidebar-item">
-                <i class="fas fa-book"></i>
-                <span>Ujian</span>
-            </a>
-            <a href="{{ route('siswa.riwayat') }}" class="sidebar-item active">
-                <i class="fas fa-history"></i>
-                <span>Riwayat Ujian</span>
-            </a>
-           
-        </div>
-        
-        <div class="sidebar-logout">
-            <form action="{{ route('users.logout') }}" method="post">
-                @csrf
-                <button type="submit" class="sidebar-item" style="width: 100%; background: none; border: none; cursor: pointer;">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </button>
-            </form>
-        </div>
-    </aside>
-    
-    <!-- Main Content -->
-    <main class="main-content" id="mainContent">
-        @if(session('success'))
-            <div class="notification-toast notification-success" id="notification">
-                <i class="fas fa-check-circle"></i>
-                <span>{{ session('success') }}</span>
-            </div>
-        @endif
-        
-        @if(session('error'))
-            <div class="notification-toast notification-error" id="notification">
-                <i class="fas fa-exclamation-circle"></i>
-                <span>{{ session('error') }}</span>
-            </div>
-        @endif
-        
-        
-        
-        <!-- Cards Menu -->
-       
-        
-        <!-- Ujian Hari Ini -->
-
-    <!-- Main Content -->
-    <div class="main">
         <!-- Page Header -->
         <div class="page-header">
+            <div> 
             <h1>
                 <i class="fas fa-history"></i>
                 Riwayat Ujian
             </h1>
             <p>Lihat riwayat ujian yang telah Anda kerjakan beserta nilai yang diperoleh</p>
+</div>
+             <div class="date-badge">
+                <i class="fas fa-calendar-alt"></i> 
+                {{ \Carbon\Carbon::parse(now())->locale("id")->isoFormat('dddd, D MMMM YYYY') }}
+            </div>
         </div>
 
         <!-- Stats Cards -->
@@ -1024,11 +667,22 @@ body {
                 <button class="filter-btn" data-filter="low">
                     <i class="fas fa-frown"></i> Kurang (<60)
                 </button>
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Cari nama ujian...">
-                </div>
+                
             </div>
+            <div class="filter-group" style="margin-top: 15px; border-top: 1px solid #eef2f6; padding-top: 15px;">
+        <span style="font-size: 0.8rem; color: #64748b; display: flex; align-items: center; gap: 5px;">
+            <i class="fas fa-tag"></i> Filter Mode:
+        </span>
+        <button class="filter-mode-btn active" data-mode="all-mode">
+            <i class="fas fa-layer-group"></i> Semua Mode
+        </button>
+        <button class="filter-mode-btn" data-mode="cbt">
+            <i class="fas fa-laptop-code"></i> CBT (Computer Based Test)
+        </button>
+        <button class="filter-mode-btn" data-mode="praktik">
+            <i class="fas fa-flask"></i> Praktik
+        </button>
+    </div>
         </div>
 
         <!-- Riwayat Section -->
@@ -1037,10 +691,11 @@ body {
                 <i class="fas fa-list-ol"></i>
                 Daftar Riwayat Ujian
             </h2>
-            <div class="date-badge">
-                <i class="fas fa-calendar-alt"></i> 
-                {{ \Carbon\Carbon::now()->isoFormat('dddd, D MMMM YYYY') }}
-            </div>
+            <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Cari nama ujian...">
+                </div>
+           
         </div>
 
         <div class="riwayat-grid" id="riwayatGrid">
@@ -1062,7 +717,10 @@ body {
                             $filterCategory = 'low';
                         }
                     @endphp
-                    <div class="riwayat-card" data-filter="{{ $filterCategory }}" data-name="{{ strtolower($dt->ujian->nama_ujian ?? '') }}">
+                    <div class="riwayat-card" 
+     data-filter="{{ $filterCategory }}" 
+     data-mode="{{ $dt->ujian->mode ?? 'cbt' }}"
+     data-name="{{ strtolower($dt->ujian->nama_ujian ?? '') }}">
                         <div class="card-header-custom">
                             <div class="student-info">
                                 <div class="student-avatar">
@@ -1075,7 +733,7 @@ body {
                             </div>
                             <div class="date-badge-custom">
                                 <i class="fas fa-calendar-check"></i>
-                                {{ \Carbon\Carbon::parse($dt->created_at)->format('d M Y') }}
+                                {{ \Carbon\Carbon::parse($dt->created_at)->locale("id")->translatedformat('d M Y') }}
                             </div>
                         </div>
                         <div class="card-body-custom">
@@ -1083,6 +741,15 @@ body {
                                 <i class="fas fa-file-alt"></i>
                                 <span>{{ $dt->ujian->nama_ujian ?? 'Ujian' }}</span>
                             </div>
+                             <div style="margin-bottom: 12px;">
+        @php
+            $modeUjian = $dt->ujian->mode ?? 'cbt'; // Ambil dari database, default 'cbt'
+        @endphp
+        <span class="mode-tag {{ $modeUjian == 'cbt' ? 'cbt' : 'praktik' }}">
+            <i class="fas {{ $modeUjian == 'cbt' ? 'fa-laptop-code' : 'fa-flask' }}"></i>
+            {{ $modeUjian == 'cbt' ? 'CBT (Computer Based Test)' : 'Ujian Praktik' }}
+        </span>
+    </div>
                             <div class="exam-meta">
                                 <div class="meta-item">
                                     <i class="fas fa-clock"></i>
@@ -1105,7 +772,7 @@ body {
                                 </div>
                             </div>
                             <div class="buttond">
-                                <a class="button is-info mx-auto" href="{{route('siswa.detail',$dt->id)}}">Detail</a>
+                                <a class="button mx-auto" href="{{route('siswa.detail',$dt->id)}}">Detail</a>
                             </div>
                             
                         </div>
@@ -1126,70 +793,90 @@ body {
             <h3>Tidak Ditemukan</h3>
             <p>Tidak ada riwayat ujian yang sesuai dengan filter yang dipilih</p>
         </div>
-    </div>
-</div>
-
+    
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filter elements
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const filterModeButtons = document.querySelectorAll('.filter-mode-btn');
+    const riwayatCards = document.querySelectorAll('.riwayat-card');
+    const searchInput = document.getElementById('searchInput');
+    const emptyState = document.getElementById('emptyState');
+    const riwayatGrid = document.getElementById('riwayatGrid');
+    
+    let currentFilter = 'all';      // Filter nilai
+    let currentMode = 'all-mode';    // Filter mode ujian
+    let currentSearch = '';
+    
+    function updateDisplay() {
+        let visibleCount = 0;
+        
+        riwayatCards.forEach(card => {
+            const filterValue = card.getAttribute('data-filter');
+            const modeValue = card.getAttribute('data-mode') || 'cbt';
+            const cardName = card.getAttribute('data-name') || '';
+            
+            let matchesFilter = (currentFilter === 'all' || filterValue === currentFilter);
+            let matchesMode = (currentMode === 'all-mode' || modeValue === currentMode);
+            let matchesSearch = (currentSearch === '' || cardName.includes(currentSearch.toLowerCase()));
+            
+            if (matchesFilter && matchesMode && matchesSearch) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        // Show/hide empty state
+        if (visibleCount === 0 && riwayatCards.length > 0) {
+            emptyState.style.display = 'block';
+            riwayatGrid.style.display = 'none';
+        } else {
+            emptyState.style.display = 'none';
+            riwayatGrid.style.display = 'grid';
+        }
+        
+        if (riwayatCards.length === 0) {
+            emptyState.style.display = 'block';
+            riwayatGrid.style.display = 'none';
+        }
+    }
+    
+    // Filter nilai button click
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            currentFilter = this.getAttribute('data-filter');
+            updateDisplay();
+        });
+    });
+    
+    // Filter mode button click
+    filterModeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            filterModeButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            currentMode = this.getAttribute('data-mode');
+            updateDisplay();
+        });
+    });
+    
+    // Search input
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            currentSearch = this.value;
+            updateDisplay();
+        });
+    }
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Mobile Sidebar Toggle
 
-    var userDropdown = document.getElementById('userDropdown');
-    if (userDropdown) {
-        userDropdown.addEventListener('click', function(e) {
-            e.stopPropagation();
-            userDropdown.classList.toggle('active');
-        });
-    }
     
-    document.addEventListener('click', function() {
-        if (userDropdown) userDropdown.classList.remove('active');
-    });
-    const mobileToggle = document.getElementById('mobileToggle');
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    
-    function toggleSidebar() {
-        sidebar.classList.toggle('open');
-        sidebarOverlay.classList.toggle('active');
-        const icon = mobileToggle.querySelector('i');
-        if (sidebar.classList.contains('open')) {
-            icon.classList.remove('fa-bars');
-            icon.classList.add('fa-times');
-        } else {
-            icon.classList.remove('fa-times');
-            icon.classList.add('fa-bars');
-        }
-    }
-    
-    if (mobileToggle) {
-        mobileToggle.addEventListener('click', toggleSidebar);
-    }
-    if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', toggleSidebar);
-    }
-    
-    // Close sidebar on window resize
-    window.addEventListener('resize', function() {
-        if (window.innerWidth > 768) {
-            sidebar.classList.remove('open');
-            sidebarOverlay.classList.remove('active');
-            if (mobileToggle) {
-                const icon = mobileToggle.querySelector('i');
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-bars');
-            }
-        }
-    });
-    
-    // Close sidebar after clicking link on mobile
-    const sidebarLinks = document.querySelectorAll('.sidebar a');
-    sidebarLinks.forEach(link => {
-        link.addEventListener('click', function() {
-            if (window.innerWidth <= 768) {
-                toggleSidebar();
-            }
-        });
-    });
     
     // ===== FILTER FUNCTIONALITY =====
     const filterButtons = document.querySelectorAll('.filter-btn');
@@ -1265,79 +952,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // ==========================================
-    // 1. INTERCEPT LINK KLIK (Smooth Redirect)
-    // ==========================================
-    document.addEventListener('click', function(e) {
-        // Cari elemen <a> yang diklik (berlaku jika klik teks atau icon di dalam <a>)
-        const link = e.target.closest('a');
-        
-        if (!link) return; // Bukan link, abaikan
-        
-        const href = link.getAttribute('href');
-        const target = link.getAttribute('target');
-        
-        // Abaikan jika:
-        // - Link kosong / # / javascript
-        // - Link untuk buka tab baru (target="_blank")
-        // - Link eksternal (mailto, tel, http lain)
-        if (!href || 
-            href.startsWith('#') || 
-            href.startsWith('javascript:') || 
-            href.startsWith('mailto:') || 
-            href.startsWith('tel:') || 
-            target === '_blank') {
-            return;
-        }
-        
-        // Abaikan link khusus jika ada (misal: tombol yang buat modal, dll)
-        if (link.classList.contains('no-transition') || link.getAttribute('data-turbolinks') === 'false') {
-            return;
-        }
-        
-        // Cek apakah link internal (domain yang sama atau relative path /)
-        const isLocal = href.startsWith(window.location.origin) || href.startsWith('/');
-        const mainContent = document.querySelector(".main-content")
-        if (isLocal) {
-            e.preventDefault(); // Cegah pindah halaman secara langsung
-            
-            // Tambahkan class animasi keluar
-           mainContent.classList.add('page-leaving');
-            
-            // Tunggu animasi selesai, baru redirect
-            setTimeout(function() {
-                window.location.href = href;
-            }, 250); // 250ms harus sama dengan durasi CSS pageLeave
-        }
-    });
-
-    // ==========================================
-    // 2. INTERCEPT FORM SUBMIT (Smooth Post/Logout)
-    // ==========================================
-    // Khusus untuk form biasa (misal: form logout, form cari)
-    document.querySelectorAll('form').forEach(function(form) {
-        form.addEventListener('submit', function() {
-            mainContent.classList.add('page-leaving');
-            // Jangan pakai e.preventDefault() biar Laravel tetap proses data/CSRF dengan normal
-        });
-    });
-
-    // Khusus untuk AJAX/Fetch (misal: form absensi, hapus jadwal yang pakai fetch)
-    const originalFetch = window.fetch;
-    window.fetch = function() {
-        mainContent.classList.add('page-leaving');
-        
-        // Tunggu 150ms lalu hilangkan animasi (supaya tidak menghitam saat loading AJAX lama)
-        setTimeout(function() {
-            mainContent.classList.add('page-leaving');
-        }, 150);
-        
-        return originalFetch.apply(this, arguments);
-    };
-});
-</script>
-</body>
-</html>
+@endsection

@@ -7,13 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 class Jawaban_Siswa extends Model
 {
     protected $table = "jawaban_siswa";
+    protected $casts = [
+    'benar' => 'integer',
+    // casts lain...
+];
     protected $fillable = [
         "siswa_id",
         "bank_id",
         "ujian_id",
         "jawaban",
         "benar",
-        
+        "file_jawaban",
     ];
     public function siswa(){
         return $this->belongsTo(Siswa::class);

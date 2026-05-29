@@ -20,6 +20,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/siswa/riwayat', [SiswaController::class, 'riwayat']);
     Route::get('/siswa/ujian/{id}/mulai', [SiswaController::class, 'mulaiUjian']);
     Route::post('/siswa/ujian/simpan', [SiswaController::class, 'simpanJawaban']);
+     Route::post('/auto-save', [SiswaController::class, 'autoSave']);
+        
+        // Cek status submission (Polling)
+        Route::get('/{id}/status', [SiswaController::class, 'cekStatus']);
     Route::post('/siswa/ujian/simpan-sementara', [SiswaController::class, 'simpanJawabanSementara']);
     Route::post('/siswa/pelanggaran', [SiswaController::class, 'pelanggaran']);
 });

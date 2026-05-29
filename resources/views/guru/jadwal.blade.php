@@ -829,9 +829,9 @@
         <span>Profil Saya</span>
             </a>
             <div class="dropdown-divider"></div>
-            <form action="{{ route('users.logout') }}" method="post">
+            <form action="{{ route('users.logout') }}" method="post" class="logout-form">
                 @csrf
-                <button type="submit" class="dropdown-item-custom logout-btn" style="width: 100%; background: none; border: none; cursor: pointer;">
+                <button type="submit" class="dropdown-item-custom logout-btn logout-button" style="width: 100%; background: none; border: none; cursor: pointer;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -868,7 +868,7 @@
                 <span>Riwayat Ujian</span>
             </a>
             <a href="{{ route('guru.result') }}" class="sidebar-item">
-                <i class="fas fa-file-alt"></i>
+                <i class="fas fa-chart-line"></i>
                 <span>Hasil Ujian</span>
             </a>
             <a href="{{ route('pengawas.index', isset($dt) ? $dt->id : '') }}" class="sidebar-item">
@@ -878,9 +878,9 @@
         </div>
         
         <div class="sidebar-logout">
-            <form action="{{ route('users.logout') }}" method="post">
+            <form action="{{ route('users.logout') }}" method="post" class="logout-form">
                 @csrf
-                <button type="submit" class="sidebar-item" style="width: 100%; background: none; border: none; cursor: pointer;">
+                <button type="submit" class="sidebar-item logout-button" style="width: 100%; background: none; border: none; cursor: pointer;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -891,12 +891,7 @@
     <!-- Main Content -->
     <main class="main-content" id="mainContent">
         <!-- Breadcrumb -->
-        <div class="breadcrumb-custom">
-            <ul>
-                <li><a href="{{ route('guru.index') }}"><i class="fas fa-home"></i> Dashboard</a></li>
-                <li class="is-active"><a href="#">Jadwal Ujian</a></li>
-            </ul>
-        </div>
+        
         
         <!-- Header -->
         <div class="level is-mobile" style="margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
@@ -910,18 +905,14 @@
                     </p>
                 </div>
             </div>
-            <div class="level-right">
-                <a href="{{ route('guru.index') }}" class="btn-primary">
-                    <i class="fas fa-plus-circle"></i> Buat Ujian Baru
-                </a>
-            </div>
+           
         </div>
         
         <!-- Filter Tabs -->
         <div class="filter-tabs">
             <button class="filter-tab active" data-filter="all">Semua</button>
-            <button class="filter-tab" data-filter="all">Terjadwal</button>
-            <button class="filter-tab" data-filter="ready">Berlangsung</button>
+            <button class="filter-tab" data-filter="ready">Terjadwal</button>
+            <button class="filter-tab" data-filter="ongoing">Berlangsung</button>
             <button class="filter-tab" data-filter="done">Selesai</button>
             <button class="filter-tab" data-filter="draft">Draft</button>
         </div>
@@ -931,7 +922,8 @@
             <div class="card-header">
                 <div class="card-header-title">
                     <i class="fas fa-list-ul"></i> Daftar Jadwal Ujian
-                    <span class="badge-count">{{ $data->count() ?? 0 }}</span>
+                     <span class="badge-count" id="jadwalCount">0</span>
+                    
                 </div>
             </div>
             <div class="card-content">
@@ -953,10 +945,10 @@
                         @foreach($data as $index => $d)
                         <tr data-status="{{ $d->ujian->status ?? 'draft' }}">
                             <td style="color:#2e5b9a; text-align:center;">{{ $index + 1 }}</td>
-                            <td style="color:#2e5b9a; font-weight:500;">{{ $d->ujian->nama_ujian }}</td>
+                            <td style="color:#2e5b9a; font-weight:500;">{{ $d->ujian->nama_ujian ?? "Ujian"}}</td>
                             <td style="color:#2e5b9a;">{{ $d->ujian->mapels->nama_mapel }}</td>
                             <td style="color:#2e5b9a;">{{ $d->kelas->nama_kelas }}</td>
-                            <td style="color:#2e5b9a;">{{ \Carbon\Carbon::parse($d->ujian->tanggal)->format("D, d F Y H:i") }}</td>
+                            <td style="color:#2e5b9a;">{{ \Carbon\Carbon::parse($d->ujian->tanggal)->locale('id')->translatedFormat('l, d F Y H:i') }}</td>
                             <td style="color:#2e5b9a;">{{ $d->ujian->durasi }} Menit</td>
                             
                             <!-- KOLOM PENGAwas -->
@@ -976,13 +968,23 @@
                             
                             <!-- KOLOM STATUS (SEKARANG PAKAI BADGE WARNA) -->
                             <td>
-                                <span class="tag-status 
-                                    @if($d->ujian->status == 'ready') tag-scheduled
-                                    @elseif($d->ujian->status == 'ongoing') tag-ongoing
-                                    @elseif($d->ujian->status == 'done') tag-completed
-                                    @else tag-draft @endif">
-                                    {{ ucfirst($d->ujian->status ?? 'draft') }}
-                                </span>
+                                @php
+    $statusMap = [
+        'ready' => 'Terjadwal',
+        'ongoing' => 'Berlangsung',
+        'done' => 'Selesai',
+        'draft' => 'Draft'
+    ];
+@endphp
+
+<span class="tag-status 
+    @if($d->ujian->status == 'ready') tag-scheduled
+    @elseif($d->ujian->status == 'ongoing') tag-ongoing
+    @elseif($d->ujian->status == 'done') tag-completed
+    @else tag-draft @endif">
+    
+    {{ $statusMap[$d->ujian->status] ?? 'Draft' }}
+</span>
                             </td>
                         </tr>
                         @endforeach
@@ -1003,6 +1005,41 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Ambil data dari Controller ($notifData)
     // Pastikan controller Anda melempar variabel $notifData
+    const filterTabs = document.querySelectorAll('.filter-tab');
+    const countEl = document.getElementById('jadwalCount');
+     const tableRows = document.querySelectorAll('#jadwalTable tbody tr');
+
+    if (countEl) {
+        countEl.innerText = tableRows.length;
+    }
+    
+
+
+
+filterTabs.forEach(tab => {
+    tab.addEventListener('click', function() {
+
+        let visibleCount = 0;
+        const filterValue = this.getAttribute('data-filter').toLowerCase();
+
+        tableRows.forEach(row => {
+            const status = (row.getAttribute('data-status') || '').toLowerCase();
+
+            if (filterValue === 'all' || status === filterValue) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // update count
+        if (countEl) {
+            countEl.innerText = visibleCount;
+        }
+
+    });
+});
     var notifData = @json($notifData ?? []);
 
     const notifWrapper = document.getElementById('notifWrapper');
@@ -1044,7 +1081,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="notif-content">
                     <div class="notif-title">${notif.title}</div>
-                    <div class="notif-desc">${notif.desc}</div>
+                    <div class="notif-desc">${notif.kelas}</div>
                     <div class="notif-time">${notif.time}</div>
                 </div>
             </a>
@@ -1161,6 +1198,28 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // User Dropdown Toggle
+    document.querySelectorAll('.logout-form').forEach(function(form) {
+
+        let submitted = false;
+
+        form.addEventListener('submit', function(e) {
+
+            if (submitted) {
+                e.preventDefault();
+                return;
+            }
+
+            submitted = true;
+
+            const btn = form.querySelector('.logout-button');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+                btn.style.pointerEvents = 'none';
+            }
+        });
+    });
     const userDropdown = document.getElementById('userDropdown');
     if (userDropdown) {
         userDropdown.addEventListener('click', function(e) {
@@ -1227,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (visibleCount === 0) {
                 if (!emptyRow) {
                     const tbody = document.querySelector('#jadwalTable tbody');
-                    const cols = document.querySelector('#jadwalTable thead th').length;
+                    const cols = document.querySelectorAll('#jadwalTable thead th').length;
                     emptyRow = document.createElement('tr');
                     emptyRow.id = 'emptyFilterRow';
                     emptyRow.innerHTML = `

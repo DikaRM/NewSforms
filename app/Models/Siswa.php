@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
-class Siswa extends Model
+class Siswa extends Authenticatable
 {
+    use HasApiTokens, HasFactory;
+
     use HasFactory;
 
 
@@ -30,6 +33,8 @@ class Siswa extends Model
         'kelas_id',
         'status',
         'username',
+        'nomor_absen',
+        'jenis_kelamin'
     ];
     public function user()
     {
@@ -48,6 +53,10 @@ class Siswa extends Model
     return $this->hasMany(Pelanggaran::class, 'siswa_id', 'id_siswa');
  
 }
+ public function peserta_ujian()
+    {
+        return $this->hasMany(Peserta_ujian::class, 'siswa_id');
+    }
 public function absensi(){
 return $this->hasMany(Absensi::class,'siswa_id','id_siswa');
 }

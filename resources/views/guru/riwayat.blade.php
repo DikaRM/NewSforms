@@ -828,9 +828,9 @@
                 <span>Profil Saya</span>
             </div>
             <div class="dropdown-divider"></div>
-            <form action="{{ route('users.logout') }}" method="post">
+            <form action="{{ route('users.logout') }}" method="post" class="logout-form">
                 @csrf
-                <button type="submit" class="dropdown-item-custom logout-btn" style="width: 100%; background: none; border: none; cursor: pointer;">
+                <button type="submit" class="dropdown-item-custom logout-btn logout-button" style="width: 100%; background: none; border: none; cursor: pointer;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -866,7 +866,7 @@
                 <span>Riwayat Ujian</span>
             </a>
             <a href="{{ route('guru.result') }}" class="sidebar-item">
-                <i class="fas fa-file-alt"></i>
+                <i class="fas fa-chart-line"></i>
                 <span>Hasil Ujian</span>
             </a>
             <a href="{{ route('pengawas.index', isset($dt) ? $dt->id : '') }}" class="sidebar-item">
@@ -876,9 +876,9 @@
         </div>
         
         <div class="sidebar-logout">
-            <form action="{{ route('users.logout') }}" method="post">
+            <form action="{{ route('users.logout') }}" method="post" class="logout-form">
                 @csrf
-                <button type="submit" class="sidebar-item" style="width: 100%; background: none; border: none; cursor: pointer;">
+                <button type="submit" class="sidebar-item logout-button" style="width: 100%; background: none; border: none; cursor: pointer;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -889,17 +889,12 @@
     <!-- Main Content -->
     <main class="main-content" id="mainContent">
         <!-- Breadcrumb -->
-        <div class="breadcrumb-custom">
-            <ul>
-                <li><a href="{{ route('guru.index') }}"><i class="fas fa-home"></i> Dashboard</a></li>
-                <li class="is-active"><a href="#">Riwayat Ujian</a></li>
-            </ul>
-        </div>
+        
         
         <!-- Header -->
         <div class="level is-mobile" style="margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
             <div class="level-left">
-                <div>
+                <div class="page-header">
                     <h1 style="color: #2e5b9a; font-size: 1.5rem; font-weight: 600; margin-bottom: 4px;">
                         <i class="fas fa-history"></i> Riwayat Ujian
                     </h1>
@@ -913,6 +908,8 @@
                     <i class="fas fa-calendar-alt" style="color: #5c6fa6;"></i>
                     <select id="yearFilter">
                         <option value="all">Semua Tahun</option>
+                        <option value="2026">2026</option>
+                        <option value="2025">2025</option>
                         <option value="2024">2024</option>
                         <option value="2023">2023</option>
                         <option value="2022">2022</option>
@@ -981,7 +978,7 @@
                             <i class="fas fa-calendar-alt"></i>
                             <span>
                                 @if($waktuSelesai)
-                                    {{ $waktuSelesai->format('l, d F Y') }}
+                                    {{\Carbon\Carbon::parse($waktuSelesai)->locale('id')->translatedformat('l, d F Y') }}
                                 @else
                                     Tanggal tidak tersedia
                                 @endif
@@ -1020,7 +1017,7 @@
                     @if(isset($dt->catatan) && $dt->catatan)
                     <div class="mt-2 mb-3">
                         <span class="tag is-light" style="background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0;">
-                            <i class="fas fa-sticky-note"></i> {{ $dt->catatan }}
+                            Note :{{ $dt->catatan }}
                         </span>
                     </div>
                     @endif
@@ -1053,17 +1050,21 @@
                 <i class="fas fa-inbox"></i>
                 <p>Belum ada riwayat ujian</p>
                 <p class="is-size-7 mt-2">Ujian yang telah selesai akan muncul di sini</p>
-                <div class="mt-3">
-                    <a href="{{ route('guru.index') }}" class="btn-outline-sm">
-                        <i class="fas fa-plus-circle"></i> Buat Ujian
-                    </a>
-                </div>
+                
             </div>
             @endforelse
         </div>
         
         <!-- Statistik Tambahan jika ada data -->
         @if(isset($data) && count($data) > 0)
+        @php
+        $totalMengerjakan = collect($data)->sum(function($item) {
+            return $item->peserta_mengerjakan_count ?? 0;
+        });
+        $rataRataNilai = collect($data)->avg(function($item) {
+            return $item->nilai_rata;
+});
+        @endphp
         <div class="columns is-multiline mt-4" style="margin-top: 24px;">
             <div class="column is-4">
                 <div class="stat-card" style="background: white; border-radius: 12px; padding: 16px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
@@ -1075,7 +1076,7 @@
                 <div class="stat-card" style="background: white; border-radius: 12px; padding: 16px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
                     <p class="heading" style="color: #6c757d; font-size: 0.75rem;">Total Peserta</p>
                     <p class="title is-4" style="color: #2e5b9a;">
-                        {{ collect($data)->sum(function($item) { return $item->peserta_count ?? 0; }) }}
+                        {{$totalMengerjakan}}
                     </p>
                 </div>
             </div>
@@ -1083,7 +1084,7 @@
                 <div class="stat-card" style="background: white; border-radius: 12px; padding: 16px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
                     <p class="heading" style="color: #6c757d; font-size: 0.75rem;">Rata-rata Nilai</p>
                     <p class="title is-4" style="color: #2e5b9a;">
-                        {{ number_format(collect($data)->avg(function($item) { return $item->nilai_rata ?? 0; }), 1) }}
+                        {{number_format($rataRataNilai,1)}}
                     </p>
                 </div>
             </div>
@@ -1094,6 +1095,28 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+     document.querySelectorAll('.logout-form').forEach(function(form) {
+
+        let submitted = false;
+
+        form.addEventListener('submit', function(e) {
+
+            if (submitted) {
+                e.preventDefault();
+                return;
+            }
+
+            submitted = true;
+
+            const btn = form.querySelector('.logout-button');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+                btn.style.pointerEvents = 'none';
+            }
+        });
+    });
     // User Dropdown Toggle
         // ... kode JS yang sudah ada ...
 
@@ -1144,7 +1167,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="notif-content">
                     <div class="notif-title">${notif.title}</div>
-                    <div class="notif-desc">${notif.desc}</div>
+                    <div class="notif-desc">${notif.kelas}</div>
                     <div class="notif-time">${notif.time}</div>
                 </div>
             </a>

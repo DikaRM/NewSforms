@@ -11,21 +11,24 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulmaswatch/default/bulmaswatch.min.css">
 <style>
 /* Overlay (background gelap) */
+/* Overlay */
 .overlay {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.4);
     backdrop-filter: blur(4px);
-    z-index: 999;
+    z-index: 9999;
+
     display: flex;
-    align-items: center;
+    align-items: flex-end; /* penting */
     justify-content: center;
 
     opacity: 0;
     visibility: hidden;
-    transition: 0.3s;
+    transition: 0.3s ease;
 }
 
+/* aktif */
 .overlay.is-active {
     opacity: 1;
     visibility: visible;
@@ -34,21 +37,26 @@
 /* Bottom Sheet */
 .bottom-sheet {
     width: 100%;
-    max-width: 500px;
+    max-width: 600px;
+
     background: white;
+
     border-radius: 20px 20px 0 0;
+
     transform: translateY(100%);
-    transition: 0.4s ease;
+    transition: transform 0.35s ease;
+
+    max-height: 92vh;
+    overflow: hidden;
+
     display: flex;
     flex-direction: column;
-    max-height: 90vh;
 }
 
-/* Animasi muncul */
+/* animasi muncul */
 .overlay.is-active .bottom-sheet {
     transform: translateY(0);
 }
-
 /* Handle kecil atas */
 .sheet-handle {
     width: 40px;
@@ -558,6 +566,16 @@ background:#D3DFF5;
         .cards { gap: 15px; }
         .card { width: calc(50% - 15px); min-width: 150px; padding: 20px; }
         .notif-dropdown { width: 280px; right: -20px; }
+         .bottom-sheet {
+        max-width: 100%;
+        height: 95vh;
+        border-radius: 20px 20px 0 0;
+    }
+
+    .sheet-body {
+        flex: 1;
+        overflow-y: auto;
+    }
     }
 
     @media (max-width: 480px) {
@@ -628,9 +646,9 @@ background:#D3DFF5;
         <span>Profil Saya</span>
     </a>
                 <div class="dropdown-divider"></div>
-                <form action="{{ route('users.logout') }}" method="post">
+                <form action="{{ route('users.logout') }}" method="post" class="logout-form">
                     @csrf
-                    <button type="submit" class="dropdown-item-custom logout-btn" style="width: 100%; background: none; border: none; cursor: pointer;">
+                    <button type="submit" class="dropdown-item-custom logout-btn logout-button" style="width: 100%; background: none; border: none; cursor: pointer;">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Logout</span>
                     </button>
@@ -665,7 +683,7 @@ background:#D3DFF5;
                 <span>Riwayat Ujian</span>
             </a>
             <a href="{{ route('guru.result') }}" class="sidebar-item">
-                <i class="fas fa-file-alt"></i>
+                <i class="fas fa-chart-line"></i>
                 <span>Hasil Ujian</span>
             </a>
             <a href="{{ route('pengawas.index', isset($dt) ? $dt->id : '') }}" class="sidebar-item">
@@ -675,9 +693,9 @@ background:#D3DFF5;
         </div>
         
         <div class="sidebar-logout">
-            <form action="{{ route('users.logout') }}" method="post">
+            <form action="{{ route('users.logout') }}" method="post" class="logout-form">
                 @csrf
-                <button type="submit" class="sidebar-item" style="width: 100%; background: none; border: none; cursor: pointer;">
+                <button type="submit" class="sidebar-item logout-button" style="width: 100%; background: none; border: none; cursor: pointer;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -731,7 +749,7 @@ background:#D3DFF5;
            <h3>Jadwal Ujian</h3>
           <p>Lihat Jadwal Ujian Yang akan Datang</p>
           <br>
-      <div class="arrow" style="color:#EBF1FA;background:#9BACD4;padding:5px 10px;border-radius:5px;"><i class="fa fa-arrow-right"></i>
+      <div class="arrow" style="color:#EBF1FA;background:#9BACD4;padding:5px 10px;border-radius:5px;font-size:10px;"><i class="fa fa-arrow-right"></i>
                 </div>
                 
               </div>
@@ -743,10 +761,10 @@ background:#D3DFF5;
         <div class="column">
             <img src="{{asset('Guru/hasil-nilai.png')}}">
         </div>
-        <div class="column"
+        <div class="column">
           <h3>Hasil Ujian</h3>
           <p>Lihat Rekap Nilai Ujian Mu.</p>
-        <div class="arrow" style="color:#EBF1FA;background:#9BACD4;padding:5px 10px;border-radius:5px;"><i class="fa fa-arrow-right"></i>
+        <div class="arrow" style="color:#EBF1FA;background:#9BACD4;padding:5px 10px;border-radius:5px;font-size:10px;"><i class="fa fa-arrow-right"></i>
                 </div>
                 
                 </div>
@@ -775,29 +793,38 @@ background:#D3DFF5;
                                     <i class="fas fa-file-alt" style="color: #2e5b9a; margin-right: 8px;"></i>
                                     {{ $uj->nama_ujian ?? 'Ujian Tanpa Nama' }}
                                 </p>
+                                @if($uj->mode == 'praktik')
+    <span class="tag-custom tag-info">
+        <i class="fas fa-paint-brush"></i> Praktik
+    </span>
+@else
+    <span class="tag-custom tag-success">
+        <i class="fas fa-desktop"></i> CBT
+    </span>
+@endif
                                 <p class="subtitle is-6 " style="margin:5px 2px;">
-                                    <span class="icon"><i class="fas fa-clock"></i></span>
-                                    Durasi: {{ $uj->durasi ?? '?' }} menit
-                                    &nbsp;|&nbsp;
-                                </p>
-                                <p class="subtitle is-6">
+                                    
                                     <span class="icon"><i class="fas fa-graduation-cap"></i></span>
                                     Kelas: {{ $uj->grade ?? '-' }}
-                                </p>
-                                    <p class="subtitle">
-                                    <span class="icon"><i class="fas fa-sticky-note"></i></span>
-                                    @php
+                                    &nbsp;|&nbsp; @php
                                     $banks = App\Models\Ujian_soals::where("ujian_id",$uj->id)->get();
                                     @endphp
                                     Soal : {{ $banks->count() }}
-                                    </p>
-                                   
                                 </p>
+                            @if($uj->mode === "cbt")
                                 <p class="subtitle is-6">
-                                    <span class="icon"><i class="fas fa-calendar-alt"></i></span>
+                                    <span class="icon"><i class="fas fa-time"></i></span>
+                                   
+                                        Durasi: {{ $uj->durasi ?? '?' }} menit
+                                    
+                                    </p>
+                            @endif
+                            
+                                   
+                                <p class="subtitle is-6">
                                     @if(isset($uj->jadwal))
-                                        {{ \Carbon\Carbon::parse($uj->jadwal->waktu_mulai)->format('d F Y H:i') }} - 
-                                        {{ \Carbon\Carbon::parse($uj->jadwal->waktu_selesai)->format('d F Y H:i') }}
+                                        {{ \Carbon\Carbon::parse($uj->jadwal->waktu_mulai)->locale('id')->translatedformat('d F Y H:i') }} - 
+                                        {{ \Carbon\Carbon::parse($uj->jadwal->waktu_selesai)->locale('id')->translatedformat('d F Y H:i') }}
                                     @else
                                         <span class="tag-custom tag-warning">Belum dijadwalkan</span>
                                     @endif
@@ -812,15 +839,14 @@ background:#D3DFF5;
                                         @csrf
                                         @method("DELETE")
                                         <button type="submit" class="button is-danger is-small" onclick="return confirm('Hapus ujian ini?')">
-                                            <i class="fas fa-trash-alt"></i> Hapus
+                                            <i class="fas fa-trash-alt" style="margin-right:6px;"></i> Hapus
                                         </button>
                                     </form>
-                                    <a href="{{ route('guru.create', $uj->id) }}" class="button is-primary is-small">
-                                        <i class="fas fa-edit"></i> Kelola Soal
+                                    <a href="{{ route('guru.ujian.detail', $uj->id) }}" class="button is-primary is-small">
+                                        <i class="fas fa-edit" style="margin-right:6px;"></i> Kelola Soal
                                     </a>
-                                    <button class="button is-info is-small" onclick="alert('Fitur publikasi segera hadir')">
-                                        <i class="fas fa-check-circle"></i> Publikasikan
-                                    </button>
+                                   
+                                    
                                 </div>
                             @elseif($uj->status === "ready")
                                 <div class="has-text-centered">
@@ -828,15 +854,15 @@ background:#D3DFF5;
                                         <i class="fas fa-play-circle"></i> Tersedia
                                     </span>
                                     <div class="mt-2" style="margin:5px 2px;">
-                                        <a href="{{ route('guru.create', $uj->id) }}" class="button is-small is-link">
-                                            <i class="fas fa-eye"></i> Detail
+                                        <a href="{{ route('guru.ujian.detail', $uj->id) }}" class="button is-small is-link">
+                                            <i class="fas fa-eye" style="margin-right:6px;"></i> Detail
                                         </a>
                                     </div>
                                 </div>
                             @elseif($uj->status === "ongoing")
                                 <div class="has-text-centered">
                                     <span class="tag-custom tag-warning">
-                                        <i class="fas fa-hourglass-half"></i> Sedang Berlangsung
+                                        <i class="fas fa-hourglass-half" style="margin-right:6px;"></i> Sedang Berlangsung
                                     </span>
                                 </div>
                             @elseif($uj->status === "done")
@@ -846,13 +872,13 @@ background:#D3DFF5;
                                     </span>
                                     <div class="mt-2">
                                         <a href="{{ route('guru.result', $uj->id) }}" class="button is-small is-info is-light">
-                                            <i class="fas fa-chart-simple"></i> Lihat Hasil
+                                            <i class="fas fa-chart-simple" style="margin-right:6px;"></i> Lihat Hasil
                                         </a>
                                     </div>
                                 </div>
                             @else
                                 <div class="has-text-centered">
-                                    <span class="tag-custom tag-info">{{ $uj->status ?? 'Draft' }}</span>
+                                    <span class="tag-custom tag-info" style="margin-right:6px;">{{ $uj->status ?? 'Draft' }}</span>
                                 </div>
                             @endif
                         </div>
@@ -973,7 +999,7 @@ background:#D3DFF5;
                 
                 {{-- Catatan --}}
                 <div class="field">
-                    <label class="label">Catatan</label>
+                    <label class="label">Catatan (opsional)</label>
                     <div class="control">
                         <input type="text" class="input" name="catatan" placeholder="Contoh: Untuk kelas XII RPL 1 & 2">
                     </div>
@@ -996,6 +1022,62 @@ background:#D3DFF5;
 </div>
 
 {{-- JavaScript --}}
+<script>
+function handleModeChangeInSheet() {
+    const modeSelect = document.getElementById('mode');
+    const durasiField = document.getElementById('durasi');
+    const durasiContainer = durasiField ? durasiField.closest('.field') : null;
+    
+    if (!modeSelect || !durasiField || !durasiContainer) return;
+    
+    function updateDurasiVisibility() {
+        const isPraktik = modeSelect.value === 'praktik';
+        
+        if (isPraktik) {
+            // Set durasi ke 1 menit dan nonaktifkan
+            durasiField.value = 1;
+            durasiField.readOnly = true;
+            durasiField.disabled = true;
+            // Sembunyikan field durasi
+            durasiContainer.style.display = 'none';
+        } else {
+            // Reset durasi ke kosong, aktifkan, dan tampilkan
+            durasiField.value = '';
+            durasiField.readOnly = false;
+            durasiField.disabled = false;
+            durasiContainer.style.display = 'block';
+        }
+    }
+    
+    // Jalankan saat pertama kali modal dibuka
+    updateDurasiVisibility();
+    
+    // Jalankan setiap kali mode berubah
+    modeSelect.addEventListener('change', updateDurasiVisibility);
+}
+function submitUjianWithJadwal() {
+    const form = document.getElementById('formCreate');
+
+    if (!form) {
+        alert('Form tidak ditemukan');
+        return;
+    }
+
+    // validasi minimal 1 kelas dipilih
+    const kelasSelect = form.querySelector('#kelas_id');
+
+    if (kelasSelect) {
+        const selected = Array.from(kelasSelect.selectedOptions);
+
+        if (selected.length === 0) {
+            alert('Pilih minimal 1 kelas');
+            return;
+        }
+    }
+
+    form.submit();
+}
+</script>
 <script>
     document.addEventListener('change', function(e) {
     if (e.target.id === 'gradeSelect') {
@@ -1041,27 +1123,24 @@ function openCreate() {
             <form id="formCreate" action="{{ route('guru.store') }}" method="post">
                 <input type="hidden" name="_token" value="${csrf}">
                 
+                <div class="field">
+                    <label class="label">Mata Pelajaran</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select name="mapel_id" id="mapel_id" required>
+                                <option value="">Pilih Mata Pelajaran</option>
+                                @foreach($guruMapel ?? [] as $gm)
+                                    @if($gm->mapel)
+                                    <option value="{{ $gm->mapel->id }}">
+                                        {{ $gm->mapel->nama_mapel }}
+                                    </option>
+                                    @endif
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
                 
-      {{-- Select Mapel dengan $guruMapel --}}
-<div class="field">
-    <label class="label">Mata Pelajaran</label>
-    <div class="control">
-        <div class="select is-fullwidth">
-            <select name="mapel_id" id="mapel_id" required>
-                <option value="">Pilih Mata Pelajaran</option>
-                @foreach($guruMapel ?? [] as $gm)
-                    @if($gm->mapel)
-                    <option value="{{ $gm->mapel->id }}">
-                        {{ $gm->mapel->nama_mapel }}
-                    </option>
-                    @endif
-                @endforeach
-            </select>
-        </div>
-    </div>
-</div>
-                
-                {{-- Nama Guru --}}
                 <div class="field">
                     <label class="label">Nama Guru</label>
                     <div class="control">
@@ -1069,7 +1148,6 @@ function openCreate() {
                     </div>
                 </div>
                 
-                {{-- Nama Ujian --}}
                 <div class="field">
                     <label class="label">Nama Ujian</label>
                     <div class="control">
@@ -1077,41 +1155,52 @@ function openCreate() {
                     </div>
                 </div>
                 
-                {{-- Durasi --}}
                 <div class="field">
+                    <label class="label">Mode Ujian</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select name="mode" id="mode" required>
+                                <option value="cbt">CBT</option>
+                                <option value="praktik">Praktik</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="help">
+                        CBT = pilihan ganda/essay biasa <br>
+                        Praktik = upload file/project
+                    </p>
+                </div>
+                
+                <!-- FIELD DURASI - dibungkus div dengan id durasiField -->
+                <div class="field" id="durasiField">
                     <label class="label">Durasi (menit)</label>
                     <div class="control">
                         <input type="number" name="durasi" id="durasi" class="input" placeholder="60" required min="1">
                     </div>
                 </div>
                 
-
                 <div class="field">
                     <label class="label">Tingkatan Kelas (Grade)</label>
                     <div class="control">
-                    <div class="select">
-                    <select name="grade" id="gradeSelect">
-                    <option value="">Pilih Tingkatan Kelas</option>
-                    <option value="10">10</option>
-                    <option value="11">11</option>
-                    <option value="12">12</option>
-                    </select>
-                       
-                       
+                        <div class="select">
+                            <select name="grade" id="gradeSelect">
+                                <option value="">Pilih Tingkatan Kelas</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                            </select>
                         </div>
                     </div>
-                    
                     <p class="help">Isi untuk informasi tambahan/deskripsi</p>
                 </div>
                 
-                {{-- Multi-Select Kelas (baru) --}}
                 <div class="field">
                     <label class="label">Pilih Kelas Peserta Ujian</label>
                     <div class="control">
                         <div class="select is-multiple is-fullwidth">
                             <select name="kelas_id[]" id="kelas_id" multiple size="5" required>
                                 @foreach($kelasList ?? [] as $kelas)
-                                <option value="{{ $kelas->id }}"  data-nama="{{ $kelas->nama_kelas }}">
+                                <option value="{{ $kelas->id }}" data-nama="{{ $kelas->nama_kelas }}">
                                     {{ $kelas->nama_kelas }}
                                 </option>
                                 @endforeach
@@ -1126,26 +1215,81 @@ function openCreate() {
                     </p>
                 </div>
                 
-                {{-- Catatan --}}
                 <div class="field">
-                    <label class="label">Catatan</label>
+                    <label class="label">Catatan (opsional)</label>
                     <div class="control">
                         <input type="text" class="input" name="catatan" placeholder="Contoh: Untuk kelas XII RPL 1 & 2">
                     </div>
                 </div>
-                
-                {{-- Tombol Submit --}}
-               
             </form>
         `,
         footer: `
             <button class="btn-cancel" onclick="closeSheet()">Cancel</button>
-            <button class="btn-submit" onclick="document.getElementById('formCreate').submit()">Submit</button>
+            <button class="btn-submit" onclick="submitUjianWithJadwal()">Submit</button>
         `
     });
+    
+    // Event listener untuk mode ujian (disembunyikan setelah sheet terbuka)
+    setTimeout(() => {
+        const modeSelect = document.getElementById('mode');
+        const durasiInput = document.getElementById('durasi');
+        const durasiField = document.getElementById('durasiField');
+        
+        if (modeSelect && durasiInput && durasiField) {
+            function toggleDurasi() {
+                const isPraktik = modeSelect.value === 'praktik';
+                
+                if (isPraktik) {
+                    // Mode praktik: set ke 1 menit dan sembunyikan field
+                    durasiInput.value = 1;
+                    durasiInput.readOnly = true;
+                    durasiInput.disabled = true;
+                    durasiField.style.display = 'none';
+                } else {
+                    // Mode CBT: tampilkan field dan reset nilai
+                    durasiInput.value = '';
+                    durasiInput.readOnly = false;
+                    durasiInput.disabled = false;
+                    durasiField.style.display = 'block';
+                }
+            }
+            
+            // Jalankan pertama kali
+            toggleDurasi();
+            
+            // Tambahkan event listener perubahan mode
+            modeSelect.addEventListener('change', toggleDurasi);
+        }
+    }, 100);
 }
+
+
+// Fungsi untuk menginisialisasi jadwal berdasarkan kelas yang dipilih
+
+
 document.addEventListener('DOMContentLoaded', function() {
-   
+   document.querySelectorAll('.logout-form').forEach(function(form) {
+
+        let submitted = false;
+
+        form.addEventListener('submit', function(e) {
+
+            if (submitted) {
+                e.preventDefault();
+                return;
+            }
+
+            submitted = true;
+
+            const btn = form.querySelector('.logout-button');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+                btn.style.pointerEvents = 'none';
+            }
+        });
+    });
     // ==========================================
     // 1. LOGIKA NOTIFIKASI (INTEGRASI LARAVEL)
     // ==========================================
@@ -1193,7 +1337,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="notif-content">
                         <div class="notif-title">${notif.title}</div>
-                        <div class="notif-desc">${notif.desc}</div>
+                        <div class="notif-desc">${notif.kelas}</div>
                         <div class="notif-time">${notif.time}</div>
                     </div>
                 </div>
@@ -1321,7 +1465,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.querySelectorAll('form').forEach(function(form) {
         form.addEventListener('submit', function() {
-            document.body.classList.add('page-leaving');
+            mainContent.classList.add('page-leaving');
         });
     });
 });

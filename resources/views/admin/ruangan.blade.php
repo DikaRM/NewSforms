@@ -125,9 +125,110 @@
         font-size: 0.95rem;
         background: #fff;
     }
+    :root {
+        --primary: #3085d6;
+        --primary-soft: #EEF2FF;
+        --text-main: #111827;
+        --text-muted: #6B7280;
+        --border: #E5E7EB;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 20px;
+        --input-height: 48px;
+        --shadow-sheet: 0 -4px 30px rgba(0, 0, 0, 0.1);
+        --focus-ring: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    }
+    * { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    .ft{
+    display:flex;
+    flex-direction:row;
+    justify-content:space-between;
+    align-items: center;
+    margin:20px 10px;
+}
+.btn-neat {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 5px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        margin-top:20px;
+        gap: 8px;
+        transition: all 0.2s;
+    }
+     .btn-net {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 5px 24px;
+        border-radius: 5px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        margin-top:10px;
+       
+        transition: all 0.2s;
+    }
+
+    .btn-neat:hover,.btn-net:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(79, 70, 229, 0.4); }
+
 </style>
 
 <!-- Session Alerts -->
+ <div class="ft">
+<button class="button is-info" style="margin:10px 2px;" onclick="openCreateRuangan()">
+    <i class="fas fa-plus"style="margin-right:6px;"></i> Tambah Ruangan
+</button>
+<form method="GET" action="">
+    <div style="display:flex; gap:10px; margin-top:20px;">
+
+        <input 
+    type="text" 
+    name="search" 
+    value="{{ request('search') }}"
+    placeholder="Cari nama / NISN..."
+    class="form-input"
+ style="margin-top:10px;">
+
+        <button type="submit" class="btn-net">
+            Cari
+        </button>
+
+    </div>
+</form>
+</div>
+@if(request('search') && !request('page'))
+    @if(isset($isSearching))
+        @if($dat->count() > 0)
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Data ditemukan',
+                text: 'Ada {{ $dat->count() }} hasil pencarian',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        </script>
+        @else
+        <script>
+            Swal.fire({
+                icon: 'warning',
+                title: 'Tidak ditemukan',
+                text: 'Data tidak ditemukan!',
+                confirmButtonColor: '#d33'
+            });
+        </script>
+        @endif
+    @endif
+@endif
 @if(session('success'))
 <script>
     Swal.fire({
@@ -153,9 +254,7 @@
 @endif
 
 <!-- Tombol Tambah -->
-<button class="button is-info" style="margin:10px 2px;" onclick="openCreateRuangan()">
-    <i class="fas fa-plus"></i> Tambah Ruangan
-</button>
+
 
 <!-- Tabel Data -->
 <table class="table is-stripped is-fullwidth is-hoverable">
@@ -178,7 +277,7 @@
          <!-- Tombol Edit -->
          <button class="button is-warning is-light is-small" 
                  onclick="openEditRuangan('{{ $d->id }}','{{ $d->nama_ruang }}','{{ $d->kode }}')">
-            <i class="fas fa-edit"></i> Edit
+            <i class="fas fa-edit"style="margin-right:6px;"></i> Edit
          </button>
          
          <!-- Tombol Hapus -->
@@ -186,9 +285,11 @@
                onsubmit="return confirm('Yakin ingin menghapus ruangan ini?');">
            @csrf
            @method("DELETE")
-           <button class="button is-danger is-small" type="submit">
-             <i class="fas fa-trash"></i> Hapus
-           </button>
+           <button type="button"
+    class="button is-danger is-small btn-delete"
+    data-id="{{$d->id}}">
+    <i class="fas fa-trash"style="margin-right:6px;"></i>Hapus
+</button>
          </form>
        </div>
      </td>
@@ -196,7 +297,9 @@
    @endforeach
   </tbody>
 </table>
-
+<div style="margin-top:20px;">
+    {{ $dat->links() }}
+</div>
 <!-- Global Bottom Sheet -->
 <div class="overlay" id="global-sheet">
     <div class="bottom-sheet">
@@ -247,10 +350,7 @@
                         <input type="text" name="nama_ruang" class="form-input" placeholder="Contoh: Ruang Teori 1 PPLG" required autocomplete="off">
                     </div>
                     
-                    <div class="form-group">
-                        <label class="form-label">Kode Ruangan</label>
-                        <input type="text" name="kode" class="form-input" placeholder="Contoh: RT-PPLG-01" required autocomplete="off">
-                    </div>
+                    
                     <!-- Input ID (Nomor Ruangan) DIHAPUS sesuai permintaan -->
                 </form>
             `,
@@ -293,5 +393,27 @@
             closeSheet();
         }
     });
+</script>
+<script>
+document.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', function () {
+        let form = this.closest('form');
+
+        Swal.fire({
+            title: 'Yakin?',
+            text: "Data tidak bisa dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    });
+});
 </script>
 @endsection

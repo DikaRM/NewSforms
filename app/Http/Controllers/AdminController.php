@@ -28,34 +28,33 @@ class AdminController
 {
     $use = User::query();
     if($request->has("role") && $request->role != ''){
-        $use->where("role",$request->role);
+        $use->where("role", $request->role);
     }
-    $sort = $request->get("sort","name");
-    $order = $request->get("order","asc");
-    $data = $use->orderBy($sort,$order,)->get();
+    $sort = $request->get("sort", "nama");
+    $order = $request->get("order", "asc");
+    $data = $use->orderBy($sort, $order)->paginate(5);
     $ire = Auth::user();
     
-// Karena Anda tahu pakai SQLite, langsung gunakan SQLite syntax
-// Query tetap sama
- $pelanggaranPerBulan = Pelanggaran::selectRaw(
-    "strftime('%m', created_at) as bulan, COUNT(*) as total"
-)
-->whereRaw("strftime('%Y', created_at) = ?", [date('Y')])
+    // ✅ PERBAIKAN UNTUK SQLITE
+    // SQLite menggunakan strftime untuk format tanggal
+    // Ganti query yang menggunakan strftime
+$pelanggaranPerBulan = Pelanggaran::selectRaw("
+    EXTRACT(MONTH FROM created_at) as bulan,
+    COUNT(*) as total
+")
+->whereRaw("EXTRACT(YEAR FROM created_at) = ?", [date('Y')])
 ->groupBy('bulan')
+->orderBy('bulan')
 ->pluck('total', 'bulan')
 ->toArray();
 
-// ✅ PERBAIKAN BAGIAN LOOP INI
- $chartData = [];
+$chartData = [];
 for ($i = 1; $i <= 12; $i++) {
-    // Ubah integer (1) menjadi string '01', '02', dst
-    $keyBulan = sprintf("%02d", $i);
-    
-    $chartData[] = $pelanggaranPerBulan[$keyBulan] ?? 0;
+    $chartData[] = $pelanggaranPerBulan[$i] ?? 0;
 }
 $pelanggaranPerBulan = $chartData;
-// Contoh hasil: [0, 0, 0, 5, 0, 0, 0, 0, 0, 10, 0, 0]
-
+    
+    // Statistics
     $totalSiswa = User::where('role', 'siswa')->count();
     $totalGuru = User::where('role', 'guru')->count();
     $totalKelas = Kelas::count();
@@ -64,11 +63,11 @@ $pelanggaranPerBulan = $chartData;
     $totalBankSoal = banksoal::count();
     
     // Status Ujian
-    $ujianReady = Ujian::where('status', 'ready')->count();  // Ujian siap
-    $ujianDraft = Ujian::where('status', 'draft')->count(); // Ujian draft
-    $ujianDone = Ujian::where('status', 'done')->count();    // Ujian selesai
-    // ==================================
+    $ujianReady = Ujian::where('status', 'ready')->count();
+    $ujianDraft = Ujian::where('status', 'draft')->count();
+    $ujianDone = Ujian::where('status', 'done')->count();
     
+    // Data tambahan (mungkin tidak semua diperlukan)
     $user = User::all();
     $kelas = Kelas::all();
     $ujian = Ujian::all();
@@ -81,10 +80,9 @@ $pelanggaranPerBulan = $chartData;
         "pelanggaran", "mapel",
         "totalSiswa", "totalGuru", "totalKelas", 
         "totalMapel", "totalPelanggaran", "totalBankSoal",
-        "ujianReady", "ujianDraft", "ujianDone","pelanggaranPerBulan"
+        "ujianReady", "ujianDraft", "ujianDone", "pelanggaranPerBulan"
     ));
 }
-
     /**
      * Show the form for creating a new resource.
      */
@@ -97,41 +95,78 @@ $pelanggaranPerBulan = $chartData;
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            "nama" => "required",
-          "password" => "required|min:6",
-          "role" => "required",
-          "nip" => "nullable",
-          ]);
-          $ps = Hash::make($validated["password"]);
-          $kata = Str::of($validated["nama"])->before(" ")->toString();
-          $usrr = [
-            "nama" => $validated["nama"],
-            "password" => $ps,
-            "role" => $validated["role"],
-            "username"=>$kata,
-            ];
-            User::create($usrr);
-          if($validated["role"] === "siswa"){
-            $on = 1;
-            $su = [
-              "user_id" => $on++,
-              "nisn" => $request->nisn,
-              "kelas" => $request->kelas,
-              ];
-            Siswa::create($su);
-          }else if($validated["role"] === "guru"){
-            $i = 1;
-            $su = [
-              "user_id" => $i++,
-              "nama" => $validated["nama"],
-              "nip" => $validated["nip"],
-              ];
-            Guru::create($su);
-          }
-          return redirect()->route("admin.index")->with("success","Berhasil Menambahkan User");
+{
+    $validated = $request->validate([
+        "nama" => "required",
+        "password" => "required|min:6",
+        "role" => "required",
+    ]);
+
+    // Pecah nama
+    $namaParts = collect(explode(' ', trim($validated["nama"])))
+        ->map(fn($item) => strtolower(trim($item)))
+        ->filter(fn($item) => strlen($item) > 2)
+        ->values();
+
+    // Fallback
+    if ($namaParts->isEmpty()) {
+        $namaParts = collect(['user']);
     }
+
+    // Default username
+    $username = $namaParts[0];
+
+    $found = false;
+
+    // Cari username tersedia
+    foreach ($namaParts as $part) {
+
+        $existsUser = User::whereRaw('LOWER(username) = ?', [$part])->exists();
+
+        if (!$existsUser) {
+            $username = $part;
+            $found = true;
+            break;
+        }
+    }
+
+    // Kalau semua sudah dipakai
+    if (!$found) {
+
+        $baseUsername = $namaParts[0];
+        $i = 1;
+
+        while (true) {
+
+            $candidate = $baseUsername . $i;
+
+            $existsUser = User::whereRaw('LOWER(username) = ?', [$candidate])->exists();
+
+            if (!$existsUser) {
+                $username = $candidate;
+                break;
+            }
+
+            $i++;
+        }
+    }
+
+    // CREATE USER
+    $user = User::create([
+        "nama" => $validated["nama"],
+        "password" => Hash::make($validated["password"]),
+        "role" => $validated["role"],
+        "username" => $username,
+    ]);
+
+    // CREATE SISW
+
+    // CREATE GURU
+
+    return redirect()
+        ->route("admin.index")
+        ->with("success", "Berhasil Menambahkan User");
+}
 
     /**
      * Display the specified resource.
@@ -153,19 +188,86 @@ $pelanggaranPerBulan = $chartData;
      * Update the specified resource in storage.
      */
     public function update(Request $request, $admin)
-    {
-      $request->validate(["password" => "required|min:6"]);
-      $usef = User::findOrFail($admin);
-      $ps = Hash::make($request->password);
-      $kata = Str::of($request->nama)->before(" ")->toString();
-        $usef->update([
-        "nama" =>$request->nama,
-        "role" => $request->role,
-        "username"=>$kata,
-        
-        ]);
-        return redirect()->route("admin.index")->with("success","Berhasil Update User");
+{
+    $request->validate([
+        "nama" => "required",
+        "role" => "required|in:admin,guru,siswa",
+        "password" => "nullable|min:6",
+    ]);
+
+    $usef = User::findOrFail($admin);
+
+    // Pecah nama
+    $namaParts = collect(explode(' ', trim($request->nama)))
+        ->map(fn($item) => strtolower(trim($item)))
+        ->filter(fn($item) => strlen($item) > 2)
+        ->values();
+
+    // Fallback
+    if ($namaParts->isEmpty()) {
+        $namaParts = collect(['user']);
     }
+
+    // Default username
+    $username = $namaParts[0];
+
+    $found = false;
+
+    // Cari username tersedia
+    foreach ($namaParts as $part) {
+
+        $existsUser = User::whereRaw('LOWER(username) = ?', [$part])
+            ->where('id', '!=', $usef->id)
+            ->exists();
+
+        if (!$existsUser) {
+            $username = $part;
+            $found = true;
+            break;
+        }
+    }
+
+    // Kalau semua sudah dipakai
+    if (!$found) {
+
+        $baseUsername = $namaParts[0];
+        $i = 1;
+
+        while (true) {
+
+            $candidate = $baseUsername . $i;
+
+            $existsUser = User::whereRaw('LOWER(username) = ?', [$candidate])
+                ->where('id', '!=', $usef->id)
+                ->exists();
+
+            if (!$existsUser) {
+                $username = $candidate;
+                break;
+            }
+
+            $i++;
+        }
+    }
+
+    // Data update
+    $updateData = [
+        "nama" => $request->nama,
+        "role" => $request->role,
+        "username" => $username,
+    ];
+
+    // Update password jika diisi
+    if ($request->filled('password')) {
+        $updateData["password"] = Hash::make($request->password);
+    }
+
+    $usef->update($updateData);
+
+    return redirect()
+        ->route("admin.index")
+        ->with("success", "Berhasil Update User");
+}
 
     /**
      * Remove the specified resource from storage.
@@ -176,13 +278,32 @@ $pelanggaranPerBulan = $chartData;
         $user->delete();
         return redirect()->route("admin.index")->with("success","berhasil delete user");
     }
-    public function KelasIndex()
-    {
-      $ire = Auth::user();
-      $dat = Kelas::with("ruangan")->get();
-      $siswa = Ruangan::all();
-      return view("admin.kelas",compact("dat","ire","siswa"));
+    public function KelasIndex(Request $request)
+{
+    $query = Kelas::with('ruangan');
+    if ($request->filled('search')) {
+        $query->where(function($q) use ($request) {
+            $q->where('nama_kelas', 'ilike', '%' . $request->search . '%');
+        });
     }
+      $dat = $query->paginate(5);
+      $isSearching = $request->filled('search');
+     $ire = Auth::user();
+    $usedRuangan = Kelas::pluck('ruangan_id');
+
+    $ruangan = Ruangan::whereNotIn('id', $usedRuangan)->get();
+
+    // ambil SEMUA ruangan juga (buat fallback edit)
+    $allRuangan = Ruangan::all();
+
+    return view('admin.kelas', [
+        'dat' => $dat,
+        'siswa' => $ruangan,
+        'ire'=>$ire,
+        'allRuangan' => $allRuangan,
+        'isSearching' => $isSearching
+    ]);
+}
     public function KelasCreate(Request $request)
     {
       $request->validate([
@@ -262,6 +383,25 @@ $pelanggaranPerBulan = $chartData;
         ->route('admin.mapel')
         ->with('success', 'Berhasil menambahkan guru ke mapel');
 }
+ public function RemoveGuru(Request $request,$id)
+{
+    // Validasi input
+    $request->validate([
+        'mapel_id' => 'required|exists:mapel,id'
+    ]);
+    
+    // Cari guru beserta relasi mapelnya
+    $guru = Guru::with('mapel')->find($id);
+    
+    
+    
+    // Jika belum ada, tambahkan relasi
+    $guru->mapel()->detach($request->mapel_id);
+    
+    return redirect()
+        ->route('admin.mapel')
+        ->with('success', 'Berhasil Menghapus guru ke mapel');
+}
     public function Made(Request $request)
     {
       $request->validate([
@@ -269,17 +409,26 @@ $pelanggaranPerBulan = $chartData;
       Mapel::create($request->all());
       return redirect()->route("admin.mapel")->with("success","Berhasil Menambah Mapel");
     }
-public function RuangIndex()
-    {
+public function RuangIndex(Request $request)
+{
       $ire = Auth::user();
-      $dat = Ruangan::all();
-      return view("admin.ruangan",compact("dat","ire"));
+      $query = Ruangan::query();
+      if ($request->filled('search')) {
+        $query->where(function($q) use ($request) {
+            $q->where('nama_ruang', 'ilike', '%' . $request->search . '%')
+              ->orWhere('kode', 'ilike', '%' . $request->search . '%');
+        });
     }
-    public function RuangCreate(Request $request)
+      $dat = $query->paginate(5);
+      $isSearching = $request->filled('search');
+      return view("admin.ruangan",compact("dat","ire","isSearching"));
+}
+public function RuangCreate(Request $request)
 {
     $request->validate([
         "nama_ruang" => "required"
     ]);
+
 
     Ruangan::create([
         "nama_ruang" => $request->nama_ruang,
@@ -302,7 +451,7 @@ public function RuangIndex()
         "nama_ruang" => $request->nama_ruang,
 
         // 🔥 OPTIONAL: kalau mau kode selalu berubah saat update
-        "kode" => strtoupper(Str::random(6)),
+        "kode" => $request->kode,
         "kode_expired_at" => Carbon::now()->addHour(),
     ]);
 
@@ -319,15 +468,23 @@ public function RuangIndex()
 
 
     public function ops(){
-      $uji = Ujian::with("kelas","mapels")->get();
+      $uji = Ujian::with("kelas","mapels")->where("mode","cbt")->get();
       $sis = Siswa::all();
       $kla = Kelas::all();
-      $jad = Jadwal::with("pengawas","ujian","kelas")->get();
+      $jad = Jadwal::with("pengawas","ujian","kelas")
+            ->whereHas("ujian", function($query) {
+                $query->where("mode", "cbt");
+            })
+            ->get();
       return view("admin-sp.index",compact("uji","sis","kla","jad"));
     }
     public function SetUji($id)
     {
-      $jad = Jadwal::with("ujian","pengawas")->where("kelas_id",$id)->get();
+      $jad = Jadwal::with("pengawas","ujian","kelas")
+            ->whereHas("ujian", function($query) {
+                $query->where("mode", "cbt");
+            })
+            ->get();
       $klas = Kelas::find($id);
       $uji = Ujian::all();
       $penh = Pengawas::with("user","guru")->get();
@@ -342,8 +499,8 @@ public function RuangIndex()
     
     // 1. Tentukan waktu mulai dan selesai
     $waktuMulai = \Carbon\Carbon::parse($request->tanggal . ' ' . $request->waktu_mulai);
-    $waktuSelesai = $waktuMulai->copy()->addMinutes($uji->durasi);
-
+    $waktuSelesai = $waktuMulai->copy()->addMinutes((int)$uji->durasi);
+   
     // 2. Cari GURU ACAK yang sedang tidak bertugas di waktu tersebut
     // Kita filter guru yang TIDAK punya jadwal bentrok
     $guruAcak = Guru::whereDoesntHave('pengawas.jadwal', function($query) use ($request, $waktuMulai, $waktuSelesai) {
@@ -379,21 +536,18 @@ public function RuangIndex()
             'error' => "Kelas ini sudah memiliki jadwal pada jam tersebut."
         ])->withInput();
     }
-
-    // 5. Eksekusi Simpan Data
-    // Pastikan relasi ke kelas di tabel pivot ujian_kelas tetap ada
-    if (!$uji->kelas()->where('kelas_id', $request->kelas_id)->exists()) {
-        $uji->kelas()->attach($request->kelas_id);
-    }
+    $uji->kelas()->syncWithoutDetaching([$request->kelas_id]);
 
     // Setup data pengawas dari hasil acak
     $pengawas = Pengawas::firstOrCreate([
         "guru_id" => $guruAcak->id,
         "user_id" => $guruAcak->user_id,
     ]);
-
+    $jamMapel = (Jadwal::where('kelas_id', $request->kelas_id)
+    ->where('tanggal', $request->tanggal)
+    ->max('jam_mapel') ?? 0) + 1;
     $jads = Jadwal::create([
-        "jam_mapel" => $request->jam_mapel,
+        "jam_mapel" => $jamMapel,
         "tanggal" => $request->tanggal,
         "ujian_id" => $request->ujian_id,
         "pengawas_id" => $pengawas->id,

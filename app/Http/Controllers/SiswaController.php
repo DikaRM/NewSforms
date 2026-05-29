@@ -1,7 +1,9 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Log;
+use App\Jobs\ProsesUjianJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -12,25 +14,41 @@ use App\Models\Siswa;
 use App\Models\User;
 use App\Models\Ujian;
 use App\Models\Kelas;
+use App\Models\BlockSiswa;
 use App\Models\banksoal;
 use App\Models\Ujian_soals;
 use App\Models\Jawaban_Siswa;
 use App\Models\Peserta_ujian;
 use App\Models\Jadwal;
 use App\Models\Pelanggaran;
+use Illuminate\Support\Facades\Storage;
 class SiswaController
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-      $data = Siswa::with("kelas")->get();
-      $ire = Auth::user();
-      $kelas = Kelas::all();
-      
-      return view("admin.siswa.index",compact("data","ire","kelas"));
+    public function index(Request $request)
+{
+    $query = Siswa::with("kelas","user")->orderBy("nomor_absen","asc");
+
+    if ($request->filled('search')) {
+        $query->where(function($q) use ($request) {
+            $q->where('nama', 'ilike', '%' . $request->search . '%')
+              ->orWhere('nisn', 'ilike', '%' . $request->search . '%');
+        });
     }
+
+    $data = $query->paginate(10)->withQueryString();
+
+    if ($request->ajax()) {
+        return view('admin.siswa.partial.table', compact('data'))->render();
+    }
+
+    $ire = Auth::user();
+    $kelas = Kelas::all();
+    $isSearching = $request->filled('search');
+    return view("admin.siswa.index", compact("data","ire","kelas","isSearching"));
+}
 
     /**
      * Show the form for creating a new resource.
@@ -49,25 +67,78 @@ class SiswaController
         'nama' => 'required',
         'nisn' => 'required|digits:10',
         'password' => 'required|min:6',
-        'kelas_id' => 'required'
+        'kelas_id' => 'required',
+        'nomor_absen' => 'required'
     ]);
-    $katapertama = Str::of($request->nama)->before(' ')->toString();
+
+    $namaParts = explode(' ', trim($request->nama));
+
+    $username = null;
+
+    // Cari kata yang valid (>2 huruf)
+    foreach ($namaParts as $part) {
+
+        $candidate = Str::lower(Str::slug($part, ''));
+
+        // skip kalau terlalu pendek
+        if (strlen($candidate) <= 2) {
+            continue;
+        }
+
+        $exists =
+            User::where('username', $candidate)->exists();
+
+        // kalau belum ada, pakai
+        if (!$exists) {
+            $username = $candidate;
+            break;
+        }
+    }
+
+    // fallback kalau semua sudah dipakai
+    if (!$username) {
+
+        $baseUsername = Str::lower(
+            Str::slug($namaParts[0] ?? 'siswa', '')
+        );
+
+        // kalau nama pertama juga pendek
+        if (strlen($baseUsername) <= 2) {
+            $baseUsername = 'siswa';
+        }
+
+        $username = $baseUsername;
+        $i = 1;
+
+        while (
+            User::where('username', $username)->exists()
+            ||
+            Siswa::where('username', $username)->exists()
+        ) {
+            $username = $baseUsername . $i;
+            $i++;
+        }
+    }
+
     $user = User::create([
         "nama" => $request->nama,
         "password" => Hash::make($request->password),
         "role" => "siswa",
-        "username"=> $katapertama,
+        "username" => $username,
     ]);
-    
+
     Siswa::create([
         "user_id" => $user->id,
         "nama" => $request->nama,
         "nisn" => $request->nisn,
         'kelas_id' => $request->kelas_id,
-        "username" => $katapertama, 
+        "nomor_absen" => $request->nomor_absen,
+        "jenis_kelamin" => $request->jenis_kelamin,
     ]);
-    
-    return redirect()->route("admin.siswa.index")->with("success", "Berhasil Tambah Siswa!");
+
+    return redirect()
+        ->route("admin.siswa.index")
+        ->with("success", "Berhasil Tambah Siswa!");
 }
     /**
      * Display the specified resource.
@@ -88,34 +159,93 @@ class SiswaController
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+  public function update(Request $request, string $id)
 {
-
     $request->validate([
         "nama" => "required",
         "nisn" => "required|digits:10",
-        // Hapus 'required' dari password
-        "password" => "nullable|min:6", // optional, dengan minimal 6 karakter
+        "password" => "nullable|min:6",
     ]);
-    
-    // 2. Proses update data
+
     $siswa = Siswa::findOrFail($id);
     $usd = User::findOrFail($siswa->user_id);
-    $katapertama = Str::of($request->nama)->before(' ')->toString();
+
+    // Pecah nama dan filter kata > 2 huruf
+    $namaParts = collect(explode(' ', trim($request->nama)))
+        ->map(fn($item) => strtolower(trim($item)))
+        ->filter(fn($item) => strlen($item) > 2)
+        ->values();
+
+    // Fallback kalau semua kata <= 2
+    if ($namaParts->isEmpty()) {
+        $namaParts = collect(['user']);
+    }
+
+    // Default username
+    $username = $namaParts[0];
+
+    // Cari username yang available
+    $found = false;
+
+    foreach ($namaParts as $part) {
+
+        $existsUser = User::whereRaw('LOWER(username) = ?', [$part])
+            ->where('id', '!=', $usd->id)
+            ->exists();
+
+
+        if (!$existsUser) {
+            $username = $part;
+            $found = true;
+            break;
+        }
+    }
+
+    // Kalau semua nama sudah dipakai
+    if (!$found) {
+
+        $baseUsername = $namaParts[0];
+        $i = 1;
+
+        while (true) {
+
+            $candidate = $baseUsername . $i;
+
+            $existsUser = User::whereRaw('LOWER(username) = ?', [$candidate])
+                ->where('id', '!=', $usd->id)
+                ->exists();
+
+            if (!$existsUser) {
+                $username = $candidate;
+                break;
+            }
+
+            $i++;
+        }
+    }
+
+    // UPDATE USER
     $usd->nama = $request->nama;
-    $usd->username = $katapertama;
-    if($request->filled("password")) {
+    $usd->username = $username;
+
+    if ($request->filled("password")) {
         $usd->password = Hash::make($request->password);
     }
+
     $usd->save();
-    
+
+    // UPDATE SISWA
     $siswa->nama = $request->nama;
     
-    $siswa->username= $katapertama;
     $siswa->nisn = $request->nisn;
+    $siswa->jenis_kelamin = $request->jenis_kelamin;
+    $siswa->nomor_absen = $request->nomor_absen;
+
     $siswa->save();
-    
-    return redirect()->route("admin.siswa.index")->with("success", "Berhasil Update Siswa!");
+
+    return redirect()
+        ->route("admin.siswa.index")
+        ->with("success", "Berhasil Update Siswa!");
 }
 
     /**
@@ -237,17 +367,38 @@ class SiswaController
     
     // Jika status 'mulai' (sedang mengerjakan), boleh lanjutkan
     // Jika belum ada record (null), buat baru dengan status 'mulai'
-    if(!$peserta) {
-        $peserta = Peserta_ujian::create([
-            'siswa_id' => $sis->id_siswa,
-            'ujian_id' => $uji->id,
-            'status' => 'mulai',
-            'nilai'=> 0,
-        ]);
-    }
-    
     $ujians = Ujian_soals::where("ujian_id", $uji->id)->pluck('bank_id')->toArray();
-    $soal = banksoal::whereIn('id', $ujians)->get();
+    if(!$peserta) {
+         $acak = banksoal::whereIn('id', $ujians)
+        ->inRandomOrder()
+        ->pluck('id')
+        ->toArray();
+
+    $peserta = Peserta_ujian::create([
+        'siswa_id' => $sis->id_siswa,
+        'ujian_id' => $uji->id,
+        'status' => 'mulai',
+        'nilai'=> 0,
+        'urutan_soal' => json_encode($acak),
+    ]);
+    }
+    if($peserta && !$peserta->urutan_soal) {
+    $acak = banksoal::whereIn('id', $ujians)
+        ->inRandomOrder()
+        ->pluck('id')
+        ->toArray();
+
+    $peserta->update([
+        'urutan_soal' => json_encode($acak)
+    ]);
+}
+    $urutan = json_decode($peserta->urutan_soal, true);
+
+$soal = banksoal::whereIn('id', $urutan)->get()
+    ->sortBy(function ($item) use ($urutan) {
+        return array_search($item->id, $urutan);
+    })
+    ->values();
     
     if($soal->isEmpty()) {
         return redirect()->back()->with('error', 'Belum ada soal untuk ujian ini');
@@ -255,94 +406,132 @@ class SiswaController
     
     return view("siswa.ujian", compact("uji", "soal", "ire", "sis", "ujians", "peserta"));
 }
-    
+   
+
+
+
+
+
+
     public function Saved(Request $request)
 {
-    // 1. VALIDASI
-    $request->validate([
-        "ujian_id" => "required|integer|exists:ujian,id",
-        "siswa_id" => "required|integer|exists:siswa,id_siswa", // Pastikan siswa valid
-        "jawaban" => "required|array",
-    ]);
+    // Log awal request
+    Log::info('=== SAVED METHOD CALLED ===');
+    Log::info('Request data:', $request->all());
+    
+    try {
+        // Validasi
+        Log::info('Validating request...');
+        $request->validate([
+            "ujian_id" => "required|integer|exists:ujian,id",
+            "siswa_id" => "required|exists:siswa,id_siswa",
+            "jawaban" => "nullable|array",
+            "file_jawaban" => "nullable|array",
+            "file_jawaban.*" => "nullable|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx,zip,mp4",
+        ]);
+        Log::info('Validation passed');
 
-    // 2. AMBIL DATA SISWA (Untuk redirect aman)
-    $siswa = Siswa::findOrFail($request->siswa_id);
-
-    $ujianId = $request->ujian_id;
-    $jawabanSiswa = $request->jawaban;
-    $soal_ids = array_keys($jawabanSiswa);
-    
-    // 3. AMBIL DATA SOAL
-    $soals = banksoal::whereIn("id", $soal_ids)->get()->keyBy("id");
-    
-    $score = 0;
-    $total_soal = count($jawabanSiswa);
-    
-    $jawabanData = []; // Siapkan array untuk batch insert (opsional tapi disarankan)
-    
-    foreach($jawabanSiswa as $soal_id => $jawabans) {
-        $soal = $soals[$soal_id] ?? null;
-        if (!$soal) continue;
+        $ujianId = $request->ujian_id;
+        Log::info('Ujian ID: ' . $ujianId);
         
-        $benar = 0;
+        $uji = Ujian::findOrFail($ujianId);
+        $siswaId = (string)$request->siswa_id; 
+        $siswa = Siswa::where("id_siswa", $siswaId)->first();
         
-        if($soal->opsi_a != null) {
-            // PILIHAN GANDA
-            $benar = (strtoupper(trim($jawabans)) == strtoupper(trim($soal->jawaban_benar))) ? 1 : 0;
-        } else {
-            // ESSAY
-            $nilai = $this->hitungNilaiEssay($jawabans, $soal->jawaban_benar);
-            $benar = ($nilai >= 80) ? 1 : 0; 
+        Log::info('Mode ujian: ' . $uji->mode);
+        
+        // Redis: Cegah double submit
+        if($uji->mode === "praktik"){
+            Log::info('Mode PRAKTIK, checking existing submission...');
+            $alreadySubmit = Jawaban_Siswa::where('ujian_id', $ujianId)
+                ->where('siswa_id', $siswaId)
+                ->exists();
+                
+            if ($alreadySubmit) {
+                Log::warning('Already submitted in PRAKTIK mode');
+                return redirect()
+                    ->route('siswa.index')
+                    ->with('error', 'Kamu sudah mengerjakan ujian ini!');
+            }
         }
         
-        if($benar) {
-            $score += 1;
+        if($uji->mode === "cbt"){
+            Log::info('Mode CBT, updating status to unready...');
+            $siswa->update(["status" => "unready"]);
+            Log::info('Status updated, new status: ' . $siswa->fresh()->status);
         }
         
-        // SIMPAN DATA KE ARRAY (Lebih aman dari error query per loop)
-        $jawabanData[] = [
-            "ujian_id" => $ujianId,
-            "siswa_id" => $siswa->id_siswa,
-            "bank_id" => $soal->id,
-            "jawaban" => $jawabans,
-            "benar" => $benar,
-            "updated_at" => now(),
+        // Redis lock
+        $redis = Redis::connection();
+        $key = "ujian:submit:{$ujianId}:{$siswaId}";
+        $jawabanRaw = $request->jawaban ?? [];
+    $jawaban = [];
+    
+    foreach ($jawabanRaw as $soalId => $jawab) {
+        // Jika nilai "-" atau kosong, simpan sebagai string kosong
+        $jawaban[$soalId] = ($jawab === '-' || $jawab === '') ? '' : $jawab;
+    }
+        
+        if ($redis->get($key)) {
+            Log::warning('Redis lock detected for key: ' . $key);
+            return redirect()->route("siswa.index")->with("error", "Ujian sedang diproses, mohon tunggu!");
+        }
+        $redis->setex($key, 300, true);
+        Log::info('Redis lock acquired for key: ' . $key);
+        
+        // --- PROSES KHUSUS MODE PRAKTIK (UPLOAD FILE) ---
+        $filesPath = [];
+        if ($request->hasFile('file_jawaban')) {
+            Log::info('Processing file uploads...');
+            foreach ($request->file('file_jawaban') as $soalId => $file) {
+                if ($file && $file->isValid()) {
+                    $extension = $file->getClientOriginalExtension();
+                    $filename = "{$siswaId}_{$ujianId}_{$soalId}_" . Str::random(5) . ".{$extension}";
+                    $path = $file->storeAs('jawaban_praktik', $filename, 'public');
+                    $filesPath[$soalId] = $path;
+                    Log::info('File saved: ' . $path);
+                }
+            }
+        }
+        
+        // Data yang dikirim ke Job
+        $dataJob = [
+            'ujian_id'       => $ujianId,
+            'siswa_id'       => $siswaId,
+            'jawaban'        => $jawaban,
+            'file_jawaban'   => $filesPath, 
+            'mode_ujian'     => $uji->mode ?? 'cbt',
         ];
+        
+        Log::info('Dispatching job...');
+        ProsesUjianJob::dispatch($dataJob);
+        Log::info('Job dispatched successfully');
+        
+        Log::info('Redirecting to siswa.index');
+        return redirect()->route("siswa.index")
+            ->with("success", "Jawaban sedang disimpan. Nilai Ujian Mu bisa dilihat di halaman Riwayat");
+            
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        Log::error('VALIDATION ERROR: ' . json_encode($e->errors()));
+        return redirect()->back()
+            ->withErrors($e->errors())
+            ->withInput();
+            
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        Log::error('MODEL NOT FOUND: ' . $e->getMessage());
+        return redirect()->route("siswa.index")
+            ->with("error", "Data ujian atau siswa tidak ditemukan!");
+            
+    } catch (\Exception $e) {
+        Log::error('UNEXPECTED ERROR in Saved():');
+        Log::error('Message: ' . $e->getMessage());
+        Log::error('File: ' . $e->getFile());
+        Log::error('Line: ' . $e->getLine());
+        Log::error('Trace: ' . $e->getTraceAsString());
+        
+        return redirect()->route("siswa.index")
+            ->with("error", "Terjadi kesalahan: " . $e->getMessage());
     }
-
-    // 4. MASS INSERT (Upsert) agar tidak lambat
-    // Pastikan di migration ada: $table->unique(['ujian_id', 'siswa_id', 'bank_id']);
-    if (!empty($jawabanData)) {
-        Jawaban_Siswa::upsert(
-            $jawabanData,
-            ['ujian_id', 'siswa_id', 'bank_id'], 
-            ['jawaban', 'benar', 'updated_at']   
-        );
-    }
-    
-    // 5. HITUNG NILAI AKHIR
-    $nilai = ($total_soal > 0) ? round(($score / $total_soal) * 100, 2) : 0;
-    
-    // 6. UPDATE PESERTA UJIAN
-    Peserta_ujian::updateOrCreate([
-        "ujian_id" => $ujianId,
-        "siswa_id" => $siswa->id_siswa,
-    ], [
-        "nilai" => $nilai,
-        "status" => "done", // Pastikan konsisten dengan database (done/selesai)
-        "selesai_pengerjaan" => now(),
-    ]);
-    
-    // 7. UPDATE STATUS SISWA (HANYA JIKA KOLOMNYA ADA)
-    // Kode ini "Aman" karena mengecek dulu kolomnya ada atau tidak.
-    // Jika tabel siswa tidak punya kolom status, maka baris ini tidak dijalankan.
-    if (Schema::hasColumn('siswa', 'status')) {
-        $siswa->update(["status" => "unready"]);
-    }
-
-    // 8. REDIRECT KE HOME / HASIL
-    // Menggunakan route 'siswa.index' atau route dashboard
-    return redirect()->route("siswa.index")->with("success", "Ujian selesai! Nilai: $nilai");
 }
     
     /**
@@ -482,7 +671,7 @@ class SiswaController
     $user = Auth::user();
     
     // Ambil data siswa dengan relasi
-    $siswa = Siswa::with('kelas')
+    $siswa = Siswa::with('kelas','user')
         ->where('nama', $user->nama)
         ->first();
     
@@ -493,7 +682,7 @@ class SiswaController
     // Ambil ujian HARI INI saja untuk dashboard
     $today = now()->format('Y-m-d');
     
-    $uji = Ujian::with(['mapels', 'jadwal', 'kelas'])
+    $uji = Ujian::with(['mapels', 'jadwal', 'kelas'])->where("mode","cbt")
         ->whereHas('jadwal', function($query) use ($today) {
             $query->whereDate('waktu_mulai', $today);
         })
@@ -503,17 +692,27 @@ class SiswaController
         ->with(['peserta' => function($query) use ($siswa) {
             $query->where('siswa_id', $siswa->id_siswa);
         }])
+        ->latest()->first();
+     $praktik = Ujian::with("mapels","jadwal","kelas")
+        ->where("mode","praktik")
+        ->whereHas('jadwal', function($query) {
+    $query->where('waktu_mulai', '<=', now())
+          ->where('waktu_selesai', '>=', now());
+})
+        ->whereHas('kelas', function($query) use ($siswa) {
+            $query->where('kelas_ujian.kelas_id', $siswa->kelas_id);
+        })
+        ->with(['peserta' => function($query) use ($siswa) {
+            $query->where('siswa_id', $siswa->id_siswa);
+        }])
         ->get();
-    
     // Tambahan: Statistik untuk resume di dashboard
     $totalUjian = Peserta_ujian::where('siswa_id', $siswa->id_siswa)->count();
     $ujianSelesai = Peserta_ujian::where('siswa_id', $siswa->id_siswa)
-        ->where('status', 'selesai')
         ->count();
     
     // Hitung rata-rata nilai
     $rataNilai = Peserta_ujian::where('siswa_id', $siswa->id_siswa)
-        ->where('status', 'selesai')
         ->avg('nilai') ?? 0;
     
     // Jadwal mendatang (3 hari ke depan)
@@ -530,6 +729,7 @@ class SiswaController
         "siswa", 
         "uji", 
         "ire", 
+        "praktik",
         "totalUjian", 
         "ujianSelesai", 
         "rataNilai",
@@ -537,8 +737,11 @@ class SiswaController
         "today"
     ));
 }
- public function reportViolation(Request $request)
+public function reportViolation(Request $request)
 {
+    \Log::info('=== REPORT VIOLATION DIPANGGIL ===');
+    \Log::info('Request data:', $request->all());
+    
     $validated = $request->validate([
         'ujian_id' => 'required|exists:ujian,id',
         'siswa_id' => 'required|exists:siswa,id_siswa',
@@ -549,22 +752,105 @@ class SiswaController
         'timestamp' => 'nullable|string'
     ]);
     
-    // Simpan ke database
-    $violation = Pelanggaran::create([
-        'ujian_id' => $validated['ujian_id'],
-        'siswa_id' => $validated['siswa_id'],
-        'jenis_pelanggaran' => $validated['jenis_pelanggaran'],
-        'timestamp' => now(),
-        
-    ]);
+    // Cari siswa
+    $siswa = Siswa::where('id_siswa', $validated['siswa_id'])->first();
+    
+    if (!$siswa) {
+        return response()->json(['success' => false, 'message' => 'Siswa tidak ditemukan'], 404);
+    }
+    
+    // Simpan pelanggaran ke tabel riwayat
+    try {
+        $violation = Pelanggaran::create([
+            'ujian_id' => $validated['ujian_id'],
+            'siswa_id' => $siswa->id_siswa,
+            'jenis_pelanggaran' => $validated['jenis_pelanggaran'],
+            'detail' => $validated['detail'] ?? null,
+            'user_agent' => $validated['user_agent'] ?? null,
+            'screen_resolution' => $validated['screen_resolution'] ?? null,
+            'timestamp' => $validated['timestamp'] ?? now(),
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'message' => 'Gagal simpan: ' . $e->getMessage()], 500);
+    }
+    
+    // ========== AMBIL ATAU BUAT BlockSiswa ==========
+    $block = BlockSiswa::firstOrCreate(
+        [
+            'siswa_id' => $siswa->id_siswa,
+            'ujian_id' => $validated['ujian_id'],
+        ],
+        [
+            'violation_count' => 0,  // default 0
+        ]
+    );
+    
+    // ========== INCREMENT violation_count +1 SETIAP PELANGGARAN ==========
+    $block->increment('violation_count');
+    
+    // Ambil nilai terbaru setelah increment
+    $totalViolations = $block->violation_count;
+    
+    \Log::info('Violation count sekarang: ' . $totalViolations);
+    
+    // JIKA SUDAH MENCAPAI 3 PELANGGARAN, SET BLOKIR
+    if ($totalViolations >= 3 && !$block->blocked_at) {
+        $block->update([
+            'blocked_at' => now(),
+            'expires_at' => now()->addDays(7),
+        ]);
+        \Log::info('Siswa diblokir! Pelanggaran ke-' . $totalViolations);
+    }
+    
+    // JIKA BELUM MENCAPAI 3, PASTIKAN TIDAK TERBLOKIR
+    if ($totalViolations < 3 && $block->blocked_at) {
+        $block->update([
+            'blocked_at' => null,
+            'expires_at' => null,
+        ]);
+    }
     
     return response()->json([
         'success' => true,
         'message' => 'Pelanggaran tercatat',
-        'violation_id' => $violation->id
+        'violation_id' => $violation->id,
+        'blocked' => $totalViolations >= 3,
+        'violation_count' => $totalViolations,  // 1, 2, 3, 4, 5, ...
+        'max_violation' => 3,
+        'block_expiry' => $block->expires_at ?? null,
+        'message' => $totalViolations >= 3 ? 'Akun Anda diblokir karena melanggar aturan ujian' : null
     ]);
 }
- 
+ public function checkBlockStatus($siswa_id, $ujian_id)
+{
+    $siswa = Siswa::where('id_siswa', $siswa_id)->first();
+    
+    if (!$siswa) {
+        return response()->json([
+            'is_blocked' => false, 
+            'total_violations' => 0,
+            'error' => 'Siswa tidak ditemukan'
+        ]);
+    }
+    
+    // CEK DI TABEL BLOCK_SISWA
+    $block = BlockSiswa::where('siswa_id', $siswa->id_siswa)
+        ->where('ujian_id', $ujian_id)
+        ->first();
+    
+    // Gunakan nama field yang SAMA dengan frontend
+    $isBlocked = $block && $block->blocked_at && ($block->expires_at > now());
+    $violationCount = $block ? $block->violation_count : 0;
+    
+    return response()->json([
+        'is_blocked' => $isBlocked,           // ← Ubah dari 'blocked'
+        'total_violations' => $violationCount, // ← Ubah dari 'violation_count'
+        'max_violation' => 3,
+        'block_expiry' => $block->expires_at ?? null,
+        'block_message' => $isBlocked ? 'Akun Anda diblokir karena melanggar aturan ujian' : null
+    ]);
+}
+
  
  
 }

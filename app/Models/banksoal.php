@@ -19,6 +19,8 @@ class banksoal extends Model
         "jawaban_benar",
         "tipe",
         "opsi_e",
+        'media_url',
+        'media_file'
     ];
     public function mapel(){
         return $this->belongsTo(Mapel::class);
@@ -26,4 +28,14 @@ class banksoal extends Model
     public function guru(){
         return $this->belongsTo(Guru::class);
     }
+     public function ujian()
+{
+    return $this->belongsToMany(
+        Ujian::class,
+        'ujian_soals',
+        'bank_id',
+        'ujian_id'
+    );
 }
+}
+

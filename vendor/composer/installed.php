@@ -3,7 +3,7 @@
         'name' => 'laravel/laravel',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'a152f51e606d86ea29dfb2a7b8d53727a03f3051',
+        'reference' => '793dc4a5d0ca9cfeaa519210731b6f490cd55a1c',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -463,7 +463,7 @@
         'laravel/laravel' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'a152f51e606d86ea29dfb2a7b8d53727a03f3051',
+            'reference' => '793dc4a5d0ca9cfeaa519210731b6f490cd55a1c',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -808,6 +808,15 @@
             'aliases' => array(),
             'dev_requirement' => true,
         ),
+        'predis/predis' => array(
+            'pretty_version' => 'v3.4.2',
+            'version' => '3.4.2.0',
+            'reference' => '2033429520d8997a7815a2485f56abe6d2d0e075',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../predis/predis',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'psr/cache' => array(
             'pretty_version' => '3.0.0',
             'version' => '3.0.0.0',
@@ -988,6 +997,15 @@
             'replaced' => array(
                 0 => '4.9.2',
             ),
+        ),
+        'sastrawi/sastrawi' => array(
+            'pretty_version' => 'v1.2.0',
+            'version' => '1.2.0.0',
+            'reference' => '31fd4261dd4980cc57447f44d1aec4bd69e2abec',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../sastrawi/sastrawi',
+            'aliases' => array(),
+            'dev_requirement' => false,
         ),
         'sebastian/cli-parser' => array(
             'pretty_version' => '3.0.2',
