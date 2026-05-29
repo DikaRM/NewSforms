@@ -12,41 +12,27 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('berita', function (Blueprint $table) {
-            $table->id();
-            
-            // ============ KARENA SISWA PAKAI id_siswa ============
-            $table->unsignedBigInteger('kelas_id');
-            $table->foreign('kelas_id')
-                  ->references('id')
-                  ->on('kelas')
-                  ->onDelete('cascade');
-            
-            // Ujian dan pengawas menggunakan id standar
-            $table->foreignId('ujian_id')
-                  ->constrained('ujian')
-                  ->onDelete('cascade')
-                  ->index();
-            
-            $table->foreignId('pengawas_id')
-                  ->constrained('pengawas')
-                  ->onDelete('cascade')
-                  ->index();
-            
-            // Kolom catatan
-            $table->text('catatan')->nullable();
-            
-            $table->timestamps();
-            
-            // ============ INDEXING ============
-            $table->index('siswa_id');
-            $table->index('ujian_id');
-            $table->index('pengawas_id');
-            
-            // Composite indexes
-            $table->index(['siswa_id', 'ujian_id']);
-            $table->index(['pengawas_id', 'ujian_id']);
-            $table->index('created_at');
-        });
+    $table->id();
+
+    $table->foreignId('kelas_id')
+        ->constrained('kelas')
+        ->cascadeOnDelete();
+
+    $table->foreignId('ujian_id')
+        ->constrained('ujian')
+        ->cascadeOnDelete();
+
+    $table->foreignId('pengawas_id')
+        ->constrained('pengawas')
+        ->cascadeOnDelete();
+
+    $table->text('catatan')->nullable();
+
+    $table->timestamps();
+
+    $table->index(['kelas_id', 'ujian_id']);
+    $table->index(['pengawas_id', 'ujian_id']);
+});
     }
 
     /**

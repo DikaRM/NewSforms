@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Profile User</title>
 </head>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
@@ -32,7 +32,7 @@
     @keyframes pageEnter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     /* =========================================
-       HEADER & SIDEBAR (COPY DARI DASHBOARD)
+       HEADER & SIDEBAR
        ========================================= */
     .header {
         background: var(--primary); color: white; padding: 12px 24px;
@@ -139,10 +139,16 @@
     .btn-outline { background: white; color: var(--text-muted); padding: 12px 24px; border-radius: 8px; border: 1px solid var(--border); font-weight: 600; cursor: pointer; width: 100%; transition: 0.3s; margin-top: 10px; }
     .btn-outline:hover { background: #f1f5f9; color: var(--text-main); }
 
-    /* Toast */
-    .notification-toast { position: fixed; top: 80px; right: 30px; padding: 12px 20px; border-radius: 12px; color: white; z-index: 1100; display: flex; align-items: center; gap: 12px; font-size: 0.9rem; box-shadow: var(--shadow-md); }
-    .notification-success { background: #10b981; }
-    .notification-error { background: #ef4444; }
+    /* Breadcrumb Link Styling */
+    .breadcrumb-link {
+        color: var(--text-muted);
+        text-decoration: none;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    .breadcrumb-link:hover {
+        color: var(--primary);
+    }
 
     @media (max-width: 768px) {
         .sidebar { transform: translateX(-100%); }
@@ -195,23 +201,14 @@
     <!-- Main Content -->
     <main class="main-content">
         
-        <!-- Toast Alerts -->
-        @if(session('success'))
-            <div class="notification-toast notification-success">
-                <i class="fas fa-check-circle"></i>
-                <span>{{ session('success') }}</span>
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="notification-toast notification-error">
-                <i class="fas fa-exclamation-circle"></i>
-                <span>{{ session('error') }}</span>
-            </div>
-        @endif
-
-        <!-- Breadcrumb -->
+        <!-- Breadcrumb (DIUBAH: Dashboard jadi link untuk kembali) -->
         <div style="margin-bottom: 20px; font-size: 0.9rem; color: var(--text-muted);">
-            <span>Dashboard</span> <i class="fas fa-chevron-right" style="font-size: 0.7rem; margin: 0 8px;"></i> <span style="color: var(--primary); font-weight: 700;">Profil Saya</span>
+            <!-- Menggunakan javascript:void(0) dan onclick history.back() -->
+            <a href="javascript:void(0);" onclick="window.history.back()" class="breadcrumb-link">
+                Dashboard
+            </a> 
+            <i class="fas fa-chevron-right" style="font-size: 0.7rem; margin: 0 8px;"></i> 
+            <span style="color: var(--primary); font-weight: 700;">Profil Saya</span>
         </div>
 
         <h2 style="margin-bottom: 24px; color: var(--text-main);">Profil Pengguna</h2>
@@ -272,16 +269,54 @@
 
             <hr style="border: 0; border-top: 1px dashed var(--border); margin: 30px 0;">
 
-            <!-- Fitur Reset Password -->
-            
-
         </div>
     </main>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // User Dropdown Toggle
+        // === 1. LOGIC SWEETALERT (TOAST) ===
+        // Cek jika ada session 'success'
+        @if(session('success'))
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer)
+                    toast.addEventListener('mouseleave', Swal.resumeTimer)
+                }
+            })
+            
+            Toast.fire({
+                icon: 'success',
+                title: '{{ session('success') }}'
+            })
+        @endif
+
+        // Cek jika ada session 'error'
+        @if(session('error'))
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer)
+                    toast.addEventListener('mouseleave', Swal.resumeTimer)
+                }
+            })
+            
+            Toast.fire({
+                icon: 'error',
+                title: '{{ session('error') }}'
+            })
+        @endif
+
+        // === 2. DROPDOWN & SIDEBAR LOGIC ===
         var userDropdown = document.getElementById('userDropdown');
         if (userDropdown) {
             userDropdown.addEventListener('click', function(e) {
@@ -290,7 +325,6 @@
             });
         }
 
-        // Mobile Sidebar Toggle
         var mobileToggle = document.getElementById('mobileToggle');
         var sidebar = document.getElementById('sidebar');
         var sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -315,4 +349,3 @@
 </script>
 </body>
 </html>
-

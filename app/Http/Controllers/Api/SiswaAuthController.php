@@ -19,34 +19,41 @@ class SiswaAuthController extends Controller
     /**
      * Login khusus siswa
      */
-    public function login(Request $request)
+public function login(Request $request)
 {
     try {
-        \Log::info('Login attempt', $request->all());
-        
+
         $request->validate([
-            'nama' => 'required|string',
+            'login' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        $user = User::where('nama', $request->nama)->first();
+        $login = $request->login;
+
+        // Cari berdasarkan nama ATAU username
+        $user = User::where('nama', $login)
+                    ->orWhere('username', $login)
+                    ->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Nama atau password salah'
+                'message' => 'Username/nama atau password salah'
             ], 401);
         }
 
+        // hanya siswa
         if ($user->role !== 'siswa') {
             return response()->json([
-                'status' => 'error', 
+                'status' => 'error',
                 'message' => 'Hanya siswa yang bisa login'
             ], 403);
         }
 
-        $siswa = Siswa::with('kelas')->where('user_id', $user->id)->first();
-        
+        $siswa = Siswa::with('kelas')
+                    ->where('user_id', $user->id)
+                    ->first();
+
         if (!$siswa) {
             return response()->json([
                 'status' => 'error',
@@ -54,9 +61,16 @@ class SiswaAuthController extends Controller
             ], 404);
         }
 
-        $token = $user->createToken('siswa-token', ['siswa'])->plainTextToken;
+        // hapus token lama
+        $user->tokens()->delete();
 
-                // AMBIL DATA DASHBOARD ASLI
+        // buat token baru
+        $token = $user->createToken(
+            'siswa-token',
+            ['siswa']
+        )->plainTextToken;
+
+        // dashboard
         $dashboardData = $this->getDashboardData($siswa);
 
         return response()->json([
@@ -64,32 +78,39 @@ class SiswaAuthController extends Controller
             'message' => 'Login berhasil',
             'data' => [
                 'token' => $token,
+
                 'user' => [
                     'id' => $user->id,
                     'nama' => $user->nama,
+                    'username' => $user->username,
                     'role' => $user->role
                 ],
+
                 'siswa' => [
                     'id_siswa' => $siswa->id_siswa,
                     'nama' => $siswa->nama,
                     'nisn' => $siswa->nisn,
-                    'kelas' => $siswa->kelas ? $siswa->kelas->nama_kelas : null,
+                    'kelas' => $siswa->kelas
+                        ? $siswa->kelas->nama_kelas
+                        : null,
                     'kelas_id' => $siswa->kelas_id,
                     'status' => $siswa->status,
                 ],
+
                 'dashboard' => $dashboardData
             ]
         ]);
 
     } catch (\Exception $e) {
+
         \Log::error('Login error: ' . $e->getMessage());
+
         return response()->json([
             'status' => 'error',
-            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            'message' => 'Terjadi kesalahan server'
         ], 500);
     }
 }
-
 
 private function getDashboardData($siswa)
 {
@@ -124,6 +145,43 @@ private function getDashboardData($siswa)
             'nilai' => $peserta->nilai ?? null,
         ];
     }
+    $ujianPraktik = Ujian::with(['mapels', 'peserta','jadwal'])
+    ->where('mode', 'praktik')
+    ->whereHas('kelas', function ($q) use ($siswa) {
+        $q->where('kelas.id', $siswa->kelas_id);
+    })
+    ->whereHas('jadwal', function($query) {
+    $query->where('waktu_mulai', '<=', now())
+          ->where('waktu_selesai', '>=', now());
+})
+->get();
+
+$ujianPraktikFormatted = $ujianPraktik->map(function ($ujian) use ($siswa) {
+
+    $peserta = Peserta_ujian::where('ujian_id', $ujian->id)
+        ->where('siswa_id', $siswa->id_siswa)
+        ->first();
+
+    return [
+        'id' => $ujian->id,
+
+        'nama_ujian' => $ujian->nama_ujian,
+
+        'mapel' => $ujian->mapels->nama_mapel ?? 'Unknown',
+
+        'status' => $ujian->status,
+
+        'status_ujian' => $peserta
+            ? ($peserta->status ?? 'belum')
+            : 'belum',
+
+        'nilai' => $peserta->nilai ?? null,
+
+        'sudah_mengerjakan' => $peserta ? true : false,
+
+        'mode_ujian' => 'praktik',
+    ];
+});
     
     // ==========================================
     // 2. TOTAL UJIAN YANG SUDAH DIKERJAKAN
@@ -174,6 +232,7 @@ private function getDashboardData($siswa)
             'rata_rata_nilai' => round($rataNilai, 2),
         ],
         'ujian_hari_ini' => $ujianHariIniFormatted,
+        'ujian_praktik' => $ujianPraktikFormatted,
         'jadwal_mendatang' => $jadwalMendatang,
         'tanggal' => now()->format('l, d F Y'),
     ];
@@ -268,6 +327,7 @@ public function dashboardSimple(Request $request)
         'nama' => $siswa->nama,
         'nisn' => $siswa->nisn,
         'kelas' => $siswa->kelas->nama_kelas ?? 'Unknown',
+        'status' => $siswa->status,
         'id_siswa' => $siswa->id_siswa,
     ];
     
@@ -278,7 +338,16 @@ public function dashboardSimple(Request $request)
     
     return response()->json([
         'status' => 'success',
-        'data' => $dashboardData
+         'data' => [
+        'siswa' => $dashboardData['siswa'],
+        'dashboard' => [
+            'statistik' => $dashboardData['statistik'],
+            'ujian_hari_ini' => $dashboardData['ujian_hari_ini'],
+             'ujian_praktik' => $dashboardData['ujian_praktik'],
+            'jadwal_mendatang' => $dashboardData['jadwal_mendatang'],
+            'tanggal' => $dashboardData['tanggal'],
+        ]
+    ]
     ]);
 }
 }

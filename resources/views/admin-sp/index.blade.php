@@ -34,7 +34,11 @@
     .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; margin: 4px 12px; color: white; text-decoration: none; border-radius: 8px; transition: all 0.3s ease; }
     .sidebar-item i { width: 22px; font-size: 1rem; }
     .sidebar-item span { font-size: 0.85rem; font-weight: 500; }
-    .sidebar-item:hover { background: rgba(255,255,255,0.2); }
+    .sidebar-item:hover {
+       background: #ffffff96;
+     border-left : 4px solid #fff;
+     color:#2e5b9a;
+    }
     .sidebar-item.active { background: rgba(255,255,255,0.25); border-left: 3px solid white; }
     .sidebar-logout { position: absolute; bottom: 20px; left: 0; right: 0; padding: 0 12px; }
     .sidebar-logout .sidebar-item { color: white; }
@@ -86,11 +90,16 @@
 
     /* Modal Styles */
     .modal { display: none; }
-    .modal.is-active { display: flex; }
-    .modal-card { width: 90%; max-width: 900px; max-height: 85vh; overflow-y: auto; border-radius: 16px; }
+    .modal.is-active { display: flex; overflow: hidden;}
+    #jadwalSusulanModal{
+        margin-left:150px;
+        overflow:hidden;
+    }
+    .modal-card { width: 90%; max-width: 900px;margin-left:300px;margin-bottom:-75px;
+    max-height: 80vh; overflow-y: auto; border-radius: 16px; }
     .modal-card-head { background: #2e5b9a; color: white; border-bottom: none; border-radius: 16px 16px 0 0; padding: 20px 24px; }
     .modal-card-title { color: white; font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
-    .modal-card-body { padding: 24px; }
+    .modal-card-body { padding: 24px; overflow-y: auto;}
     .modal-card-foot { background: #fafbfe; border-top: 1px solid #eef2f6; justify-content: flex-end; padding: 15px 24px; border-radius: 0 0 16px 16px; }
     .modal-background { background: rgba(0,0,0,0.6); }
     .delete { background: rgba(255,255,255,0.3); }
@@ -118,7 +127,8 @@
         .stat-value { font-size: 1.3rem; }
         .exam-grid, .class-grid { grid-template-columns: 1fr; }
         .absensi-stats-grid { grid-template-columns: repeat(2, 1fr); }
-        .modal-card { width: 95%; max-height: 90vh; }
+        .modal-card { width: 95%; max-height: 90vh; margin-left:20px;
+        ;margin-bottom:-75px;}
     }
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: #f1f1f1; }
@@ -146,9 +156,9 @@
         <span>Profil Saya</span>
     </a>
             <div class="dropdown-divider"></div>
-            <form action="{{ route('users.logout') }}" method="post">
+            <form action="{{ route('users.logout') }}" method="post" class="logout-form">
                 @csrf
-                <button type="submit" class="dropdown-item-custom logout-btn" style="width: 100%; background: none; border: none; cursor: pointer;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button>
+                <button type="submit" class="dropdown-item-custom logout-btn logout-button" style="width: 100%; background: none; border: none; cursor: pointer;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button>
             </form>
         </div>
     </div>
@@ -163,9 +173,9 @@
             <a href="{{ route('admin-ops.index') }}" class="sidebar-item active"><i class="fas fa-home"></i><span>Dashboard</span></a>
         </div>
         <div class="sidebar-logout">
-            <form action="{{ route('users.logout') }}" method="post">
+            <form action="{{ route('users.logout') }}" method="post" class="logout-form">
                 @csrf
-                <button type="submit" class="sidebar-item" style="width: 100%; background: none; border: none; cursor: pointer;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button>
+                <button type="submit" class="sidebar-item logout-button" style="width: 100%; background: none; border: none; cursor: pointer;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button>
             </form>
         </div>
     </aside>
@@ -264,21 +274,26 @@
                 <div class="class-body">
                     @php
                         $totalSiswa = isset($sis) ? $sis->where("kelas_id", $k->id)->count() : 0;
+                        $kelasId = $k->id;
+
+$red = App\Models\Ujian::whereHas('kelas', function ($q) use ($kelasId) {
+    $q->where('kelas.id', $kelasId);
+})->where('status', 'ready')->where('mode','cbt')->get();
                         $jadwalKelas = isset($jad) ? $jad->where('kelas_id', $k->id) : collect();
                     @endphp
                     <div class="class-stats">
                         <div class="class-stat"><div class="class-stat-value">{{ $totalSiswa }}</div><div class="class-stat-label">Siswa</div></div>
                         <div class="class-stat"><div class="class-stat-value">{{ $jadwalKelas->count() }}</div><div class="class-stat-label">Ujian</div></div>
-                        <div class="class-stat"><div class="class-stat-value" style="color:#28a745;">{{ $readyExams->count() }}</div><div class="class-stat-label">Ready</div></div>
+                        <div class="class-stat"><div class="class-stat-value" style="color:#28a745;">{{ $red->count() }}</div><div class="class-stat-label">Ready</div></div>
                     </div>
 
                     <!-- Dua Tombol Aksi -->
                     <div style="display: flex; gap: 10px;">
                         <a href="{{ route('admin-ops.set', $k->id) }}" class="btn-action-card" style="background: #2e5b9a;">
-                            <i class="fas fa-calendar-alt"></i> Atur Jadwal
+                            <i class="fas fa-calendar-alt" style="margin-right:6px;"></i> Atur Jadwal
                         </a>
                         <button class="btn-action-card" style="background: #5c6fa6;" onclick="openRekapModal({{ $k->id }}, '{{ $k->nama_kelas }}')">
-                            <i class="fas fa-clipboard-list"></i> Lihat Rekap
+                            <i class="fas fa-clipboard-list" style="margin-right:6px;"></i> Lihat Rekap
                         </button>
                     </div>
                 </div>
@@ -322,7 +337,7 @@
                                         <tr>
                                             <td>{{ $abs->siswa->nama ?? '-' }}</td>
                                             <td><span class="tag is-{{ $abs->status_kehadiran == 'hadir' ? 'success' : ($abs->status_kehadiran == 'sakit' ? 'warning' : ($abs->status_kehadiran == 'izin' ? 'info' : 'danger')) }} is-light">{{ ucfirst($abs->status_kehadiran) }}</span></td>
-                                            <td>{{ $abs->waktu_absen ? \Carbon\Carbon::parse($abs->waktu_absen)->format('H:i') : '-' }}</td>
+                                            <td>{{ $abs->created_at? \Carbon\Carbon::parse($abs->created_at)->format('H:i') : '-' }}</td>
                                         </tr>
                                         @endforeach
                                     </tbody>
@@ -335,21 +350,81 @@
                     @endif
 
                     @if($beritaByUjian->count() > 0)
-                    <div class="inner-section-title"><i class="fas fa-file-alt"></i> Berita Acara</div>
-                    @foreach($beritaByUjian as $ujianId => $beritas)
-                        <div class="ujian-group-box">
-                            @foreach($beritas as $b)
-                            <div class="berita-acara-inner">
-                                <p style="font-size: 0.85rem; opacity: 0.9;">{{ $b->catatan ?: 'Tidak ada catatan.' }}</p>
-                                <div style="font-size: 0.75rem; opacity: 0.7; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; margin-top: 8px;">
-                                    <i class="fas fa-user-check"></i> Pengawas: {{ $b->pengawas->guru->nama ?? '-' }}
-                                </div>
-                            </div>
-                            @endforeach
-                        </div>
-                    @endforeach
+                    <div class="inner-section-title">
+    <i class="fas fa-file-alt"></i> Berita Acara
+</div>
+
+@foreach($beritaByUjian as $ujianId => $beritas)
+    @php
+        $namaUjian = \App\Models\Ujian::find($ujianId)?->nama_ujian ?? 'Ujian Dihapus';
+    @endphp
+
+    <div class="ujian-group-box">
+        <details style="cursor:pointer;">
+            <summary class="ujian-group-title" style="background: #eef4ff; color: #2e5b9a;padding:8px 10px;">
+                <i class="fas fa-book" style="color:#2e5b9a;"></i>
+                {{ $namaUjian }}
+                <span style="margin-left:auto; font-size:0.75rem; color:#6b7280;">
+                    ({{ count($beritas) }} laporan)
+                </span>
+            </summary>
+
+            <div style="margin-top:12px;">
+                @foreach($beritas as $b)
+    @php
+        $kelasBerita = \App\Models\Kelas::find($b->kelas_id);
+        $namaKelasBerita = $kelasBerita->nama_kelas ?? 'Tidak Diketahui';
+    @endphp
+
+    <div class="class-card" style="border: 1px solid #dbeafe; margin-bottom: 16px;">
+        
+        <!-- Header -->
+        
+
+        <!-- Body -->
+        <div class="class-body">
+
+            <!-- Isi Catatan -->
+            <div class="class-header" style="color: #2e5b9a;background:white;   ">
+            
+
+               {{ $b->catatan ?: 'Tidak ada catatan.' }}
+        </div>
+
+            <!-- Footer -->
+            <div style="
+                margin-top: 5px;
+                padding-top: 5px;
+                border-top: 1px solid #edf2f7;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 0.8rem;
+                color: #64748b;
+            ">
+                <div>
+                    <i class="fas fa-user-check"></i>
+                    {{ $b->pengawas->guru->nama ?? Auth::user()->name }}
+                </div>
+
+                <div>
+                    <i class="fas fa-clock"></i>
+                    {{ \Carbon\Carbon::parse($b->created_at)->locale('id')->translatedformat('d M Y H:i') }}
+                </div>
+            </div>
+
+        </div>
+    </div>
+    @endforeach
+                </div>
+        </details>
+    </div>
+@endforeach
                     @else
-                    <div class="berita-acara-empty" style="margin-bottom: 20px;"><i class="fas fa-file-alt"></i> Belum ada berita acara.</div>
+                                <div class="berita-acara-empty">
+                                <i class="fas fa-file-alt"></i> Belum ada berita acara.
+                            </div>
+
                     @endif
 
                     <div class="inner-section-title"><i class="fas fa-clock"></i> Data Susulan</div>
@@ -357,7 +432,10 @@
                     @foreach($susulanByUjian as $ujianId => $susulans)
                         @php 
                             $namaUjianSus = \App\Models\Ujian::find($ujianId)?->nama_ujian ?? 'Ujian Dihapus';
-                            $hasJadwalSusulan = \App\Models\Jadwal::where('ujian_id', $ujianId)->where('kelas_id', $k->id)->where('untuk_susulan', true)->exists();
+                            $hasJadwalSusulan = \App\Models\Jadwal::where('ujian_id', $ujianId)
+    ->where('kelas_id', $k->id)
+    ->where('untuk_susulan', DB::raw('true'))
+    ->exists();
                         @endphp
                         <div class="ujian-group-box">
                             <div class="ujian-group-title"><i class="fas fa-book" style="color:#2e5b9a;"></i> {{ $namaUjianSus }}</div>
@@ -382,8 +460,8 @@
                                 </table>
                             </div>
                             @if(!$hasJadwalSusulan)
-                            <button class="button is-warning is-small mt-3" onclick="openCreateJadwalSusulanModal({{ $k->id }}, '{{ $k->nama_kelas }}', {{ $ujianId }}, '{{ addslashes($namaUjianSus) }}')">
-                                <i class="fas fa-calendar-plus"></i> Buat Jadwal Susulan
+                            <button class="button is-warning is-small mt-3" onclick="openCreateJadwalSusulanModal({{ $k->id }}, '{{ $k->nama_kelas }}', {{ $ujianId }}, '{{ addslashes($namaUjianSus) }}', {{ $uj->durasi ?? 0 }})">
+                                <i class="fas fa-calendar-plus" style="margin-right:6px;"></i> Buat Jadwal Susulan
                             </button>
                             @endif
                         </div>
@@ -414,7 +492,8 @@
             <!-- Diisi oleh Javascript -->
         </section>
         <footer class="modal-card-foot">
-            <button class="button" onclick="closeRekapModal()"><i class="fas fa-times"></i> Tutup</button>
+            <button class="button is-danger has-text-light is-fullwidth"
+             onclick="closeRekapModal()"><i class="fas fa-times"></i></button>
         </footer>
     </div>
 </div>
@@ -437,14 +516,8 @@
                 <div class="field">
                     <label class="label"><i class="fas fa-book"></i> Ujian <span class="has-text-danger">*</span></label>
                     <div class="control">
-                        <div class="select is-fullwidth">
-                            <select name="ujian_id" id="form_susulan_ujian_id" required>
-                                <option value="">Pilih Ujian</option>
-                                @foreach($uji ?? [] as $uj)
-                                    <option value="{{ $uj->id }}">{{ $uj->nama_ujian }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                    <input type="text" name="ujian_nama" id="form_susulan_ujian_nama" class="input" readonly/>
+                            <input type="hidden" name="ujian_id" id="form_susulan_ujian_id"  required/>
                     </div>
                 </div>
 
@@ -457,8 +530,8 @@
                     <label class="label"><i class="fas fa-user-graduate"></i> Siswa Susulan</label>
                     <div class="control">
                         <div class="buttons mb-2">
-                            <button type="button" class="button is-small is-info" onclick="selectAllSiswa()"><i class="fas fa-check-double"></i> Pilih Semua</button>
-                            <button type="button" class="button is-small is-light" onclick="unselectAllSiswa()"><i class="fas fa-times"></i> Batal Semua</button>
+                            <button type="button" class="button is-small is-info" onclick="selectAllSiswa()"><i class="fas fa-check-double"  style="margin-right:6px;"></i> Pilih Semua</button>
+                            <button type="button" class="button is-small is-light" onclick="unselectAllSiswa()"><i class="fas fa-times"  style="margin-right:6px;"></i> Batal Semua</button>
                         </div>
                         <div id="siswaSusulanList" style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
                             <p class="has-text-grey-light has-text-centered">Pilih kelas dari rekap terlebih dahulu</p>
@@ -482,15 +555,15 @@
                     <div class="column is-6">
                         <div class="field">
                             <label class="label"><i class="fas fa-clock"></i> Selesai <span class="has-text-danger">*</span></label>
-                            <div class="control"><input class="input" type="time" name="waktu_selesai" id="form_waktu_selesai" required></div>
+                            <div class="control"><input class="input" type="time" name="waktu_selesai" id="form_waktu_selesai" readonly></div>
                         </div>
                     </div>
                 </div>
             </section>
             <footer class="modal-card-foot" style="justify-content: flex-end;">
                 <div class="buttons">
-                    <button type="button" class="button" onclick="closeJadwalSusulanModal()"><i class="fas fa-times"></i> Batal</button>
-                    <button type="submit" class="button is-success"><i class="fas fa-save"></i> Simpan Jadwal</button>
+                    <button type="button" class="button is-danger " onclick="closeJadwalSusulanModal()"><i class="fas fa-times"></i></button>
+                    <button type="submit" class="button is-success"><i class="fas fa-save"></i></button>
                 </div>
             </footer>
         </form>
@@ -499,6 +572,29 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.logout-form').forEach(function(form) {
+
+        let submitted = false;
+
+        form.addEventListener('submit', function(e) {
+
+            if (submitted) {
+                e.preventDefault();
+                return;
+            }
+
+            submitted = true;
+
+            const btn = form.querySelector('.logout-button');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+                btn.style.pointerEvents = 'none';
+            }
+        });
+    });
+    let currentDurasi = 0;
     const userDropdown = document.getElementById('userDropdown');
     if (userDropdown) {
         userDropdown.addEventListener('click', function(e) { e.stopPropagation(); userDropdown.classList.toggle('active'); });
@@ -534,23 +630,19 @@ function closeRekapModal() {
 }
 
 // SUSULAN MODAL LOGIC
-function openCreateJadwalSusulanModal(kelasId, kelasNama, ujianId, ujianNama) {
+function openCreateJadwalSusulanModal(kelasId, kelasNama, ujianId, ujianNama, durasi) {
+    currentDurasi = durasi;
+    
     document.getElementById('jadwalSusulanForm').reset();
     document.getElementById('form_kelas_id').value = kelasId;
+    document.getElementById('form_susulan_ujian_nama').value = ujianNama;
     document.getElementById('form_nama_kelas_display').value = kelasNama;
-    
-    if(ujianId) {
-        document.getElementById('form_susulan_ujian_id').value = ujianId;
-    }
+    document.getElementById('form_susulan_ujian_id').value = ujianId;
+    let data = window['susulanDataKelas_' + kelasId] || [];
 
-    if(typeof window['susulanDataKelas_'+kelasId] !== 'undefined') {
-        populateSusulanCheckboxes(window['susulanDataKelas_'+kelasId], ujianId);
-    } else {
-        document.getElementById('siswaSusulanList').innerHTML = '<p class="has-text-grey-light has-text-centered">Tidak ada data siswa susulan</p>';
-    }
-
+    // 🔥 ISI CHECKBOX SISWA
+    populateSusulanCheckboxes(data, ujianId);
     document.getElementById('jadwalSusulanModal').classList.add('is-active');
-    document.body.style.overflow = 'hidden';
 }
 
 function closeJadwalSusulanModal() {
@@ -572,7 +664,7 @@ function populateSusulanCheckboxes(data, ujianId) {
     filtered.forEach(siswa => {
         html += `<div class="field" style="margin-bottom: 8px;">
             <label class="checkbox">
-                <input type="checkbox" name="siswa_ids[]" value="${siswa.id}">
+                <input type="checkbox" name="siswa_ids[]" value="${siswa.siswa_id}">
                 <strong>${siswa.siswa?.nama || 'Siswa'}</strong>
                 <span class="has-text-grey"> - ${siswa.alasan || 'Tidak hadir'}</span>
             </label>
@@ -594,7 +686,21 @@ document.getElementById('jadwalSusulanForm').addEventListener('submit', function
     if(checkedSiswa.length === 0) { e.preventDefault(); alert('Pilih minimal 1 siswa susulan!'); return; }
     if(!confirm(`Yakin ingin menyimpan jadwal susulan untuk HARI INI dengan pengawas ACAK?`)) { e.preventDefault(); }
 });
+document.getElementById('form_waktu_mulai').addEventListener('change', function() {
+    if (!this.value || !currentDurasi) return;
 
+    let [jam, menit] = this.value.split(':').map(Number);
+
+    let totalMenit = jam * 60 + menit + currentDurasi;
+
+    let selesaiJam = Math.floor(totalMenit / 60) % 24;
+    let selesaiMenit = totalMenit % 60;
+
+    let formatJam = String(selesaiJam).padStart(2, '0');
+    let formatMenit = String(selesaiMenit).padStart(2, '0');
+
+    document.getElementById('form_waktu_selesai').value = `${formatJam}:${formatMenit}`;
+});
 // TUTUP MODAL DENGAN TOMBOL ESCAPE
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {

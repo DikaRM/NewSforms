@@ -12,7 +12,9 @@
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1",
+        "predis/predis": "^3.4",
         "reliese/laravel": "^1.4",
+        "sastrawi/sastrawi": "^1.2",
         "simplesoftwareio/simple-qrcode": "^4.2"
     },
     "require-dev": {

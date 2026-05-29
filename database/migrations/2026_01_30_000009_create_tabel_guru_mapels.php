@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('guru_mapel', function (Blueprint $table) {
             $table->id();
-            $table->string('guru_id');
-            $table->string('mapel_id');
+            $table->unsignedBigInteger('guru_id');
+            $table->unsignedBigInteger('mapel_id');
             $table->timestamps();
             
             // Foreign keys (dipertahankan)

@@ -8,6 +8,7 @@
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulmaswatch/default/bulmaswatch.min.css">
+
 <style>
     /* Animasi masuk (Berjalan otomatis saat halaman baru dibuka) */
     .main-content {
@@ -44,8 +45,68 @@
             transform: translateY(-12px);
         }
     }
-</style>
-<style>
+    .custom-pagination-wrapper {
+    margin-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.pagination-info {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.pagination-container {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.page-btn:hover {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.page-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(48, 133, 214, 0.25);
+}
+
+.page-btn.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.page-dots {
+    padding: 0 6px;
+    color: var(--text-muted);
+}
+
+
 * {
     margin: 0;
     padding: 0;
@@ -858,9 +919,9 @@ height:35px;
         <span>Profil Saya</span>
     </a>
             <div class="dropdown-divider"></div>
-            <form action="{{ route('users.logout') }}" method="post" id="logoutForm">
+            <form action="{{ route('users.logout') }}" method="post" class=" logout-form">
                 @csrf
-                <button type="submit" class="dropdown-item-custom logout-btn" style="width: 100%; background: none; border: none; cursor: pointer;">
+                <button type="submit" class="dropdown-item-custom logout-button" style="width: 100%; background: none; border: none; cursor: pointer;" id="logoutBtn">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -912,9 +973,9 @@ height:35px;
         </div>
         
         <div class="sidebar-logout">
-            <form action="{{ route('users.logout') }}" method="post">
+            <form action="{{ route('users.logout') }}" method="post" class=" logout-form">
                 @csrf
-                <button type="submit" class="sidebar-item" style="width: 100%; background: none; border: none; cursor: pointer;">
+                <button type="submit" class="sidebar-item logout-button" style="width: 100%; background: none; border: none; cursor: pointer;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -1053,6 +1114,28 @@ height:35px;
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+   document.querySelectorAll('.logout-form').forEach(function(form) {
+
+        let submitted = false;
+
+        form.addEventListener('submit', function(e) {
+
+            if (submitted) {
+                e.preventDefault();
+                return;
+            }
+
+            submitted = true;
+
+            const btn = form.querySelector('.logout-button');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+                btn.style.pointerEvents = 'none';
+            }
+        });
+    });
     
     // ==========================================
     // 1. INTERCEPT LINK KLIK (Smooth Redirect)

@@ -1,6 +1,9 @@
 <?php
         
 namespace App\Http\Controllers\Api;
+use Illuminate\Support\Facades\Redis;
+use App\Jobs\ProsesUjianJob;
+use Illuminate\Support\Facades\Log;
         use App\Http\Controllers\Controller;
         use App\Models\Siswa;
         use App\Models\Ujian;
@@ -12,13 +15,10 @@ namespace App\Http\Controllers\Api;
         use App\Models\Pelanggaran;
         use Illuminate\Http\Request;
         use Illuminate\Support\Facades\Auth;
-
+        use Illuminate\Support\Facades\Validator;
+        use Carbon\Carbon;
         class SiswaController extends Controller
         {
-            private function getSiswaFromUser($user)
-            {
-                return Siswa::with('kelas')->where('user_id', $user->id)->first();
-            }
 
             /**
              * Get jadwal ujian siswa
@@ -66,8 +66,7 @@ namespace App\Http\Controllers\Api;
             {
                 $user = $request->user();
                 $siswa = $this->getSiswaFromUser($user);
-
-                $riwayat = Peserta_ujian::with(['ujian.mapels'])
+                $riwayat = Peserta_ujian::with(['ujian.mapels','ujian.jadwal'])
                     ->where('siswa_id', $siswa->id_siswa)
                     ->whereNotNull('nilai')
                     ->get()
@@ -77,7 +76,11 @@ namespace App\Http\Controllers\Api;
                             'nama_ujian' => $peserta->ujian->nama_ujian,
                             'mapel' => $peserta->ujian->mapels->nama_mapel ?? 'Unknown',
                             'nilai' => $peserta->nilai,
-                            'tanggal_selesai' => $peserta->updated_at,
+                            'tanggal_selesai' => Carbon::parse(
+    $peserta->ujian->jadwal->tanggal
+)
+->locale('id')
+->translatedFormat('l, d F Y'),
                             'status' => 'selesai',
                         ];
                     });
@@ -91,170 +94,376 @@ namespace App\Http\Controllers\Api;
             /**
             * Mulai ujian
             */
-            public function mulaiUjian(Request $request, $id)
-        {
-            $user = $request->user();
-            $siswa = $this->getSiswaFromUser($user);
-
-            $ujian = Ujian::with(['mapels', 'jadwal'])->where('id', $id)->first();
-            
-            if (!$ujian) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Ujian tidak ditemukan'
-                ], 404);
-            }
-
-            $existingPeserta = Peserta_ujian::where('ujian_id', $id)
-                ->where('siswa_id', $siswa->id_siswa)
-                ->first();
-
-            if ($existingPeserta && $existingPeserta->nilai) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Anda sudah mengerjakan ujian ini'
-                ], 400);
-            }
-
-            // ✅ Perbaikan: Ambil soal dan jawaban sekaligus
-            $soalIds = Ujian_soals::where('ujian_id', $id)->pluck('bank_id');
-            $soal = banksoal::whereIn('id', $soalIds)->get();
-            
-            // ✅ Ambil semua jawaban sebelumnya dalam 1 query!
-            $jawabanSebelumnya = Jawaban_Siswa::where('ujian_id', $id)
-                ->where('siswa_id', $siswa->id_siswa)
-                ->whereIn('bank_id', $soalIds)
-                ->get()
-                ->keyBy('bank_id');  // Key by bank_id untuk akses cepat
-
-            if ($soal->isEmpty()) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Belum ada soal untuk ujian ini'
-                ], 404);
-            }
-
-            $peserta = Peserta_ujian::updateOrCreate(
-                [
-                    'ujian_id' => $id,
-                    'siswa_id' => $siswa->id_siswa,
-                ],
-                [
-                    'status' => 'ongoing',
-                    "nilai" => 0,
-                    'mulai_pengerjaan' => now(),
-                ]
-            );
-
-            // ✅ Format soal tanpa query tambahan
-            $soalList = $soal->map(function($item) use ($jawabanSebelumnya) {
-                $jawaban = $jawabanSebelumnya->get($item->id);
-                
-                return [
-                    'id' => $item->id,
-                    'pertanyaan' => $item->soal,
-                    'tipe' => $item->opsi_a ? 'pilihan_ganda' : 'essay',
-                    'opsi' => $item->opsi_a ? [
-                        'a' => $item->opsi_a,
-                        'b' => $item->opsi_b,
-                        'c' => $item->opsi_c,
-                        'd' => $item->opsi_d,
-                        'e' => $item->opsi_e,
-                    ] : null,
-                    'gambar' => $item->gambar,
-                    'jawaban_sebelumnya' => $jawaban ? $jawaban->jawaban : null,
-                ];
-            });
-
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'ujian' => [],
-                    'soal' => $soalList,
-                    'total_soal' => count($soalList),
-                ]
-            ], 200);
-        }
+           
 
             /**
             * Simpan jawaban ujian
             */
-            public function simpanJawaban(Request $request)
-        {
-            $request->validate([
-                'ujian_id' => 'required|integer',
-                'jawaban' => 'required|array',
-            ]);
+public function simpanJawaban(Request $request)
+    {
+         $jawaban = $request->input('jawaban', []);
+    
+    // Jika jawaban adalah string (error), konversi ke array
+    if (is_string($jawaban)) {
+        // Coba decode JSON jika mungkin
+        $decoded = json_decode($jawaban, true);
+        if (is_array($decoded)) {
+            $jawaban = $decoded;
+        } else {
+            $jawaban = [];
+        }
+    }
+    
+    // Jika masih tidak array, set ke array kosong
+    if (!is_array($jawaban)) {
+        $jawaban = [];
+    }
+    
+    // Log untuk debugging
+    Log::info('Jawaban yang diterima', [
+        'type' => gettype($jawaban),
+        'data' => $jawaban
+    ]);
+        $ujianId = $request->ujian_id;
+        $user = $request->user();
+        $siswa = $this->getSiswaFromUser($user);
+        
+        if (!$siswa) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Siswa tidak ditemukan'
+            ], 404);
+        }
 
-            $user = $request->user();
-            $siswa = $this->getSiswaFromUser($user);
-            $siswa->update(["status" => "unready"]);
-            $jawabanSiswa = $request->jawaban;
-            $soal_ids = array_keys($jawabanSiswa);
-            $soals = banksoal::whereIn("id", $soal_ids)->get()->keyBy("id");
-            
-            $score = 0;
-            $total_soal = count($jawabanSiswa);
-            
-            // ✅ Siapkan data untuk batch insert/update
-            $jawabanData = [];
-            
-            foreach($jawabanSiswa as $soal_id => $jawabans) {
-                $soal = $soals[$soal_id] ?? null;
-                if (!$soal) continue;
+        $uji = Ujian::find($ujianId);
+        if (!$uji) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ujian tidak ditemukan'
+            ], 404);
+        }
+
+        $modeUjian = $uji->mode ?? 'cbt';
+        
+        // ========== VALIDASI SESUAI MODE UJIAN ==========
+        if ($modeUjian === 'praktik') {
+            // Cek apakah sudah submit sebelumnya
+            $sudahSubmit = Jawaban_Siswa::where('ujian_id', $ujianId)
+                ->where('siswa_id', $siswa->id_siswa)
+                ->exists();
                 
-                $benar = 0;
-                
-                if($soal->opsi_a != null) {
-                    $benar = (strtoupper(trim($jawabans)) == strtoupper(trim($soal->jawaban_benar))) ? 1 : 0;
-                } else {
-                    $nilai = $this->hitungNilaiEssay($jawabans, $soal->jawaban_benar);
-                    $benar = ($nilai >= 80) ? 1 : 0;
-                }
-                
-                if($benar) {
-                    $score += 1;
-                }
-                
-                $jawabanData[] = [
-                    "ujian_id" => $request->ujian_id,
-                    "siswa_id" => $siswa->id_siswa,
-                    "bank_id" => $soal->id,
-                    "jawaban" => $jawabans,
-                    "benar" => $benar,
-                    "created_at" => now(),
-                    "updated_at" => now(),
-                ];
+            if ($sudahSubmit) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Kamu sudah mengumpulkan tugas praktik ini!'
+                ], 400);
             }
             
-            // ✅ Batch insert/update (gunakan upsert)
-            Jawaban_Siswa::upsert(
-                $jawabanData,
-                ['ujian_id', 'siswa_id', 'bank_id'], // Unique constraint
-                ['jawaban', 'benar', 'updated_at']   // Fields to update
-            );
+            // Validasi: Pastikan ada file untuk soal tipe upload
+            $soalList = $uji->soals()
+    ->where('tipe', 'upload')
+    ->get();
+                
+            foreach ($soalList as $soal) {
+                $soalId = $soal->id;
+                $fileKey = "file_jawaban.{$soalId}";
+                
+                if (!$request->hasFile($fileKey) || !$request->file($fileKey)->isValid()) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => "File untuk soal ID {$soalId} wajib diupload"
+                    ], 400);
+                }
+            }
+        } else {
+            // Mode CBT: Pastikan ada jawaban
+            if (empty($request->jawaban)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Jawaban tidak boleh kosong'
+                ], 400);
+            }
             
-            $nilai = ($total_soal > 0) ? round(($score / $total_soal) * 100, 2) : 0;
+            // Cek apakah sudah mengerjakan
+            $sudahMengerjakan = Peserta_ujian::where('ujian_id', $ujianId)
+                ->where('siswa_id', $siswa->id_siswa)
+                ->where('status', 'done')
+                ->exists();
+                
+            if ($sudahMengerjakan) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Kamu sudah mengerjakan ujian ini!'
+                ], 400);
+            }
+        }
+
+        // ========== REDIS LOCK (Cegah Double Submit) ==========
+        $redis = Redis::connection();
+        $lockKey = "ujian:submit:{$ujianId}:{$siswa->id_siswa}";
+        $lockValue = uniqid('', true);
+        $locked = $redis->set($lockKey, $lockValue, 'EX', 300, 'NX');
+        
+        if (!$locked) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ujian sedang diproses, mohon tunggu!'
+            ], 429);
+        }
+
+        try {
+            // ========== PROSES FILE UPLOAD (Untuk Mode Praktik) ==========
+            $filesPath = [];
             
-            Peserta_ujian::updateOrCreate([
-                "ujian_id" => $request->ujian_id,
-                "siswa_id" => $siswa->id_siswa,
-            ], [
-                "nilai" => $nilai,
-                "status" => "done",
-                "selesai_pengerjaan" => now(),
+            if ($request->hasFile('file_jawaban')) {
+                foreach ($request->file('file_jawaban') as $soalId => $file) {
+                    if ($file && $file->isValid()) {
+                        $extension = $file->getClientOriginalExtension();
+                        $filename = "{$siswa->id_siswa}_{$ujianId}_{$soalId}_" . time() . "_" . uniqid() . ".{$extension}";
+                        $path = $file->storeAs('jawaban_praktik', $filename, 'public');
+                        $filesPath[$soalId] = $path;
+                        
+                        Log::info("File uploaded for job", [
+                            'soal_id' => $soalId,
+                            'path' => $path,
+                            'siswa_id' => $siswa->id_siswa
+                        ]);
+                    }
+                }
+            }
+
+            // ========== DATA UNTUK JOB ==========
+            $dataJob = [
+                'ujian_id' => $ujianId,
+                'siswa_id' => $siswa->id_siswa,
+                'jawaban' => $jawaban,
+                'file_jawaban' => $filesPath,
+                'mode_ujian' => $modeUjian,
+                'waktu_submit' => now()->toDateTimeString(),
+                'user_agent' => $request->userAgent(),
+                'ip_address' => $request->ip(),
+            ];
+
+            // Dispatch ke queue
+            ProsesUjianJob::dispatch($dataJob);
+            
+            // Hapus lock setelah dispatch
+            $redis->del($lockKey);
+
+            // ========== RESPONSE BERDASARKAN MODE ==========
+            $successMessage = $modeUjian === 'praktik'
+                ? "Tugas praktik berhasil dikumpulkan! Jawaban sedang diproses."
+                : "Jawaban berhasil disimpan! Sedang diproses. Nilai akan muncul dalam beberapa saat.";
+
+            return response()->json([
+                'status' => 'success',
+                'message' => $successMessage,
+                'data' => [
+                    'mode' => $modeUjian,
+                    'ujian_id' => $ujianId,
+                    'total_answers' => count($request->jawaban ?? []),
+                    'total_files' => count($filesPath),
+                    'status' => 'processing'
+                ]
+            ], 200);
+            
+        } catch (\Exception $e) {
+            // Hapus lock jika error
+            $redis->del($lockKey);
+            
+            Log::error("Failed to dispatch job", [
+                'ujian_id' => $ujianId,
+                'siswa_id' => $siswa->id_siswa,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             
             return response()->json([
-                'status' => 'success',
-                'message' => 'Ujian selesai!',
-                'data' => [
-                    'nilai' => $nilai,
-                    'benar' => $score,
-                    'total_soal' => $total_soal,
-                ]
-            ], 200);
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
+    }
+
+    /**
+     * Cek status submission (Polling)
+     */
+    public function cekStatus(Request $request)
+    {
+        $request->validate([
+            'ujian_id' => 'required|integer',
+        ]);
+
+        $user = $request->user();
+        $siswa = $this->getSiswaFromUser($user);
+        
+        if (!$siswa) {
+            return response()->json(['status' => 'error', 'message' => 'Siswa tidak ditemukan'], 404);
+        }
+
+        $peserta = Peserta_ujian::where('ujian_id', $request->ujian_id)
+            ->where('siswa_id', $siswa->id_siswa)
+            ->first();
+
+        if (!$peserta) {
+            return response()->json([
+                'status' => 'processing',
+                'message' => 'Ujian sedang diproses'
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'nilai' => $peserta->nilai,
+                'status' => $peserta->status,
+                'selesai_pengerjaan' => $peserta->selesai_pengerjaan
+            ]
+        ]);
+    }
+
+    /**
+     * Auto Save (Untuk CBT)
+     */
+    public function autoSave(Request $request)
+    {
+        $request->validate([
+            'ujian_id' => 'required|integer',
+            'soal_id' => 'required|integer',
+            'jawaban' => 'nullable|string',
+        ]);
+
+        $user = $request->user();
+        $siswa = $this->getSiswaFromUser($user);
+        
+        if (!$siswa) {
+            return response()->json(['status' => 'error', 'message' => 'Siswa tidak ditemukan'], 404);
+        }
+
+        // Simpan ke Redis cache (expire 1 jam)
+        $key = "auto_save:{$request->ujian_id}:{$siswa->id_siswa}:{$request->soal_id}";
+        Redis::setex($key, 3600, $request->jawaban ?? '');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Auto-save berhasil'
+        ]);
+    }
+
+    /**
+     * Mulai Ujian (Ambil Soal)
+     */
+     public function mulaiUjian(Request $request, $id)
+{
+    $user = $request->user();
+    $siswa = Siswa::where('user_id', $user->id)->first();
+    
+    if (!$siswa) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Siswa tidak ditemukan'
+        ], 404);
+    }
+    
+    $ujianId = $id;
+    $ujian = Ujian::find($ujianId);
+    
+    if (!$ujian) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Ujian tidak ditemukan'
+        ], 404);
+    }
+    
+    // Ambil soal melalui relasi many-to-many
+    $soalList = $ujian->soals()->get();
+    
+    // Ambil jawaban sebelumnya dari auto-save (Redis)
+    $jawabanSebelumnya = [];
+    foreach ($soalList as $soal) {
+        $key = "auto_save:{$ujianId}:{$siswa->id_siswa}:{$soal->id}";
+        $savedAnswer = Redis::get($key);
+        if ($savedAnswer) {
+            $jawabanSebelumnya[$soal->id] = $savedAnswer;
+        }
+    }
+    
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Soal berhasil dimuat',
+        'data' => [
+            'ujian' => [
+                'id' => $ujian->id,
+                'nama' => $ujian->nama_ujian,
+                'durasi' => $ujian->durasi,
+                'mode' => $ujian->mode ?? 'cbt',
+            ],
+            'soal' => $soalList->map(function($soal) use ($jawabanSebelumnya) {
+                // Tentukan tipe soal berdasarkan kolom 'tipe' di database
+                // Nilai yang mungkin: 'pg', 'essay', 'upload', 'av'
+                $tipe = $soal->tipe ?? 'pg';
+                
+                // Siapkan opsi (untuk tipe pg dan av yang memiliki opsi)
+                $opsi = null;
+                if ($tipe == 'pg' || $tipe == 'av') {
+                    $opsi = [];
+                    if ($soal->opsi_a != null && $soal->opsi_a != '') {
+                        $opsi['a'] = $soal->opsi_a;
+                    }
+                    if ($soal->opsi_b != null && $soal->opsi_b != '') {
+                        $opsi['b'] = $soal->opsi_b;
+                    }
+                    if ($soal->opsi_c != null && $soal->opsi_c != '') {
+                        $opsi['c'] = $soal->opsi_c;
+                    }
+                    if ($soal->opsi_d != null && $soal->opsi_d != '') {
+                        $opsi['d'] = $soal->opsi_d;
+                    }
+                    if ($soal->opsi_e != null && $soal->opsi_e != '') {
+                        $opsi['e'] = $soal->opsi_e;
+                    }
+                    
+                    // Jika tidak ada opsi sama sekali, set ke null
+                    if (empty($opsi)) {
+                        $opsi = null;
+                    }
+                }
+                
+                // Siapkan media untuk tipe AV
+                $mediaUrl = null;
+                $mediaFile = null;
+                if ($tipe == 'av') {
+                    if (!empty($soal->media_url)) {
+                        $mediaUrl = $soal->media_url;
+                    }
+                    if (!empty($soal->media_file)) {
+                        $mediaFile = asset('storage/' . $soal->media_file);
+                    }
+                }
+                
+                return [
+                    'id' => $soal->id,
+                    'pertanyaan' => $soal->soal,
+                    'tipe' => $tipe,  // 'pg', 'essay', 'upload', 'av'
+                    'opsi' => $opsi,   // Ada isinya jika tipe pg atau av yang punya opsi
+                    'media_url' => $mediaUrl,
+                    'media_file' => $mediaFile,
+                    'jawaban_sebelumnya' => $jawabanSebelumnya[$soal->id] ?? null,
+                ];
+            }),
+        ]
+    ], 200);
+}
+    /**
+     * Helper functions
+     */
+    private function getSiswaFromUser($user)
+    {
+        if ($user->role === 'siswa') {
+            return Siswa::where('user_id', $user->id)->first();
+        }
+        return null;
+    }
 
             /**
             * Hitung nilai essay

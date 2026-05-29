@@ -12,6 +12,7 @@ class Peserta_ujian extends Model
         "ujian_id",
         "nilai",
         "status",
+        "urutan_soal",
     ];
     public function siswa(){
         return $this->belongsTo(Siswa::class,"siswa_id","id_siswa");

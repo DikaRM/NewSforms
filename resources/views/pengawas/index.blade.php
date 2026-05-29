@@ -1,103 +1,10 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-  <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>Pengawas - Sistem Ujian</title>
+@extends("layouts.guru")
+@section("title","Pengawas Guru")
+@section("content")
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulmaswatch/default/bulmaswatch.min.css">
   <style>
-    /* Animasi masuk (Berjalan otomatis saat halaman baru dibuka) */
-    body {
-        animation: pageEnter 0.3s ease-out forwards;
-    }
-
-    @keyframes pageEnter {
-        from {
-            opacity: 0;
-            transform: translateY(12px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    /* Animasi keluar (Ditambahkan oleh JavaScript saat klik link) */
-    body.page-leaving {
-        animation: pageLeave 0.25s ease-in forwards !important;
-    }
-
-    @keyframes pageLeave {
-        from {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        to {
-            opacity: 0;
-            transform: translateY(-12px);
-        }
-    }
-</style>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', system-ui, sans-serif;
-    }
-
-    body {
-      background: #f3f5f9;
-      overflow-x: hidden;
-    }
-
-    /* ===== NAVBAR ===== */
-    .navbar {
-      background: #2e5b9a;
-      padding: 0 24px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      position: fixed;
-      display:flex;
-      flex-direction:row;
-      justify-content:space-between;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-    }
-
-    .navbar-brand {
-      padding: 8px 0;
-    }
-
-    .navbar-item {
-      color: white !important;
-      font-weight: 600;
-      font-size: 1.1rem;
-    }
-
-    .navbar-item i {
-      margin-right: 10px;
-    }
-
-    .navbar-end {
-      padding: 8px 0;
-    }
-
-    .navbar-end .button {
-      background:transparent;
-      border: none;
-      color: white;
-      transition: all 0.3s ease;
-    }
-
-    .navbar-end .button:hover {
-      background: #c8233323;
-      transform: translateY(-2px);
-    }
-
+    
     /* ===== MAIN CONTAINER ===== */
     .main-container {
       margin-top: 70px;
@@ -348,52 +255,7 @@
     }
 
     /* Mobile Menu Toggle Button */
-    .mobile-menu-toggle {
-      display: none;
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 50px;
-      height: 50px;
-      background: #2e5b9a;
-      border-radius: 50%;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 100;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      border: none;
-      color: white;
-    }
-
-    .mobile-menu-toggle i {
-      font-size: 22px;
-    }
-
-    /* Sidebar untuk mobile */
-    .mobile-sidebar {
-      position: fixed;
-      bottom: 80px;
-      right: 20px;
-      background: #2e5b9a;
-      border-radius: 20px;
-      padding: 12px;
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 99;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-    }
-
-    .mobile-sidebar.open {
-      display: flex;
-    }
-
-    .mobile-sidebar .btn-mobile {
-      width: 44px;
-      height: 44px;
-      background: rgba(255,255,255,0.15);
-    }
+    
 
     /* Notification */
     .notification-toast {
@@ -487,55 +349,6 @@
       border-radius: 3px;
     }
   </style>
-</head>
-<body>
-
-  <!-- Navbar -->
-  <nav class="navbar" role="navigation" style="display:flex;flex-direction:rows;">
-    <div class="navbar-brand">
-      <a href="#" class="navbar-item has-text-white">
-        <i class="fas fa-chalkboard-user"></i>
-        Pengawas Ujian
-      </a>
-    </div>
-
-    <div class="navbar-end">
-      <form action="{{route('users.logout')}}" method="post">
-        @csrf
-        <button type="submit" class="button">
-          <i class="fas fa-sign-out-alt"></i>
-          <span>Logout</span>
-        </button>
-      </form>
-    </div>
-  </nav>
-
-  <!-- Mobile Menu Toggle -->
-  <button class="mobile-menu-toggle" id="mobileMenuToggle">
-    <i class="fas fa-bars"></i>
-  </button>
-
-  <!-- Mobile Sidebar Menu -->
-  <div class="mobile-sidebar" id="mobileSidebar">
-    <a href="{{route('guru.index')}}" class="btn-mobile">
-      <i class="fas fa-home icon-mobile"></i>
-    </a>
-    <a href="{{route('guru.result')}}" class="btn-mobile">
-      <i class="fas fa-file-alt icon-mobile"></i>
-    </a>
-    <a href="{{route('guru.riwayat')}}" class="btn-mobile">
-      <i class="fas fa-history icon-mobile"></i>
-    </a>
-    <a href="{{route('guru.jadwal')}}" class="btn-mobile">
-      <i class="fas fa-calendar-alt icon-mobile"></i>
-    </a>
-    <a href="{{route('pengawas.index',$id ?? '')}}" class="btn-mobile">
-      <i class="fas fa-user-check icon-mobile"></i>
-    </a>
-  </div>
-
-  <!-- Main Container -->
-  <div class="main-container">
     <!-- Notification -->
     @if(session('success'))
       <div class="notification-toast notification-success" id="notification">
@@ -601,9 +414,9 @@
                 <div class="info-content">
                   <div class="info-label">Waktu Pelaksanaan</div>
                   <div class="info-value">
-                    {{ \Carbon\Carbon::parse($jd->waktu_mulai)->isoFormat('dddd, D MMMM YYYY') }}
+                    {{ \Carbon\Carbon::parse($jd->waktu_mulai)->locale('id')->isoFormat('dddd, D MMMM YYYY') }}
                     <br>
-                    <small>{{ \Carbon\Carbon::parse($jd->waktu_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($jd->waktu_selesai)->format('H:i') }} WIB</small>
+                    <small>{{ \Carbon\Carbon::parse($jd->waktu_mulai)->locale('id')->translatedformat('H:i') }} - {{ \Carbon\Carbon::parse($jd->waktu_selesai)->format('H:i') }} WIB</small>
                   </div>
                 </div>
               </div>
@@ -654,141 +467,6 @@
     </div>
   </div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Mobile Menu Toggle
-      const mobileToggle = document.getElementById('mobileMenuToggle');
-      const mobileSidebar = document.getElementById('mobileSidebar');
-      
-      if (mobileToggle && mobileSidebar) {
-        mobileToggle.addEventListener('click', function(e) {
-          e.stopPropagation();
-          mobileSidebar.classList.toggle('open');
-          const icon = mobileToggle.querySelector('i');
-          if (mobileSidebar.classList.contains('open')) {
-            icon.classList.remove('fa-bars');
-            icon.classList.add('fa-times');
-          } else {
-            icon.classList.remove('fa-times');
-            icon.classList.add('fa-bars');
-          }
-        });
-        
-        // Close sidebar when clicking outside
-        document.addEventListener('click', function(event) {
-          if (!mobileToggle.contains(event.target) && !mobileSidebar.contains(event.target)) {
-            mobileSidebar.classList.remove('open');
-            const icon = mobileToggle.querySelector('i');
-            icon.classList.remove('fa-times');
-            icon.classList.add('fa-bars');
-          }
-        });
-      }
-      
-      // Auto hide notification
-      const notification = document.getElementById('notification');
-      if (notification) {
-        setTimeout(function() {
-          notification.style.opacity = '0';
-          setTimeout(function() {
-            notification.style.display = 'none';
-          }, 300);
-        }, 5000);
-      }
-      
-      // Handle window resize - close mobile menu on desktop
-      let resizeTimer;
-      window.addEventListener('resize', function() {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(function() {
-          if (window.innerWidth > 768) {
-            if (mobileSidebar) mobileSidebar.classList.remove('open');
-            if (mobileToggle) {
-              const icon = mobileToggle.querySelector('i');
-              if (icon) {
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-bars');
-              }
-            }
-          }
-        }, 250);
-      });
-    });
-  </script>
+  
 
-  <script>
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // ==========================================
-    // 1. INTERCEPT LINK KLIK (Smooth Redirect)
-    // ==========================================
-    document.addEventListener('click', function(e) {
-        // Cari elemen <a> yang diklik (berlaku jika klik teks atau icon di dalam <a>)
-        const link = e.target.closest('a');
-        
-        if (!link) return; // Bukan link, abaikan
-        
-        const href = link.getAttribute('href');
-        const target = link.getAttribute('target');
-        
-        // Abaikan jika:
-        // - Link kosong / # / javascript
-        // - Link untuk buka tab baru (target="_blank")
-        // - Link eksternal (mailto, tel, http lain)
-        if (!href || 
-            href.startsWith('#') || 
-            href.startsWith('javascript:') || 
-            href.startsWith('mailto:') || 
-            href.startsWith('tel:') || 
-            target === '_blank') {
-            return;
-        }
-        
-        // Abaikan link khusus jika ada (misal: tombol yang buat modal, dll)
-        if (link.classList.contains('no-transition') || link.getAttribute('data-turbolinks') === 'false') {
-            return;
-        }
-        
-        // Cek apakah link internal (domain yang sama atau relative path /)
-        const isLocal = href.startsWith(window.location.origin) || href.startsWith('/');
-        
-        if (isLocal) {
-            e.preventDefault(); // Cegah pindah halaman secara langsung
-            
-            // Tambahkan class animasi keluar
-            document.body.classList.add('page-leaving');
-            
-            // Tunggu animasi selesai, baru redirect
-            setTimeout(function() {
-                window.location.href = href;
-            }, 250); // 250ms harus sama dengan durasi CSS pageLeave
-        }
-    });
-
-    // ==========================================
-    // 2. INTERCEPT FORM SUBMIT (Smooth Post/Logout)
-    // ==========================================
-    // Khusus untuk form biasa (misal: form logout, form cari)
-    document.querySelectorAll('form').forEach(function(form) {
-        form.addEventListener('submit', function() {
-            document.body.classList.add('page-leaving');
-            // Jangan pakai e.preventDefault() biar Laravel tetap proses data/CSRF dengan normal
-        });
-    });
-
-    // Khusus untuk AJAX/Fetch (misal: form absensi, hapus jadwal yang pakai fetch)
-    const originalFetch = window.fetch;
-    window.fetch = function() {
-        document.body.classList.add('page-leaving');
-        
-        // Tunggu 150ms lalu hilangkan animasi (supaya tidak menghitam saat loading AJAX lama)
-        setTimeout(function() {
-            document.body.classList.remove('page-leaving');
-        }, 150);
-        
-        return originalFetch.apply(this, arguments);
-    };
-});
-</script>
-</body>
-</html>
+@endsection

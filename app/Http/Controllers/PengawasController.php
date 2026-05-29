@@ -7,13 +7,16 @@ use App\Models\Pengawas;
 use App\Models\Absensi;
 use App\Models\Susulan;
 use App\Models\Ruangan;
+use App\Models\BlockSiswa;
 use App\Models\Jadwal;
 use App\Models\Berita;
 use App\Models\Siswa;
+use App\Models\Guru;
 use App\Models\Ujian;
 use App\Models\Kelas;
 use App\Models\Pelanggaran;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 class PengawasController
 {
     /**
@@ -28,9 +31,40 @@ class PengawasController
         return redirect()->route("guru.index");
       }
       $datas = $data->pluck("id");
-      $jads = Jadwal::with("ujian")->whereIn("pengawas_id",$datas)->whereDate("tanggal",now()->toDateString())->whereTime("waktu_selesai",'>',now()->toTimeString())->orderBy("waktu_selesai",'asc')->get();
+      $jads = Jadwal::with("ujian")
+    ->whereIn("pengawas_id", $datas)
+    ->where("waktu_selesai", ">", now())
+    ->orderBy("waktu_selesai", 'asc')
+    ->get();
       $sis = Siswa::with("kelas")->get();
-        return view("pengawas.index",compact('data','jads','sis',"id"));
+      $ire = Auth::user();
+   $dt = Guru::where("nama",$ire->nama)->first();
+    
+
+if(!$dt){
+    abort(403, 'Guru tidak ditemukan');
+}
+     $jadwalMengawas = Jadwal::with('ujian','kelas.ruangan')
+    ->where('pengawas_id', $dt->id)
+    
+    ->whereHas('ujian', function($q){
+        $q->where('status', 'ready');
+    })
+    
+    ->orderBy('waktu_mulai', 'asc')
+    ->take(3)
+    ->get();
+    // Format data menjadi array rapi untuk JavaScript
+    $notifData = $jadwalMengawas->map(function($item) {
+        return [
+            'id'        => $item->id,
+            'title'     => "Mengawas: " . ($item->ujian->nama_ujian ?? 'Ujian Tanpa Nama'),
+            'kelas' => optional($item->kelas)->nama_kelas . ' - ' . optional($item->kelas->ruangan)->nama_ruang,
+            'time'      => \Carbon\Carbon::parse($item->waktu_mulai)->locale("id")->translatedformat('d M Y, H:i'),
+            'unread'    => true // Default true agar muncul badge merah
+        ];
+    });
+        return view("pengawas.index",compact('data','jads','sis',"id","ire","dt","notifData"));
     }
 
     /**
@@ -92,6 +126,7 @@ class PengawasController
 
     $data = Siswa::with("kelas")
         ->where("kelas_id", $jadk->kelas_id)
+        ->orderBy('nomor_absen', 'asc')
         ->get();
 
     $pelan = Pelanggaran::with("siswa")->get();
@@ -105,9 +140,23 @@ class PengawasController
         ->first();
 
     $ruanganValid = session('ruangan_valid_'. $jadk->id);
-
+    $ire = Auth::user();
+    $dt = Guru::where("nama",$ire->nama)->first();
+      $jadwalMengawas = Jadwal::with('ujian')
+                            ->where('pengawas_id', $dt->id) // Pastikan kolom ini ada di tabel jadwal
+                            ->orderBy('waktu_mulai', 'desc')
+                            ->get();
+    // Format data menjadi array rapi untuk JavaScript
+    $notifData = $jadwalMengawas->map(function($item) {
+        return [
+            'id'        => $item->id,
+            'title'     => "Mengawas: " . ($item->ujian->nama_ujian ?? 'Ujian Tanpa Nama'),
+            'time'      => \Carbon\Carbon::parse($item->waktu_mulai)->locale("id")->translatedformat('d M Y, H:i'),
+            'unread'    => true // Default true agar muncul badge merah
+        ];
+    });
     return view("pengawas.main", compact(
-        "jadk","data","pelan","da","berita","ruanganValid"
+        "jadk","data","pelan","da","berita","ruanganValid","dt","ire","notifData"
     ));
 }
 
@@ -202,4 +251,50 @@ public function checkRuangan(Request $request, $id)
         'success' => true
     ]);
 }
+// app/Http/Controllers/PengawasController.php
+
+public function unblockSiswa($siswa_id, $ujian_id)
+{
+    try {
+        // Cari siswa berdasarkan id_siswa (bukan id)
+        $siswa = \App\Models\Siswa::where('id_siswa', $siswa_id)->first();
+        
+        if (!$siswa) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Siswa tidak ditemukan'
+            ]);
+        }
+        
+        // Cari data block
+        $block = \App\Models\BlockSiswa::where('siswa_id', $siswa->id_siswa)
+            ->where('ujian_id', $ujian_id)
+            ->first();
+        
+        if ($block) {
+            $block->update([
+                'violation_count' => 0,
+                'blocked_at' => null,
+                'expires_at' => null,
+            ]);
+            
+            return response()->json([
+                'success' => true, 
+                'message' => 'Siswa berhasil diunblock. Siswa dapat melanjutkan ujian.'
+            ]);
+        }
+        
+        return response()->json([
+            'success' => false, 
+            'message' => 'Data block tidak ditemukan'
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false, 
+            'message' => 'Error: ' . $e->getMessage()
+        ]);
+    }
+}
+
 }

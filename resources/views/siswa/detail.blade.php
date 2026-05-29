@@ -685,7 +685,7 @@ body {
 <!-- Header -->
 <header class="header">
     <h2>
-        <i class="fas fa-graduation-cap"></i>
+         <img src="{{ asset('WhatsApp Image 2026-04-10 at 08.00.25.png') }}" class="image is-32x34" style="height:30px" alt="Logo"/>
         <span>SMK NEGERI 1 CIOMAS</span>
     </h2>
     
@@ -766,7 +766,7 @@ body {
                     <div class="stat-label">Jawaban Salah</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number">{{ $totalSoal > 0 ? round(($jawabanBenar/$totalSoal)*100) : 0 }}%</div>
+                    <div class="stat-number">{{ $peserta->nilai}}%</div>
                     <div class="stat-label">Nilai</div>
                 </div>
             </div>
@@ -792,7 +792,9 @@ body {
                 @php
                     $bank = $jwb->bank;
                     $isBenar = $jwb->benar == 1;
-                    $isPilihanGanda = !empty($bank->opsi_a);
+                    $isPilihanGanda = $bank->tipe === 'pg';
+                    $isEssay = $bank->tipe === 'essay';
+                    $isAV = $bank->tipe === 'av';
                     
                     // Parse opsi untuk pilihan ganda
                     $opsiList = [];
@@ -817,16 +819,65 @@ body {
                         </div>
                         <div class="jenis-soal">
                             <i class="fas fa-{{ $isPilihanGanda ? 'list' : 'pencil' }}"></i>
-                            {{ $isPilihanGanda ? 'Pilihan Ganda' : 'Essay' }}
+                            @if($isPilihanGanda)
+    Pilihan Ganda
+@elseif($isAV)
+    Audio Visual
+@else
+    Essay
+@endif
                         </div>
                     </div>
                     
                     <div class="soal-text">
-                        {!! nl2br(e($bank->soal ?? 'Soal tidak tersedia')) !!}
-                    </div>
+    {!! nl2br(e($bank->soal ?? 'Soal tidak tersedia')) !!}
+</div>
+
+{{-- MEDIA AV --}}
+@if($isAV)
+
+    {{-- FILE UPLOAD --}}
+    @if($bank->media_file)
+
+        @php
+            $ext = pathinfo($bank->media_file, PATHINFO_EXTENSION);
+        @endphp
+
+        <div style="margin-bottom:20px;">
+
+            {{-- VIDEO --}}
+            @if(in_array($ext, ['mp4', 'webm', 'ogg']))
+                <video controls style="width:100%; border-radius:10px;">
+                    <source src="{{ asset('storage/' . $bank->media_file) }}">
+                    Browser tidak mendukung video.
+                </video>
+
+            {{-- AUDIO --}}
+            @elseif(in_array($ext, ['mp3', 'wav', 'ogg']))
+                <audio controls style="width:100%;">
+                    <source src="{{ asset('storage/' . $bank->media_file) }}">
+                    Browser tidak mendukung audio.
+                </audio>
+            @endif
+
+        </div>
+
+    {{-- URL EXTERNAL --}}
+    @elseif($bank->media_url)
+
+        <div style="margin-bottom:20px;">
+            <a href="{{ $bank->media_url }}" target="_blank" class="button is-link is-light">
+                <i class="fas fa-play"></i>&nbsp;
+                Buka Media
+            </a>
+        </div>
+
+    @endif
+
+@endif
                     
                     @if($isPilihanGanda)
-
+                    @elseif($isAV)
                     @else
                         <!-- Tampilan Essay -->
                         <div class="jawaban-section">

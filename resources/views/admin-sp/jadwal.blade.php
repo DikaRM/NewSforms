@@ -200,7 +200,9 @@
     }
 
     .sidebar-item:hover {
-        background: rgba(255,255,255,0.2);
+       background: #ffffff96;
+     border-left : 4px solid #fff;
+     color:#2e5b9a;
     }
 
     .sidebar-item.active {
@@ -618,6 +620,49 @@
             align-items: stretch;
         }
     }
+    .swal2-popup {
+    font-family: 'Segoe UI', sans-serif;
+    padding: 24px !important;
+}
+
+.swal2-confirm {
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    padding: 10px 20px !important;
+}
+
+.swal2-cancel {
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    color: #444 !important;
+}
+
+.swal2-input:focus,
+.swal2-select:focus {
+    border-color: #2e5b9a !important;
+    box-shadow: 0 0 0 3px rgba(46,91,154,0.15) !important;
+}
+.swal-title-custom{
+    margin-bottom: 8px !important;
+    padding-bottom: 0 !important;
+}
+
+.swal-html-custom{
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+.schedule-count {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(4px);
+}
 </style>
 </head>
 <body>
@@ -638,7 +683,7 @@
                 @if(isset($panitia))
                     <span>{{ $panitia->nama ?? 'Panitia' }}</span>
                 @else
-                    <span>Panitia</span>
+                    
                 @endif
                 <i class="fas fa-chevron-down"></i>
             </div>
@@ -652,9 +697,9 @@
     </a>
             
             <div class="dropdown-divider"></div>
-            <form action="{{ route('users.logout') }}" method="post">
+            <form action="{{ route('users.logout') }}" method="post" class="logout-form">
                 @csrf
-                <button type="submit" class="dropdown-item-custom logout-btn" style="width: 100%; background: none; border: none; cursor: pointer;">
+                <button type="submit" class="dropdown-item-custom logout-btn logout-button" style="width: 100%; background: none; border: none; cursor: pointer;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -686,9 +731,9 @@
         </div>
         
         <div class="sidebar-logout">
-            <form action="{{ route('users.logout') }}" method="post">
+            <form action="{{ route('users.logout') }}" method="post" class="logout-form">
                 @csrf
-                <button type="submit" class="sidebar-item" style="width: 100%; background: none; border: none; cursor: pointer;">
+                <button type="submit" class="sidebar-item logout-button" style="width: 100%; background: none; border: none; cursor: pointer;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -698,20 +743,7 @@
     
     <!-- Main Content -->
     <main class="main-content" id="mainContent">
-        <!-- Breadcrumb -->
-        <div class="breadcrumb-custom" style="margin-bottom: 20px;">
-            <ul style="list-style: none; display: flex; gap: 8px; flex-wrap: wrap;">
-                <li><a href="{{ route('admin-ops.index') }}" style="color: #5c6fa6; text-decoration: none;"><i class="fas fa-home"></i> Dashboard</a></li>
-                <li><a href="{{ route('admin-ops.index') }}" style="color: #5c6fa6; text-decoration: none;">Kelas</a></li>
-                <li class="is-active" style="color: #2e5b9a; font-weight: 500;">{{$klas->nama_kelas}}</li>
-            </ul>
-        </div>
         
-        <!-- Back Button -->
-        <a href="{{ route('admin-ops.index') }}" class="back-button">
-            <i class="fas fa-arrow-left"></i>
-            Kembali ke Dashboard
-        </a>
         
         <!-- Class Info Card -->
         <div class="class-info-card">
@@ -786,7 +818,14 @@
               });
               
               // Filter ujian yang ready saja
-              $readyUjian = $uji->where('status', 'ready');
+             $readyUjian = \App\Models\Ujian::where('status', 'ready')
+    ->whereHas('kelas', function ($q) use ($klas) {
+        $q->where('kelas.id', $klas->id);
+    })
+    ->whereDoesntHave('jadwal', function ($q) use ($klas) {
+        $q->where('kelas_id', $klas->id);
+    })
+    ->get();
             @endphp
 
             @foreach($days as $enDay => $idDay)
@@ -794,9 +833,11 @@
                 <div class="day-header {{strtolower($enDay)}}" onclick="toggleDay('{{$enDay}}')">
                     <div>
                         <span class="is-size-5 has-text-weight-bold">{{$idDay}}</span>
-                        <span class="tag is-light ml-2">
-                            {{ isset($groupedJad[$enDay]) ? $groupedJad[$enDay]->count() : 0 }} Jadwal
-                        </span>
+                            <span class="schedule-count">
+    <i class="fas fa-calendar-check"></i>
+    {{ isset($groupedJad[$enDay]) ? $groupedJad[$enDay]->count() : 0 }} 
+</span>
+                            
                     </div>
                     <i class="fas fa-chevron-down"></i>
                 </div>
@@ -804,26 +845,31 @@
                 <div class="day-content" id="content-{{$enDay}}">
                     <!-- Existing Schedules -->
                     @if(isset($groupedJad[$enDay]) && $groupedJad[$enDay]->count() > 0)
-                      @foreach($groupedJad[$enDay] as $jd)
+                    @foreach($groupedJad[$enDay] as $jd)
                       @php
                         // Cek bentrok dengan jadwal lain
                         $bentrok = false;
                         foreach($groupedJad[$enDay] as $other) {
-                          if($other->id != $jd->id) {
-                            $start1 = \Carbon\Carbon::parse($jd->tanggal);
-                            $end1 = \Carbon\Carbon::parse($jd->waktu_selesai);
-                            $start2 = \Carbon\Carbon::parse($other->waktu_mulai);
-                            $end2 = \Carbon\Carbon::parse($other->waktu_selesai);
-                            
-                            if($start1 < $end2 && $end1 > $start2) {
-                              $bentrok = true;
-                              break;
-                            }
-                          }
+                          if($jd->tanggal != $other->tanggal) {
+        continue;
+    }
+
+    if($other->id != $jd->id) {
+        $start1_dt = \Carbon\Carbon::parse($jd->waktu_mulai);
+$end1_dt   = \Carbon\Carbon::parse($jd->waktu_selesai);
+
+$start2_dt = \Carbon\Carbon::parse($other->waktu_mulai);
+$end2_dt   = \Carbon\Carbon::parse($other->waktu_selesai);
+        if($start1_dt < $end2_dt && $end1_dt > $start2_dt) {
+            $bentrok = true;
+            break;
+        }
+    }
+                          
                         }
                       @endphp
                       <!-- DATA ID PENTING UNTUK FITUR EDIT & DELETE -->
-                      <div class="schedule-item {{$bentrok ? 'conflict' : ''}}" data-id="{{$jd->id}}" data-pengawas="{{$jd->pengawas->guru_id}}">
+                      <div class="schedule-item {{$bentrok ? 'conflict' : ''}}" data-id="{{$jd->id}}" data-pengawas="{{$jd->pengawas->guru_id ?? 0}}" data-tanggal="{{$jd->tanggal}}">
                           <div class="level" style="flex-wrap: wrap;">
                               <div class="level-left">
                                   <div>
@@ -837,16 +883,16 @@
                                               </span>
                                           @endif
                                       </div>
-                                      <h5 class="title is-5 mb-1">{{$jd->ujian->nama_ujian}}</h5>
+                                      <h5 class="title is-5 " style="margin-top:20px;">{{$jd->ujian->nama_ujian ?? "Ujian Undefined"}}</h5>
                                       <div class="tags">
                                           <span class="tag is-info is-light">
-                                              <i class="fas fa-chalkboard-teacher"></i> {{$jd->pengawas->guru->nama}}
+                                              <i class="fas fa-chalkboard-teacher" style="margin-right:6px;"></></i> {{$jd->pengawas->guru->nama ?? "Pengawas Misterius"}}
                                           </span>
                                           <span class="tag is-warning is-light">
-                                              <i class="fas fa-hourglass-half"></i> {{$jd->ujian->durasi}} Menit
+                                              <i class="fas fa-hourglass-half" style="margin-right:6px;"></></i> {{$jd->ujian->durasi ?? "10 "}} Menit
                                           </span>
                                           <span class="tag is-primary is-light">
-                                              <i class="fas fa-sort-numeric-up"></i> Jam ke-{{$jd->jam_mapel}}
+                                              <i class="fas fa-sort-numeric-up" style="margin-right:6px;"></i> Jam ke-{{$jd->jam_mapel}}
                                           </span>
                                       </div>
                                   </div>
@@ -875,84 +921,134 @@
                     @endif
 
                     <!-- Add Schedule Form for this Day -->
-                    <div class="add-schedule-form">
-                        <h5 class="title is-6 mb-3">
-                            <i class="fas fa-plus-circle" style="color: #2e5b9a;"></i> 
-                            Tambah Jadwal {{$idDay}}
-                        </h5>
-                        
-                        <form action="{{route('admin-ops.sav')}}" method="post" onsubmit="return validateForm(this, '{{$enDay}}')">
-                            @csrf
-                            
-                            <div class="columns is-multiline is-variable is-3">
-                                <div class="column is-3">
-                                    <div class="field">
-                                        <label class="label is-small">Jam Ke-</label>
-                                        <div class="control">
-                                            <input type="number" class="input is-small auto-jam" name="jam_mapel" min="1" placeholder="Otomatis..." required readonly style="background: #f8f9fc;">
-                                        </div>
-                                    </div>
-                                </div>
+                    <div style="
+    background:#ffffff;
+    border:1px solid #eef2f6;
+    border-radius:16px;
+    padding:18px;
+    margin-top:12px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.04);
+">
 
-                                <div class="column is-3">
-                                    <div class="field">
-                                        <label class="label is-small">Jam Mulai</label>
-                                        <div class="control">
-                                            <input type="time" class="input is-small" name="waktu_mulai" 
-                                                   value="08:00" required>
-                                        </div>
-                                    </div>
-                                </div>
+    <!-- HEADER MINI -->
+    <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-bottom:14px;
+    ">
+        <div style="font-weight:700;color:#2e5b9a;">
+            + Tambah Jadwal {{ $idDay }}
+        </div>
 
-                                <div class="column is-3">
-                                    <div class="field">
-                                        <label class="label is-small">Tanggal</label>
-                                        <div class="control">
-                                            <input type="date" class="input is-small" name="tanggal" 
-                                                   value="{{ now()->format('Y-m-d') }}" 
-                                                   onchange="updateDay('{{$enDay}}', this.value)" required>
-                                        </div>
-                                    </div>
-                                </div>
+        <div style="
+            font-size:0.7rem;
+            color:#9ca3af;
+        ">
+            Auto assign system
+        </div>
+    </div>
 
-                                <div class="column is-3">
-                                    <div class="field">
-                                        <label class="label is-small">Pilih Ujian</label>
-                                        <div class="control">
-                                            <div class="select is-small is-fullwidth">
-                                                <select name="ujian_id" required>
-                                                    <option value="">Pilih Ujian</option>
-                                                    @foreach($readyUjian as $uj)
-                                                      <option value="{{$uj->id}}" data-durasi="{{$uj->durasi}}">
-                                                          {{$uj->nama_ujian}} ({{$uj->durasi}} menit) - {{$uj->mapels->nama_mapel}}
-                                                      </option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+    <form action="{{route('admin-ops.sav')}}" method="post"
+          onsubmit="return validateForm(this, '{{$enDay}}')">
+        @csrf
 
-                                <div class="column is-12">
-                                    <input type="hidden" name="kelas_id" value="{{$klas->id}}">
-                                    <input type="hidden" name="hari" value="{{$enDay}}">
-                                    
-                                    <div class="field is-grouped is-grouped-right mt-3">
-                                        <div class="control">
-                                            <button type="reset" class="button is-small is-light">
-                                                <i class="fas fa-undo"></i> Reset
-                                            </button>
-                                        </div>
-                                        <div class="control">
-                                            <button type="submit" class="button is-small is-primary" style="background: #2e5b9a;">
-                                                <i class="fas fa-save"></i> Simpan untuk {{$idDay}}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+        <!-- GRID INPUT -->
+        <div style="
+            display:grid;
+            grid-template-columns:repeat(3, 1fr);
+            gap:12px;
+        ">
+
+            <!-- JAM MULAI -->
+            <div>
+                <label style="font-size:0.75rem;color:#6b7280;">Jam Mulai</label>
+                <input type="time" name="waktu_mulai" value="08:00" required
+                    style="
+                        width:100%;
+                        padding:10px 12px;
+                        border-radius:10px;
+                        border:1px solid #e5e7eb;
+                        outline:none;
+                    ">
+            </div>
+
+            <!-- TANGGAL -->
+            <div>
+                <label style="font-size:0.75rem;color:#6b7280;">Tanggal</label>
+                <select name="tanggal" class="tanggal-select"
+                        data-day="{{$enDay}}" required
+                        style="
+                            width:100%;
+                            padding:10px 12px;
+                            border-radius:10px;
+                            border:1px solid #e5e7eb;
+                            background:white;
+                        ">
+                    <option value="">Pilih Tanggal</option>
+                </select>
+            </div>
+
+            <!-- UJIAN -->
+            <div>
+                <label style="font-size:0.75rem;color:#6b7280;">Ujian</label>
+                <select name="ujian_id" required
+                        style="
+                            width:100%;
+                            padding:10px 12px;
+                            border-radius:10px;
+                            border:1px solid #e5e7eb;
+                            background:white;
+                        ">
+                    <option value="">Pilih Ujian</option>
+                    @foreach($readyUjian as $uj)
+                        <option value="{{$uj->id}}" data-durasi="{{$uj->durasi}}">
+                            {{$uj->nama_ujian}} ({{$uj->durasi}}m)
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+        </div>
+
+        <!-- FOOTER ACTION -->
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-top:16px;
+        ">
+
+            <input type="hidden" name="kelas_id" value="{{$klas->id}}">
+            <input type="hidden" name="hari" value="{{$enDay}}">
+
+            <button type="reset" style="
+                padding:8px 14px;
+                border-radius:10px;
+                border:1px solid #e5e7eb;
+                background:#f9fafb;
+                cursor:pointer;
+            ">
+                Reset
+            </button>
+
+            <button type="submit" style="
+                padding:10px 16px;
+                border-radius:10px;
+                background:#2e5b9a;
+                color:white;
+                border:none;
+                font-weight:600;
+                cursor:pointer;
+                box-shadow:0 4px 10px rgba(46,91,154,0.2);
+            ">
+                Simpan Jadwal
+            </button>
+
+        </div>
+
+    </form>
+</div>
                 </div>
             </div>
             @endforeach
@@ -987,20 +1083,83 @@
 @endif
 
 <script>
+    document.querySelectorAll('.logout-form').forEach(function(form) {
+
+        let submitted = false;
+
+        form.addEventListener('submit', function(e) {
+
+            if (submitted) {
+                e.preventDefault();
+                return;
+            }
+
+            submitted = true;
+
+            const btn = form.querySelector('.logout-button');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+                btn.style.pointerEvents = 'none';
+            }
+        });
+    });
     // ========== FUNGSI OTOMATIS JAM KE- ==========
+       // ========== FUNGSI OTOMATIS JAM KE- (DIPERBAIKI) ==========
     function updateAutoJamMapel() {
         document.querySelectorAll('.day-card').forEach(card => {
-            const existingSchedules = card.querySelectorAll('.schedule-item').length;
+            // Ambil nilai tanggal dari input form "Tambah Jadwal" di kartu ini
+            const dateInput = card.querySelector('input[name="tanggal"]');
+            const currentDate = dateInput ? dateInput.value : '';
+            
             const jamInput = card.querySelector('.auto-jam');
             
             if (jamInput) {
-                if (existingSchedules === 0) {
-                    jamInput.value = 1;
-                } else {
-                    jamInput.value = existingSchedules + 1;
+                let count = 0;
+                if (currentDate) {
+                    // Filter: Hitung HANYA jadwal yang tanggalnya SAMA dengan input tanggal
+                    const matchingItems = card.querySelectorAll(`.schedule-item[data-tanggal="${currentDate}"]`);
+                    count = matchingItems.length;
                 }
+                
+                // Jika ada jadwal di tanggal itu, lanjutkan hitungan. Jika tidak, mulai dari 1.
+                jamInput.value = count > 0 ? count + 1 : 1;
             }
         });
+    }
+
+    // ========== VALIDASI TANGGAL (DIPERBAIKI) ==========
+    function updateDay(expectedDay, dateString) {
+      const date = new Date(dateString + 'T12:00:00');
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const actualDay = days[date.getDay()];
+      
+      // --- LOGIC BARU: UPDATE JAM MAPEL BERDASARKAN TANGGAL ---
+      const form = event.target.closest('form');
+      const jamInput = form.querySelector('.auto-jam');
+      const dayCard = form.closest('.day-card');
+
+      if (jamInput && dateString) {
+          // Cari semua jadwal di kartu ini yang tanggalnya SAMA dengan inputan user
+          const sameDateSchedules = dayCard.querySelectorAll(`.schedule-item[data-tanggal="${dateString}"]`);
+          
+          if (sameDateSchedules.length > 0) {
+              jamInput.value = sameDateSchedules.length + 1;
+          } else {
+              jamInput.value = 1; // Default 1 jika tanggal beda / belum ada jadwal
+          }
+      }
+      // ------------------------------------------------------
+
+      if (actualDay !== expectedDay) {
+        if (!confirm(`Tanggal yang dipilih adalah hari ${getIndonesianDay(actualDay)}.\nApakah Anda yakin ingin menambah jadwal di hari ${getIndonesianDay(expectedDay)}?`)) {
+          event.target.value = '{{ now()->format('Y-m-d') }}';
+          
+          // Trigger ulang hitungan jam mapel jika user membatalkan (kembali ke tanggal hari ini)
+          updateAutoJamMapel();
+        }
+      }
     }
 
     // ========== KONFIGURASI ==========
@@ -1071,6 +1230,56 @@
     }
     
     // ========== FUNGSI FILTER ==========
+    function generateDatesByDay() {
+    const dayMap = {
+        Sunday: 0,
+        Monday: 1,
+        Tuesday: 2,
+        Wednesday: 3,
+        Thursday: 4,
+        Friday: 5,
+        Saturday: 6
+    };
+
+    document.querySelectorAll('.tanggal-select').forEach(select => {
+
+        const targetDay = select.dataset.day;
+        const targetDayNumber = dayMap[targetDay];
+
+        select.innerHTML = '<option value="">Pilih Tanggal</option>';
+
+        const today = new Date();
+
+        // generate 12 minggu ke depan
+        for (let i = 0; i < 84; i++) {
+
+            const d = new Date();
+            d.setDate(today.getDate() + i);
+
+            if (d.getDay() === targetDayNumber) {
+
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+
+                const value = `${yyyy}-${mm}-${dd}`;
+
+                const indoDate = d.toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+
+                select.innerHTML += `
+                    <option value="${value}">
+                        ${indoDate}
+                    </option>
+                `;
+            }
+        }
+    });
+}
     function applyFilters() {
       const showConflicts = document.getElementById('showConflicts')?.checked;
       const filterPengawas = document.getElementById('filterPengawas')?.value;
@@ -1091,17 +1300,7 @@
     }
     
     // ========== VALIDASI TANGGAL ==========
-    function updateDay(expectedDay, dateString) {
-      const date = new Date(dateString + 'T12:00:00');
-      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const actualDay = days[date.getDay()];
-      
-      if (actualDay !== expectedDay) {
-        if (!confirm(`Tanggal yang dipilih adalah hari ${getIndonesianDay(actualDay)}.\nApakah Anda yakin ingin menambah jadwal di hari ${getIndonesianDay(expectedDay)}?`)) {
-          event.target.value = '{{ now()->format('Y-m-d') }}';
-        }
-      }
-    }
+    
     
     function getIndonesianDay(day) {
       const days = {
@@ -1190,56 +1389,235 @@
         }
 
         // 3. Tampilkan Modal Edit
-        Swal.fire({
-            title: 'Edit Jadwal',
-            html: `
-                <div style="text-align: left;">
-                    <label style="display:block; margin-bottom: 5px; font-weight:bold; font-size: 0.9rem;">Ujian Saat Ini:</label>
-                    <input id="swal-input1" class="swal2-input" value="${namaUjian}" readonly style="background:#f0f0f0; color:#555; margin-bottom: 10px;">
-                    
-                    <label style="display:block; margin-bottom: 5px; font-weight:bold; font-size: 0.9rem;">Pilih Ujian Baru:</label>
-                    <select id="swal-select-ujian" class="swal2-input" style="margin-bottom: 10px;">
-                        <option value="">-- Pilih Ujian Baru --</option>
-                        ${ujianOptions}
-                    </select>
+       Swal.fire({
+    title: ``,
+    
+    html: `
+     
+        <div style="margin-top:5px;text-align:left;">
+        <div style="
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 14px;
+    border-radius:14px;
+    background:linear-gradient(135deg,#eef4ff,#f5f7ff);
+    color:#2e5b9a;
+    font-weight:700;
+    font-size:0.95rem;
+    margin-bottom:14px;
+    box-shadow:0 2px 8px rgba(46,91,154,0.08);
+">
 
-                    <div style="display:flex; gap:10px;">
-                        <div style="flex:1;">
-                            <label style="display:block; margin-bottom: 5px; font-weight:bold; font-size: 0.9rem;">Jam Mulai:</label>
-                            <input type="time" id="swal-input2" class="swal2-input" value="${start}">
-                        </div>
-                        <div style="flex:1;">
-                            <label style="display:block; margin-bottom: 5px; font-weight:bold; font-size: 0.9rem;">Jam Ke-:</label>
-                            <input type="number" id="swal-input3" class="swal2-input" value="${jamKe}">
-                        </div>
-                    </div>
+    <div style="
+        width:34px;
+        height:34px;
+        border-radius:10px;
+        background:#2e5b9a;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        color:white;
+        font-size:14px;
+    ">
+        <i class="fas fa-pen"></i>
+    </div>
+
+    <div>
+        Edit Jadwal
+        <div style="
+            font-size:0.7rem;
+            font-weight:500;
+            color:#6b7280;
+            margin-top:2px;
+        ">
+            Perbarui waktu & ujian
+        </div>
+    </div>
+
+</div>
+            <!-- Info Jadwal Lama -->
+            <div style="
+                background:#f8fafc;
+                border:1px solid #e5e7eb;
+                border-radius:14px;
+                padding:14px;
+                margin-bottom:18px;
+                margin-top:10px;
+            ">
+                <div style="
+                    font-size:0.75rem;
+                    color:#888;
+                    margin-bottom:6px;
+                ">
+                    Jadwal Saat Ini
                 </div>
-            `,
-            focusConfirm: false,
-            showCancelButton: true,
-            confirmButtonText: 'Simpan Perubahan',
-            confirmButtonColor: '#2e5b9a',
-            cancelButtonColor: '#d33',
-            preConfirm: () => {
-                return {
-                    ujian_id: document.getElementById('swal-select-ujian').value,
-                    waktu_mulai: document.getElementById('swal-input2').value,
-                    jam_mapel: document.getElementById('swal-input3').value,
-                }
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const data = result.value;
-                
-                if(!data.ujian_id) {
-                    Swal.fire('Error', 'Silakan pilih ujian baru!', 'error');
-                    return;
-                }
 
-                // Kirim data via AJAX
-                updateScheduleAjax(id, data);
-            }
-        });
+                <div style="
+                    font-weight:600;
+                    color:#1f2937;
+                    margin-bottom:8px;
+                ">
+                    ${namaUjian}
+                </div>
+
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <span style="
+                        background:#eef4ff;
+                        color:#2e5b9a;
+                        padding:5px 10px;
+                        border-radius:999px;
+                        font-size:0.75rem;
+                        font-weight:600;
+                    ">
+                        ${start} - ${end}
+                    </span>
+
+                    <span style="
+                        background:#f3f4f6;
+                        color:#444;
+                        padding:5px 10px;
+                        border-radius:999px;
+                        font-size:0.75rem;
+                        font-weight:600;
+                    ">
+                        Jam ke-${jamKe}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Pilih Ujian -->
+            <div style="margin-bottom:14px;">
+                <label style="
+                    display:block;
+                    font-size:0.82rem;
+                    font-weight:600;
+                    margin-bottom:8px;
+                    color:#374151;
+                ">
+                    Pilih Ujian Baru
+                </label>
+
+                <select 
+                    id="swal-select-ujian"
+                    style="
+                        width:100%;
+                        height:48px;
+                        border:1px solid #dbe3ec;
+                        border-radius:12px;
+                        padding:0 14px;
+                        font-size:0.9rem;
+                        outline:none;
+                    "
+                >
+                    <option value="">-- Pilih Ujian --</option>
+                    ${ujianOptions}
+                </select>
+            </div>
+
+            <!-- Grid -->
+            <div style="
+                display:grid;
+                grid-template-columns:1fr 1fr;
+                gap:14px;
+            ">
+                <div>
+                    <label style="
+                        display:block;
+                        font-size:0.82rem;
+                        font-weight:600;
+                        margin-bottom:8px;
+                        color:#374151;
+                    ">
+                        Jam Mulai
+                    </label>
+
+                    <input 
+                        type="time"
+                        id="swal-input2"
+                        value="${start}"
+                        style="
+                            width:100%;
+                            height:48px;
+                            border:1px solid #dbe3ec;
+                            border-radius:12px;
+                            padding:0 14px;
+                            font-size:0.9rem;
+                            outline:none;
+                        "
+                    >
+                </div>
+
+                <div>
+                    <label style="
+                        display:block;
+                        font-size:0.82rem;
+                        font-weight:600;
+                        margin-bottom:8px;
+                        color:#374151;
+                    ">
+                        Jam Ke-
+                    </label>
+
+                    <input 
+                        type="number"
+                        id="swal-input3"
+                        value="${jamKe}"
+                        style="
+                            width:100%;
+                            height:48px;
+                            border:1px solid #dbe3ec;
+                            border-radius:12px;
+                            padding:0 14px;
+                            font-size:0.9rem;
+                            outline:none;
+                        "
+                    >
+                </div>
+            </div>
+
+        </div>
+    `,
+
+    width: 650,
+    background: '#ffffff',
+    borderRadius: '22px',
+
+    showCancelButton: true,
+
+    confirmButtonText: `
+        <i class="fas fa-save"></i>
+        Simpan
+    `,
+
+    cancelButtonText: `
+        <i class="fas fa-times"></i>
+        Batal
+    `,
+
+    confirmButtonColor: '#2e5b9a',
+    cancelButtonColor: '#e5e7eb',
+
+   customClass: {
+    title: 'swal-title-custom',
+    htmlContainer: 'swal-html-custom',
+    popup: 'animated fadeInDown',
+    confirmButton: 'swal-confirm-modern',
+    cancelButton: 'swal-cancel-modern'
+},
+
+    buttonsStyling: true,
+
+    focusConfirm: false,
+
+    preConfirm: () => {
+        return {
+            ujian_id: document.getElementById('swal-select-ujian').value,
+            waktu_mulai: document.getElementById('swal-input2').value,
+            jam_mapel: document.getElementById('swal-input3').value,
+        }
+    }
+})
     }
 
     function updateScheduleAjax(id, data) {
@@ -1386,11 +1764,12 @@
       });
     }
     
-    function checkAllConflicts() {
+       function checkAllConflicts() {
       document.querySelectorAll('.day-card').forEach(card => {
         const schedules = card.querySelectorAll('.schedule-item');
         const scheduleList = [];
         
+        // 1. Kumpulkan data lengkap (Termasuk Tanggal)
         schedules.forEach(schedule => {
           const timeText = schedule.querySelector('.time-badge').innerText;
           const timeMatch = timeText.match(/(\d{2}:\d{2}) - (\d{2}:\d{2})/);
@@ -1398,16 +1777,24 @@
           if (timeMatch) {
             scheduleList.push({
               element: schedule,
+              date: schedule.dataset.tanggal, // AMBIL DATA TANGGAL
               start: timeMatch[1],
               end: timeMatch[2]
             });
           }
         });
         
+        // 2. Cek Bentrok
         for (let i = 0; i < scheduleList.length; i++) {
           for (let j = i + 1; j < scheduleList.length; j++) {
             const a = scheduleList[i];
             const b = scheduleList[j];
+            
+            // --- PERBAIKAN UTAMA: LEWATI JIKA TANGGAL BEDA ---
+            if (a.date !== b.date) {
+                continue; 
+            }
+            // ------------------------------------------------
             
             if (a.start < b.end && a.end > b.start) {
               a.element.classList.add('conflict');
@@ -1425,6 +1812,7 @@
     
     // ========== INITIALIZATION ==========
     window.addEventListener('DOMContentLoaded', function() {
+        generateDatesByDay();
       document.querySelectorAll('.day-content').forEach(content => {
         content.classList.add('active');
       });

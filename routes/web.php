@@ -7,6 +7,13 @@ use App\Http\Controllers\GuruController;
 use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\PengawasController;
+use App\Models\Ujian;
+Route::get('/guru/ujian/{ujiId}/kelas', function($ujiId) {
+    $uji = Ujian::findOrFail($ujiId);
+    $kelas = $uji->kelas()->get();
+    return response()->json(['success' => true, 'data' => $kelas]);
+})->name('guru.ujian.kelas');
+
 
 Route::get('/', function () {
 if (Auth::check()) {
@@ -87,6 +94,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/mapel/buat', [AdminController::class, 'Made'])->name('made');
     Route::put('/mapel/{id}', [AdminController::class, 'MapelUpdate'])->name('deat');
     Route::delete('/mapel/{id}', [AdminController::class, 'MapelDestroy'])->name('letroy');
+    Route::delete('/mapel-guru/{id}', [AdminController::class, 'RemoveGuru'])->name('roy');
     Route::post('/mapel', [AdminController::class, 'AddGuru'])->name('built');
 });
 
@@ -101,8 +109,7 @@ Route::middleware(['auth', 'role:siswa'])->prefix('siswa')->name('siswa.')->grou
     Route::get('/detail/{id}', [SiswaController::class, 'detail'])->name('detail');
     Route::post('/saved', [SiswaController::class, 'Saved'])->name('save');
     // Di web.php
-Route::get('/ujian/resume/{id}', [SiswaController::class, 'resume'])->name('resume');
-    
+    Route::get('/ujian/resume/{id}', [SiswaController::class, 'resume'])->name('resume');
 });
 
 // GURU ROUTES
@@ -110,13 +117,17 @@ Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(f
     Route::get('/siap', [GuruController::class, 'TeachIndex'])->name('index');
     Route::post('/create-soal', [GuruController::class, 'rheina'])->name('soal.save');
     Route::post('/create', [GuruController::class, 'sed'])->name('soal.sad');
+    Route::post('/publish', [GuruController::class, 'sept'])->name('soal.keep');
     Route::delete('/create-soal/pus/{id}', [GuruController::class, 'bowl'])->name('soal.destroy');
     Route::delete('/hapus-soal/{id}', [GuruController::class, 'hapus'])->name('hapus');
     
     Route::post('/store', [GuruController::class, 'CreateUjian'])->name('store');
     Route::post('/update-nilai', [GuruController::class, 'updateNilai'])->name('update-nilai');
     Route::get('/create-soal/{id}', [GuruController::class, 'CreateSoal'])->name('create');
+    Route::get('/ujian/{id}/detail', [GuruController::class, 'detail'])->name('ujian.detail');
     Route::post('/save/{id}', [GuruController::class, 'def'])->name('ujian.sold');
+    Route::post('/ujian/{id}/praktik', [GuruController::class, 'storePraktik'])->name('ujian.praktik');
+
     Route::get('/jadwal', [GuruController::class, 'jadwal'])->name('jadwal');
     Route::get('/result', [GuruController::class, 'result'])->name('result');
     Route::get('/hasil/{id}', [GuruController::class, 'hasil'])->name('hasil');
@@ -126,6 +137,9 @@ Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(f
     Route::post('/jadwal-susulan', [GuruController::class, 'bareroll'])->name('jadwal-susulan.store');
     Route::put('/jadwal-susulan/{id}', [GuruController::class, 'updateJadwalSusulan'])->name('jadwal-susulan.update');
     Route::delete('/jadwal-susulan/{id}', [GuruController::class, 'destroyJadwalSusulan'])->name('jadwal-susulan.destroy');
+    Route::post('/soal/{id}/update', [GuruController::class, 'editSoal'])->name('soal.update');
+    Route::post('/soal/ready/{id}', [GuruController::class, 'ChangeState'])->name('publish');
+Route::delete('/soal/{id}/delete', [GuruController::class, 'deleteSoal'])->name('soal.delete');
 });
 
 // PENGAWAS ROUTES
@@ -135,13 +149,14 @@ Route::middleware(['auth', 'role:guru'])->prefix('guru')->name('guru.')->group(f
     Route::post('/pengawas/abcent', [PengawasController::class, 'abcent'])->name('pengawas.abcent.store');
     Route::post('/pelanggarans/penalty', [SiswaController::class, 'Pelanggaran'])->name('pengawas.pelanggaran.pen');
     Route::get('/pengawas/show/{id}', [PengawasController::class, 'show'])->name('pengawas.show');
+    Route::post('/pengawas/unblock/{siswa_id}/{ujian_id}', [PengawasController::class, 'unblockSiswa'])->name('pengawas.unblock');
 
 // ADMIN-OPS ROUTES
 Route::middleware(['auth', 'role:admin-ops'])->prefix('admin-ops')->name('admin-ops.')->group(function () {
     Route::get('/', [AdminController::class, 'ops'])->name('index');
     Route::get('/{id}', [AdminController::class, 'SetUji'])->name('set');
     Route::post('/create', [AdminController::class, 'operateCreate'])->name('sav');
-    Route::post('/jadwal', [GuruController::class, 'bareroll'])->name('jadwal-susulan.store');
+    Route::post('/jadwal', [GuruController::class, 'createJadwalSusulan'])->name('jadwal-susulan.store');
     // Route Hapus Jadwal
 Route::delete('/jadwal/{id}', [AdminController::class, 'operateDestroy'])->name('jadwal.destroy');
 
@@ -153,5 +168,31 @@ Route::post('/import/soal', [GuruController::class, 'import'])->name('import.soa
 Route::post('/import/preview', [GuruController::class, 'preview'])->name('import.preview');
 Route::post('/import/confirm', [GuruController::class, 'confirm'])->name('import.confirm');
 Route::post('/siswa/violation', [SiswaController::class, 'reportViolation'])->name('siswa.violation');
+Route::get('/check-block/{siswa_id}/{ujian_id}', [SiswaController::class, 'checkBlockStatus']);
+
+// Route untuk mengambil data jawaban detail (AJAX)
+Route::get('/guru/get-jawaban/{pesertaId}', [App\Http\Controllers\GuruController::class, 'getJawabanSiswa'])->name('guru.get-jawaban');
 Route::get("/ruangan/{id}",[UsersController::class,"show"])->name("show-qr");
 Route::post('/ruangan-check/{id}', [App\Http\Controllers\PengawasController::class, 'checkRuangan'])->name('ruangan.check');
+Route::get('/proxy-spline', function() {
+    $url = 'https://my.spline.design/draganddropbookpencilschoolcopy-2oyBmqYoZQJF4pK46vZCTquJ/';
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    
+    return response($response)->header('Content-Type', 'text/html');
+});
+// routes/web.php
+Route::get('/admin/monitor', function() {
+    $redis = Redis::connection();
+    
+    return [
+        'queue_length' => $redis->llen('queues:default'),
+        'redis_status' => $redis->ping(),
+        'failed_jobs' => DB::table('failed_jobs')->count(),
+    ];
+})->middleware('auth');

@@ -1,308 +1,34 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-<meta name="csrf-token" content="{{ csrf_token() }}">
-<title>Dashboard Siswa - Sistem Ujian</title>
+@extends('layouts.siswa')
 
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulmaswatch/default/bulmaswatch.min.css">
+@section('title', 'Dashboard Siswa')
+
+@section("content")
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Script Alert dipindah ke sini agar hanya jalan di dashboard -->
+    @if(session('success'))
+    <script>
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: '{{ session('success') }}',
+            confirmButtonColor: '#2e5b9a'
+        });
+    </script>
+    @endif
+
+    @if(session('error'))
+    <script>
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal!',
+            text: '{{ session('error') }}',
+            confirmButtonColor: '#d33'
+        });
+    </script>
+    @endif
+
+
 <style>
-    /* Animasi masuk (Berjalan otomatis saat halaman baru dibuka) */
-    .main-content{
-        animation: pageEnter 0.3s ease-out forwards;
-    }
-
-    @keyframes pageEnter {
-        from {
-            opacity: 0;
-            transform: translateY(12px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    /* Animasi keluar (Ditambahkan oleh JavaScript saat klik link) */
-    .main-content.page-leaving {
-        animation: pageLeave 0.25s ease-in forwards !important;
-    }
-
-    @keyframes pageLeave {
-        from {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        to {
-            opacity: 0;
-            transform: translateY(-12px);
-        }
-    }
-</style>
-<style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', system-ui, sans-serif;
-}
-
-body {
-    background: #f3f5f9;
-    overflow-x: hidden;
-}
-
-/* ===== HEADER ===== */
-.header {
-    background: #2e5b9a;
-    color: white;
-    padding: 12px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.header h2 {
-    font-size: 1rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.header h2 i {
-    font-size: 1.2rem;
-}
-
-/* User Dropdown */
-.user-dropdown {
-    position: relative;
-    cursor: pointer;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    transition: background 0.3s ease;
-}
-
-.user-info:hover {
-    background: rgba(255,255,255,0.15);
-}
-
-.user-avatar {
-    width: 34px;
-    height: 34px;
-    background: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #2e5b9a;
-    font-weight: bold;
-}
-
-.user-name {
-    font-weight: 500;
-    font-size: 0.85rem;
-}
-
-.user-name i {
-    font-size: 0.7rem;
-    margin-left: 5px;
-}
-
-/* Dropdown Menu */
-.dropdown-menu-custom {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: 8px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    min-width: 180px;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
-    z-index: 1001;
-}
-
-.user-dropdown.active .dropdown-menu-custom {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-.dropdown-item-custom {
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: #333;
-    text-decoration: none;
-    transition: background 0.2s ease;
-    border-bottom: 1px solid #eee;
-    font-size: 0.85rem;
-}
-
-.dropdown-item-custom:last-child {
-    border-bottom: none;
-}
-
-.dropdown-item-custom:hover {
-    background: #f5f5f5;
-}
-
-.dropdown-item-custom i {
-    width: 18px;
-    color: #2e5b9a;
-}
-
-.dropdown-divider {
-    height: 1px;
-    background: #eee;
-    margin: 4px 0;
-}
-
-.logout-btn {
-    color: #dc3545;
-}
-
-.logout-btn i {
-    color: #dc3545;
-}
-
-/* ===== LAYOUT ===== */
-.app-wrapper {
-    display: flex;
-    margin-top: 56px;
-    min-height: calc(100vh - 56px);
-}
-
-/* ===== SIDEBAR ===== */
-.sidebar {
-    width: 260px;
-    background: #53629E;
-    position: fixed;
-    left: 0;
-    top: 56px;
-    bottom: 0;
-    z-index: 99;
-    transition: transform 0.3s ease;
-    overflow-y: auto;
-}
-
-.sidebar-menu {
-    padding: 20px 0;
-}
-
-.sidebar-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 20px;
-    margin: 4px 12px;
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.sidebar-item i {
-    width: 22px;
-    font-size: 1rem;
-}
-
-.sidebar-item span {
-    font-size: 0.85rem;
-    font-weight: 500;
-}
-
-.sidebar-item:hover {
-    background: rgba(255,255,255,0.2);
-}
-
-.sidebar-item.active {
-    background: rgba(255,255,255,0.25);
-    border-left: 3px solid white;
-}
-
-.sidebar-logout {
-    position: absolute;
-    bottom: 20px;
-    left: 0;
-    right: 0;
-    padding: 0 12px;
-}
-
-.sidebar-logout .sidebar-item {
-    color: white;
-}
-
-.sidebar-logout .sidebar-item:hover {
-    background: #dc3545;
-}
-
-/* ===== MAIN CONTENT ===== */
-.main-content {
-    flex: 1;
-    margin-left: 260px;
-    padding: 24px;
-    transition: margin-left 0.3s ease;
-    width: calc(100% - 260px);
-}
-
-/* Mobile Menu Toggle */
-.mobile-toggle {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 50px;
-    height: 50px;
-    background: #2e5b9a;
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 100;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    border: none;
-    color: white;
-}
-
-.mobile-toggle i {
-    font-size: 22px;
-}
-
-/* Overlay untuk mobile */
-.sidebar-overlay {
-    display: none;
-    position: fixed;
-    top: 56px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 98;
-}
-
-.sidebar-overlay.active {
-    display: block;
-}
 
 /* ===== CARDS ===== */
 .cards {
@@ -504,40 +230,9 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
-    .header h2 span {
-        display: inline;
-    }
     
-    .user-name span {
-        display: none;
-    }
     
-    .user-name i {
-        display: none;
-    }
-    
-    .user-avatar {
-        width: 32px;
-        height: 32px;
-    }
-    
-    .sidebar {
-        transform: translateX(-100%);
-    }
-    
-    .sidebar.open {
-        transform: translateX(0);
-    }
-    
-    .main-content {
-        margin-left: 0 !important;
-        width: 100% !important;
-        padding: 16px;
-    }
-    
-    .mobile-toggle {
-        display: flex;
-    }
+   
     
     .cards {
         gap: 15px;
@@ -577,9 +272,7 @@ body {
         width: 100%;
     }
     
-    .main-content {
-        padding: 12px;
-    }
+    
     
     .exam-card .card-content {
         padding: 15px;
@@ -603,118 +296,174 @@ body {
     background: #5c6fa6;
     border-radius: 3px;
 }
+.page-header {
+   display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* biar responsive */
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.page-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e2a3e;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.page-header h1 i {
+    color: #2e5b9a;
+    font-size: 1.8rem;
+}
+
+.page-header p {
+    color: #64748b;
+    font-size: 0.9rem;
+}
+.exam-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding-top: 10px;
+}
+
+.exam-notice {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.exam-notice.warning {
+    background: #fff7e6;
+    color: #d97706;
+    border: 1px solid #facc15;
+}
+
+.exam-notice.info {
+    background: #eef4ff;
+    color: #2e5b9a;
+    border: 1px solid #bfd4ff;
+}
+
+.exam-btn {
+    width: 100%;
+    max-width: 240px;
+    height: 46px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.92rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: 0.25s ease;
+}
+
+.exam-btn:hover {
+    transform: translateY(-2px);
+}
+
+.exam-btn-primary {
+    background: #2e5b9a;
+    color: white;
+}
+
+.exam-btn-warning {
+    background: #f59e0b;
+    color: white;
+}
+
+.exam-status-tag {
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.exam-status-tag.info {
+    background: #eef4ff;
+    color: #2e5b9a;
+}
+
+.exam-status-tag.warning {
+    background: #fff7e6;
+    color: #d97706;
+}
+.exam-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .exam-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.exam-btn-start{
+    background: #2e5b9a;
+    color: white;
+    
+    height: 38px;
+    padding: 0 16px;
+    
+    border-radius: 10px;
+    
+    font-size: 0.85rem;
+    font-weight: 600;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    transition: 0.2s ease;
+}
+
+.exam-btn-start:hover{
+    background: #24497d;
+    color: #ffffff2f;
+    transform: translateY(-1px);
+}
 </style>
-</head>
 
-<body>
-
-<!-- Header -->
-<header class="header">
-    <h2>
-       <img src="{{asset('WhatsApp Image 2026-04-10 at 08.00.25.png')}}" class="image is-32x34" style="height:30px;"/>
-        <span class="has-text-light">SMK NEGERI 1 CIOMAS</span>
-    </h2>
-    
-    <div class="user-dropdown" id="userDropdown">
-        <div class="user-info">
-            <div class="user-avatar">
-                <i class="fas fa-user"></i>
-            </div>
-            <div class="user-name">
-                @if(isset($ire))
-                    <span>{{ $ire->nama }}</span>
-                @else
-                    <span>Siswa</span>
-                @endif
-                <i class="fas fa-chevron-down"></i>
-            </div>
-        </div>
-        
-        <div class="dropdown-menu-custom">
-           <a href="{{ route('profile.index') }}" class="dropdown-item-custom">
-        <i class="fas fa-user-circle"></i>
-        <span>Profil Saya</span>
-    </a>
-            <div class="dropdown-divider"></div>
-            <form action="{{ route('users.logout') }}" method="post">
-                @csrf
-                <button type="submit" class="dropdown-item-custom logout-btn" style="width: 100%; background: none; border: none; cursor: pointer;">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </button>
-            </form>
-        </div>
-    </div>
-</header>
-
-<!-- Mobile Menu Toggle -->
-<button class="mobile-toggle" id="mobileToggle">
-    <i class="fas fa-bars"></i>
-</button>
-
-<!-- Overlay -->
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-<div class="app-wrapper">
-    <!-- Sidebar -->
-<aside class="sidebar" id="sidebar">
-        <div class="sidebar-menu">
-            <a href="{{ route('siswa.index') }}" class="sidebar-item ">
-                <i class="fas fa-home"></i>
-                <span>Dashboard</span>
-            </a>
-             <a href="{{ route('siswa.jadwal') }}" class="sidebar-item">
-                <i class="fas fa-calendar-alt"></i>
-                <span>Jadwal Ujian</span>
-            </a>
-             <a href="{{ route('siswa.uji') }}" class="sidebar-item active">
+<div class="page-header">
+            <div>
+                <h1>
                 <i class="fas fa-book"></i>
-                <span>Ujian</span>
-            </a>
-            <a href="{{ route('siswa.riwayat') }}" class="sidebar-item">
-                <i class="fas fa-history"></i>
-                <span>Riwayat Ujian</span>
-            </a>
-           
-        </div>
-        
-        <div class="sidebar-logout">
-            <form action="{{ route('users.logout') }}" method="post">
-                @csrf
-                <button type="submit" class="sidebar-item" style="width: 100%; background: none; border: none; cursor: pointer;">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </button>
-            </form>
-        </div>
-    </aside>
-    
-    <!-- Main Content -->
-    <main class="main-content" id="mainContent">
-        @if(session('success'))
-            <div class="notification-toast notification-success" id="notification">
-                <i class="fas fa-check-circle"></i>
-                <span>{{ session('success') }}</span>
+                 Ujian Mode
+            </h1>
+            <p>Lihat Ujian Yang akan Dilaksanakan</p>
             </div>
-        @endif
-        
-        @if(session('error'))
-            <div class="notification-toast notification-error" id="notification">
-                <i class="fas fa-exclamation-circle"></i>
-                <span>{{ session('error') }}</span>
+            
+            <div class="date-badge">
+                <i class="fas fa-calendar-alt"></i> 
+                {{ \Carbon\Carbon::parse(now())->locale("id")->isoFormat('dddd, D MMMM YYYY') }}
             </div>
-        @endif
-        
+        </div>
 
-         <!-- Cards Menu -->
-
-        
-        <!-- Ujian Hari Ini -->
 <div class="exam-container">
     <div class="section-title">
         <i class="fas fa-calendar-day"></i> Ujian Hari Ini - {{ date('d/m/Y') }}
     </div>
+    
   @if($siswa->status === "ready")
+  <div class="exam-grid">
     @if(isset($uji) && count($uji) > 0)
         @foreach($uji as $uj)
         @php 
@@ -742,12 +491,12 @@ body {
                     <div class="media-content">
                         <p class="title is-4">{{ $uj->mapels->nama_mapel ?? $uj->nama_ujian }}</p>
                         <p class="title is-4">{{ $uj->nama_ujian ?? $uj->nama_ujian }}</p>
-                        <p class="subtitle is-6">
+                        <p class="subtitle is-6" style="margin-top:10px;">
                             <span class="icon">
                                 <i class="fas fa-calendar-alt"></i>
                             </span>
                             @if(isset($uj->jadwal))
-                                {{ date('l, d F Y H:i', strtotime($uj->jadwal->waktu_mulai)) }}
+                                {{ \Carbon\Carbon::parse($uj->jadwal->waktu_mulai)->locale('id')->translatedFormat('l, d F Y H:i') }}
                             @else
                                 Waktu Belum ditentukan
                             @endif
@@ -780,7 +529,7 @@ body {
                     {{-- 2. STATUS MULAI: Tampilkan tombol lanjutkan --}}
                     @elseif($statusUjian == 'mulai')
                         <div class="has-text-centered">
-                            <div class="notification is-warning is-light">
+                            <div class="notification is-light" style="color:#2e5b9a;font-size:12px;">
                                 <i class="fas fa-hourglass-half"></i> Ujian sedang berjalan
                             </div>
                             <a href="{{ route('siswa.resume', $uj->id) }}" class="button is-warning is-medium">
@@ -798,7 +547,7 @@ body {
                     @elseif($statusUjian == 'belum')
                         @if($isUjianReady)
                             <div class="has-text-centered">
-                                <a href="{{ route('siswa.shop', $uj->id) }}" class="button is-medium has-text-light" style="background:#2e5b9a;">
+                                <a href="{{ route('siswa.shop', $uj->id) }}" class="button exam-btn-start" style="background:#2e5b9a;">
                                     <span class="icon">
                                         <i class="fas fa-play"></i>
                                     </span>
@@ -813,8 +562,8 @@ body {
                             </div>
                         @else
                             <div class="has-text-centered">
-                                <span class="tag is-info is-light is-medium">
-                                    <i class="fas fa-info-circle"></i> Belum tersedia
+                                <span class="tag is-info is-light is-medium" style="display:inline-flex; align-items:center; gap:8px;">
+                                    <i class="fas fa-info-circle" ></i> Belum tersedia
                                 </span>
                             </div>
                         @endif
@@ -838,173 +587,9 @@ body {
             <p class="is-size-7">Silakan cek jadwal ujian untuk informasi lebih lanjut</p>
         </div>
     @endif
+    </div>
   @else
    <h5>Belum Di Absen</h5>
   @endif
 </div>
-
-
-
-    </main>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // User Dropdown Toggle
-    var userDropdown = document.getElementById('userDropdown');
-    if (userDropdown) {
-        userDropdown.addEventListener('click', function(e) {
-            e.stopPropagation();
-            userDropdown.classList.toggle('active');
-        });
-    }
-    
-    document.addEventListener('click', function() {
-        if (userDropdown) userDropdown.classList.remove('active');
-    });
-    
-    // Mobile Sidebar Toggle
-    var mobileToggle = document.getElementById('mobileToggle');
-    var sidebar = document.getElementById('sidebar');
-    var sidebarOverlay = document.getElementById('sidebarOverlay');
-    
-    function toggleSidebar() {
-        sidebar.classList.toggle('open');
-        sidebarOverlay.classList.toggle('active');
-        var icon = mobileToggle.querySelector('i');
-        if (sidebar.classList.contains('open')) {
-            icon.classList.remove('fa-bars');
-            icon.classList.add('fa-times');
-        } else {
-            icon.classList.remove('fa-times');
-            icon.classList.add('fa-bars');
-        }
-    }
-    
-    if (mobileToggle) {
-        mobileToggle.addEventListener('click', toggleSidebar);
-    }
-    if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', toggleSidebar);
-    }
-    
-    // Auto hide notification
-    var notification = document.getElementById('notification');
-    if (notification) {
-        setTimeout(function() {
-            notification.style.opacity = '0';
-            setTimeout(function() {
-                notification.style.display = 'none';
-            }, 300);
-        }, 5000);
-    }
-    
-    // Handle window resize
-    var resizeTimer;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(function() {
-            if (window.innerWidth > 768) {
-                sidebar.classList.remove('open');
-                if (sidebarOverlay) sidebarOverlay.classList.remove('active');
-                var icon = mobileToggle.querySelector('i');
-                if (icon) {
-                    icon.classList.remove('fa-times');
-                    icon.classList.add('fa-bars');
-                }
-            }
-        }, 250);
-    });
-    
-    // Close sidebar on mobile after clicking link
-    var sidebarItems = document.querySelectorAll('.sidebar-item');
-    for (var i = 0; i < sidebarItems.length; i++) {
-        sidebarItems[i].addEventListener('click', function() {
-            if (window.innerWidth <= 768) {
-                setTimeout(function() {
-                    if (sidebar.classList.contains('open')) toggleSidebar();
-                }, 150);
-            }
-        });
-    }
-});
-</script>
-
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // ==========================================
-    // 1. INTERCEPT LINK KLIK (Smooth Redirect)
-    // ==========================================
-    document.addEventListener('click', function(e) {
-        // Cari elemen <a> yang diklik (berlaku jika klik teks atau icon di dalam <a>)
-        const link = e.target.closest('a');
-        
-        if (!link) return; // Bukan link, abaikan
-        
-        const href = link.getAttribute('href');
-        const target = link.getAttribute('target');
-        
-        // Abaikan jika:
-        // - Link kosong / # / javascript
-        // - Link untuk buka tab baru (target="_blank")
-        // - Link eksternal (mailto, tel, http lain)
-        if (!href || 
-            href.startsWith('#') || 
-            href.startsWith('javascript:') || 
-            href.startsWith('mailto:') || 
-            href.startsWith('tel:') || 
-            target === '_blank') {
-            return;
-        }
-        
-        // Abaikan link khusus jika ada (misal: tombol yang buat modal, dll)
-        if (link.classList.contains('no-transition') || link.getAttribute('data-turbolinks') === 'false') {
-            return;
-        }
-        
-        // Cek apakah link internal (domain yang sama atau relative path /)
-        const isLocal = href.startsWith(window.location.origin) || href.startsWith('/');
-        const mainContent = document.querySelector(".main-content")
-        if (isLocal) {
-            e.preventDefault(); // Cegah pindah halaman secara langsung
-            
-            // Tambahkan class animasi keluar
-            
-            mainContent.classList.add("page-leaving");
-            // Tunggu animasi selesai, baru redirect
-            setTimeout(function() {
-                window.location.href = href;
-            }, 250); // 250ms harus sama dengan durasi CSS pageLeave
-        }
-    });
-
-    // ==========================================
-    // 2. INTERCEPT FORM SUBMIT (Smooth Post/Logout)
-    // ==========================================
-    // Khusus untuk form biasa (misal: form logout, form cari)
-    document.querySelectorAll('form').forEach(function(form) {
-        form.addEventListener('submit', function() {
-           mainContent.add("page-leaving");
-            // Jangan pakai e.preventDefault() biar Laravel tetap proses data/CSRF dengan normal
-        });
-    });
-
-    // Khusus untuk AJAX/Fetch (misal: form absensi, hapus jadwal yang pakai fetch)
-    const originalFetch = window.fetch;
-    window.fetch = function() {
-        mainContent.add("page-leaving");
-        
-        // Tunggu 150ms lalu hilangkan animasi (supaya tidak menghitam saat loading AJAX lama)
-        setTimeout(function() {
-           mainContent.add("page-leaving");
-
-        }, 150);
-        
-        return originalFetch.apply(this, arguments);
-    };
-});
-</script>
-</body>
-</html>
+@endsection

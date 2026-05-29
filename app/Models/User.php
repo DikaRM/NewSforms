@@ -18,4 +18,7 @@ class User extends Authenticatable
       "role",
       "username",
       ];
+      public function user(){
+        return $this->hasOne(Guru::class);
+    }
 }

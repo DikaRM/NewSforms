@@ -32,16 +32,33 @@
         color: white;
         border: none;
         padding: 12px 24px;
-        border-radius: 50px;
+        border-radius: 5px;
         font-weight: 600;
         box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
         cursor: pointer;
         display: inline-flex;
         align-items: center;
+        margin-top:20px;
         gap: 8px;
         transition: all 0.2s;
     }
-    .btn-neat:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(79, 70, 229, 0.4); }
+     .btn-net {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 5px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        margin-top:10px;
+        gap: 8px;
+        transition: all 0.2s;
+    }
+
+    .btn-neat:hover,.btn-net:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(79, 70, 229, 0.4); }
 
     /* --- Tombol Edit (Di Tabel) --- */
     .btn-edit-table {
@@ -161,6 +178,20 @@
     /* Tabel Bulma sedikit disesuaikan agar rapi */
     .table th { color: #6B7280; font-weight: 600; text-transform: uppercase; font-size: 0.8rem; }
     .table td { vertical-align: middle; }
+    .text-error {
+    color: #dc3545;
+    font-size: 0.75rem;
+    margin-top: -5px;
+    display: block;
+}
+
+.ft{
+    display:flex;
+    flex-direction:row;
+    justify-content:space-between;
+    align-items: center;
+    margin:20px 10px;
+}
 </style>
 
 <!-- 3. SWEETALERT LOGIC (Tetap dipertahankan) -->
@@ -175,7 +206,30 @@
     Swal.fire({ icon: 'error', title: 'Gagal!', text: '{{ session('error') }}', confirmButtonColor: '#d33' });
 </script>
 @endif
-
+@if(request('search') && !request('page'))
+    @if(isset($isSearching))
+        @if($data->count() > 0)
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Data ditemukan',
+                text: 'Ada {{ $data->count() }} hasil pencarian',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        </script>
+        @else
+        <script>
+            Swal.fire({
+                icon: 'warning',
+                title: 'Tidak ditemukan',
+                text: 'Data tidak ditemukan!',
+                confirmButtonColor: '#d33'
+            });
+        </script>
+        @endif
+    @endif
+@endif
 @error('password')
 <script>
 Swal.fire({ icon: 'error', title: 'Gagal!', text: 'Password Minimal 6', confirmButtonColor: '#d33' });
@@ -190,12 +244,32 @@ Swal.fire({ icon: 'error', title: 'Gagal!', text: 'Nisn Harus 10', confirmButton
 
 <!-- 4. CONTENT UTAMA -->
 <!-- Tombol Trigger Baru -->
-<button class="btn-neat" onclick="openSheet('modal-create')">
+ <div class="ft">
+    <button class="btn-neat" onclick="openSheet('modal-create')">
     <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
     </svg>
     Tambah Data Siswa
 </button>
+<form method="GET" action="">
+    <div style="display:flex; gap:10px; margin-top:20px;">
+
+        <input 
+    type="text" 
+    name="search" 
+    value="{{ request('search') }}"
+    placeholder="Cari nama / NISN..."
+    class="form-input"
+ style="margin-top:10px;">
+
+        <button type="submit" class="btn-net">
+            Cari
+        </button>
+
+    </div>
+</form>
+ </div>
+
 
 <!-- MODAL CREATE (Bottom Sheet) -->
 <div class="overlay" id="modal-create">
@@ -209,7 +283,10 @@ Swal.fire({ icon: 'error', title: 'Gagal!', text: 'Nisn Harus 10', confirmButton
         <form action="{{route('admin.siswa.store')}}" method="post">
             @csrf
             <div class="sheet-body">
-                
+                <div class="input-wrapper">
+                    <span class="input-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg></span>
+                    <input type="number" class="form-input" placeholder="Nomer Absen" name="nomor_absen" required>
+                </div>
                 <div class="input-wrapper">
                     <span class="input-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></span>
                     <input type="text" class="form-input" placeholder="Nama Lengkap" name="nama" required>
@@ -219,12 +296,26 @@ Swal.fire({ icon: 'error', title: 'Gagal!', text: 'Nisn Harus 10', confirmButton
                     <span class="input-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></span>
                     <input type="password" class="form-input" placeholder="Password" name="password">
                 </div>
+                <small id="password-error" class="text-error"></small>
 
                 <div class="input-wrapper">
                     <span class="input-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg></span>
                     <input type="number" class="form-input" placeholder="NISN (10 Digit)" minlength="10" maxlength="10" name="nisn" required>
                 </div>
+                <small id="nisn-error" class="text-error"></small>
+                <div class="input-wrapper">
+    <span class="input-icon">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+        </svg>
+    </span>
 
+    <select class="form-select" name="jenis_kelamin" required>
+        <option value="">Jenis Kelamin</option>
+        <option value="L">Laki-laki</option>
+        <option value="P">Perempuan</option>
+    </select>
+</div>
                 <div class="input-wrapper">
                     <span class="input-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" /></svg></span>
                     <select class="form-select" name="kelas_id" required>
@@ -245,84 +336,137 @@ Swal.fire({ icon: 'error', title: 'Gagal!', text: 'Nisn Harus 10', confirmButton
 </div>
 
 <!-- TABEL DATA -->
+ 
+ <div id="siswa-table">
 <table class="table is-stripped is-fullwidth is-hoverable" style="margin-top: 20px;">
   <thead>
     <tr>
       <td style="width: 50px;">No</td>
+      <td>Nomer Absen</td>
       <td>Username</td>
       <td>Nama Lengkap</td>
+      <td>Jenis Kelamin</td>
       <td>NISN</td>
       <td>Kelas</td>
       <td>Aksi</td>
     </tr>
   </thead>
-  <tbody>
-    @foreach($data as $d)
+<tbody id="table-body">
+    @foreach($data as $index => $d )
     <tr>
-      <td>{{$d->id_siswa}}</td>
-      <td>{{$d->username}}</td>
+      <td>{{$index + 1}}</td>
+      @if($d->nomor_absen)
+        <td>{{$d->nomor_absen}}</td>
+      @else
+        <td>-</td>
+      @endif
+      <td>{{$d->user->username}}</td>
       <td>{{$d->nama}}</td>
+      <td>
+    @if($d->jenis_kelamin == 'L')
+        <span class="tag is-primary is-light">Laki-laki</span>
+    @else
+        <span class="tag is-danger is-light">Perempuan</span>
+    @endif
+</td>
       <td>{{$d->nisn}}</td>
       <td><span class="tag is-info is-light">{{$d->kelas->nama_kelas}}</span></td>
       <td>
         <div style="display: flex; gap: 8px;">
             <!-- Trigger Edit -->
-            <button class="btn-edit-table" onclick="openSheet('modal-edit-{{$d->id_siswa}}')">Edit</button>
+            <button 
+    class="button is-warning is-light is-small btn-edit"
+    data-id="{{$d->id_siswa}}"
+    data-nama="{{$d->nama}}"
+    data-absen="{{$d->nomor_absen}}"
+    data-nisn="{{$d->nisn}}"
+    data-jk="{{$d->jenis_kelamin}}"
+>
+    <i class="fas fa-edit" style="margin-right:6px;"></i>Edit
+</button>
             
             <!-- Trigger Delete (Biar rapi pakai form biasa) -->
-            <form action="{{route('admin.siswa.destroy',$d->id_siswa)}}" method="post" style="display: inline;">
+            <form action="{{route('admin.siswa.destroy',$d->id_siswa)}}"  method="post" style="display: inline;">
                 @csrf
                 @method("DELETE")
-                <button type="submit" class="button is-danger is-small" style="border-radius: 6px; height: 32px;">Hapus</button>
+                <button type="button"
+    class="button is-danger is-small btn-delete"
+    data-id="{{$d->id_siswa}}">
+   <i class="fas fa-trash" style="margin-right:6px;"></i> Hapus
+</button>
             </form>
         </div>
       </td>
     </tr>
 
     <!-- MODAL EDIT (Looping untuk setiap siswa) -->
-    <div class="overlay" id="modal-edit-{{$d->id_siswa}}">
-        <div class="bottom-sheet">
-            <div class="sheet-handle" onclick="closeSheet('modal-edit-{{$d->id_siswa}}')"></div>
-            <div class="sheet-header">
-                <h3 class="sheet-title">Edit Siswa: {{$d->nama}}</h3>
-                <button class="btn-close" onclick="closeSheet('modal-edit-{{$d->id_siswa}}')">Tutup</button>
-            </div>
-            
-            <form action="{{route('admin.siswa.update',$d->id_siswa)}}" method="post">
-                @csrf
-                @method("PUT")
-                <div class="sheet-body">
-                    
-                    <div class="input-wrapper">
-                        <span class="input-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></span>
-                        <input type="text" class="form-input" name="nama" value="{{$d->nama}}" required>
-                    </div>
-
-                    <!-- Password biasanya kosong saat edit agar tidak menampilkan hash, tapi saya ikuti kode Anda -->
-                    <div class="input-wrapper">
-                        <span class="input-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></span>
-                        <input type="text" class="form-input" placeholder="Biarkan kosong jika tidak diubah" name="password">
-                    </div>
-
-                    <div class="input-wrapper">
-                        <span class="input-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg></span>
-                        <input type="number" class="form-input" placeholder="NISN" minlength="10" maxlength="10" name="nisn" value="{{$d->nisn}}" required>
-                    </div>
-
-                </div>
-                <div class="sheet-footer">
-                    <button type="button" class="btn-cancel" onclick="closeSheet('modal-edit-{{$d->id_siswa}}')">Batal</button>
-                    <button type="submit" class="btn-submit">Update Data</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    
     @endforeach
   </tbody>
 </table>
+<div class="overlay" id="modal-edit">
+    <div class="bottom-sheet">
+        <div class="sheet-handle" onclick="closeSheet('modal-edit')"></div>
 
+        <div class="sheet-header">
+            <h3 class="sheet-title" id="edit-title">Edit Siswa</h3>
+            <button class="btn-close" onclick="closeSheet('modal-edit')">Tutup</button>
+        </div>
+
+        <form id="edit-form" method="post">
+            @csrf
+            @method("PUT")
+
+            <div class="sheet-body">
+
+                <div class="input-wrapper">
+                    <span class="input-icon">#</span>
+                    <input type="number" class="form-input" name="nomor_absen" id="edit-absen" required>
+                </div>
+
+                <div class="input-wrapper">
+                    <span class="input-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></span>
+                    <input type="text" class="form-input" name="nama" id="edit-nama" required>
+                </div>
+
+                <div class="input-wrapper">
+                    <span class="input-icon"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></span>
+                    <input type="text" class="form-input" name="password" placeholder="Kosongkan jika tidak diubah">
+                </div>
+
+                <div class="input-wrapper">
+                    <span class="input-icon">ID</span>
+                    <input type="number" class="form-input" name="nisn" id="edit-nisn" required>
+                </div>
+
+                <div class="input-wrapper">
+                    <span class="input-icon">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+        </svg>
+    </span> 
+                    <select class="form-select" name="jenis_kelamin" id="edit-jk">
+                        <option value="L">Laki-laki</option>
+                        <option value="P">Perempuan</option>
+                    </select>
+                </div>
+
+            </div>
+
+            <div class="sheet-footer">
+                <button type="button" class="btn-cancel" onclick="closeSheet('modal-edit')">Batal</button>
+                <button type="submit" class="btn-submit">Update</button>
+            </div>
+        </form>
+    </div>
+</div>
+<div style="margin-top:20px;">
+    {{ $data->links() }}
+</div>
+    </div>
 <!-- 5. JAVASCRIPT FUNGSI POPUP -->
 <script>
+    
     function openSheet(id) {
         const overlay = document.getElementById(id);
         if (overlay) {
@@ -349,6 +493,91 @@ Swal.fire({ icon: 'error', title: 'Gagal!', text: 'Nisn Harus 10', confirmButton
             }
         });
     });
+</script>
+<script>
+document.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', function () {
+        let form = this.closest('form');
+
+        Swal.fire({
+            title: 'Yakin?',
+            text: "Data tidak bisa dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    });
+});
+</script>
+<script>
+document.addEventListener('input', function(e) {
+
+    // VALIDASI NISN
+    if (e.target.name === 'nisn') {
+        let value = e.target.value;
+        let error = e.target.closest('.input-wrapper').nextElementSibling;
+
+        if (value.length !== 10) {
+            error.innerText = "NISN harus 10 digit";
+            e.target.style.borderColor = "red";
+        } else {
+            error.innerText = "";
+            e.target.style.borderColor = "#ddd";
+        }
+    }
+
+    // VALIDASI PASSWORD
+    if (e.target.name === 'password') {
+        let value = e.target.value;
+        let error = e.target.closest('.input-wrapper').nextElementSibling;
+
+        // KHUSUS EDIT: boleh kosong
+        if (value.length > 0 && value.length < 6) {
+            error.innerText = "Password minimal 6 karakter";
+            e.target.style.borderColor = "red";
+        } else {
+            error.innerText = "";
+            e.target.style.borderColor = "#ddd";
+        }
+    }
+
+});
+</script>
+<script>
+document.addEventListener('click', function(e) {
+
+    const btn = e.target.closest('.btn-edit');
+    if (!btn) return;
+
+    // ambil data dari tombol
+    let id = btn.dataset.id;
+    let nama = btn.dataset.nama;
+    let absen = btn.dataset.absen;
+    let nisn = btn.dataset.nisn;
+    let jk = btn.dataset.jk;
+
+    // isi ke form
+    document.getElementById('edit-nama').value = nama;
+    document.getElementById('edit-absen').value = absen;
+    document.getElementById('edit-nisn').value = nisn;
+    document.getElementById('edit-jk').value = jk;
+
+    // set action form
+    document.getElementById('edit-form').action = `/admin/siswa/${id}`;
+
+    // ubah title
+    document.getElementById('edit-title').innerText = "Edit: " + nama;
+
+    // buka modal
+    openSheet('modal-edit');
+});
 </script>
 
 @endsection

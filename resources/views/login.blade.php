@@ -130,7 +130,7 @@ body {
 
 .yellow-kecil {
   position: absolute;
-  top: 58%;
+  top: 65%;
   left: 85%;
   width: 60px;
   height: 105px;
@@ -263,16 +263,7 @@ body {
   position: relative;
 }
 
-.input-wrapper .icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #a0aec0;
-  font-size: 1rem;
-  pointer-events: none;
-  transition: color 0.3s;
-}
+ 
 
 .input-group input {
   width: 100%;
@@ -291,21 +282,38 @@ body {
   font-size: 0.85rem;
 }
 
-.input-group input:focus {
-  border-color: #2f5597;
-  box-shadow: 0 0 0 4px rgba(47,85,151,0.1);
-  transform: translateY(-1px);
+.input-wrapper {
+  position: relative;
 }
 
-.input-group input:focus + .icon,
-.input-group input:focus ~ .icon {
-  color: #2f5597;
+.input-wrapper .icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a0aec0;
+  font-size: 1rem;
+  pointer-events: none;
+  transition: 0.25s ease;
+    z-index: 10;
 }
 
-/* Reverse icon selector (karena icon sebelum input) */
-.input-wrapper:focus-within .icon {
-  color: #2f5597;
+.input-wrapper input {
+  width: 100%;
+  padding: 14px 14px 14px 42px;
+  border-radius: 12px;
+  border: 2px solid #dde3ed;
+  background: #fff;
+  font-size: 0.95rem;
+  color: #2d3748;
+  outline: none;
+   transition: all 0.25s ease;
 }
+
+
+
+/* Saat input sedang aktif */
+
 
 .login-btn {
   width: 100%;
@@ -356,6 +364,10 @@ body {
   font-size: 0.75rem;
   color: #a0aec0;
 }
+/* Default icon terlihat */
+
+
+/* Optional: saat hover juga hilang */
 
 /* ==================== RESPONSIVE HP ==================== */
 @media (max-width: 768px) {
@@ -417,6 +429,34 @@ body {
   .logo img { width: 45px; height: 35px; }
   .login-box h2 { font-size: 22px; }
 }
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2f5597 0%, #4e6fae 100%);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 30px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.3s;
+  letter-spacing: 0.5px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* SVG pesawat */
+.plane-icon {
+  width: 20px;
+  height: 20px;
+  position: relative;
+}
 </style>
 </head>
 
@@ -458,12 +498,17 @@ body {
     <!-- FORM ASLI TIDAK DIUBAH — CSRF & ROUTE TERJAGA -->
     <form method="POST" action="{{route('users.store')}}">
       @csrf
+      @php
+$token = Str::uuid();
+session(['login_token' => $token]);
+@endphp
 
+<input type="hidden" name="login_token" value="{{ $token }}">
       <div class="input-group">
         <label>Pengguna</label>
         <div class="input-wrapper">
           <span class="icon"><i class="bi bi-person-circle"></i></span>
-          <input type="text" placeholder="Nama Lengkap / Username" name="login">
+          <input type="text" placeholder="Nama Lengkap / Username" name="login" required>
         </div>
       </div>
 
@@ -471,11 +516,23 @@ body {
         <label>Password</label>
         <div class="input-wrapper">
           <span class="icon"><i class="bi bi-lock"></i></span>
-          <input type="password" placeholder="Password" name="password">
+          <input type="password" placeholder="Password" name="password" required>
         </div>
       </div>
 
-      <button class="login-btn" type="submit">Masuk</button>
+     <button class="login-btn" id="login-btn" type="submit">
+    
+    <span class="btn-text">Masuk</span>
+
+    <!-- SVG Pesawat -->
+    <svg class="plane-icon" viewBox="0 0 24 24" fill="none">
+        <path
+            d="M2 19L22 12L2 5L2 10L17 12L2 14L2 19Z"
+            fill="white"
+        />
+    </svg>
+
+</button>
     </form>
 
     <p class="login-footer">© 2025 SMKN 1 Ciomas — SmartSchool Exam</p>
@@ -485,6 +542,36 @@ body {
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     
 <script>
+ document.querySelectorAll('.input-wrapper input').forEach(input => {
+
+    const icon = input.parentElement.querySelector('.icon');
+
+    function updateInput() {
+
+        if (input.value.length > 0 || input === document.activeElement) {
+
+            // icon hilang
+            icon.style.opacity = "0";
+
+            // text pindah ke kiri
+            input.style.paddingLeft = "14px";
+
+        } else {
+
+            // icon muncul
+            icon.style.opacity = "1";
+
+            // kasih ruang icon lagi
+            input.style.paddingLeft = "42px";
+        }
+    }
+
+    input.addEventListener('focus', updateInput);
+    input.addEventListener('blur', updateInput);
+    input.addEventListener('input', updateInput);
+
+    updateInput();
+});
 // =============================================
 // GSAP ANIMATIONS — tidak menyentuh form/logic
 // =============================================
@@ -514,6 +601,19 @@ for (let i = 0; i < 15; i++) {
     delay: Math.random() * 2
   });
 }
+gsap.set('.yellow-kecil', {
+  y: -5
+});
+
+gsap.to('.yellow-kecil', { 
+  y: 30, // batas atas
+  repeat: -1,
+  yoyo: true,
+  duration: 1.5,
+ ease: "back.out(1.4)"
+  
+},"-=0.3" );
+
 
 // --- 2. Animasi masuk keseluruhan ---
 const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
@@ -544,7 +644,7 @@ tl.from('.left h1', {
   y: 40,
   opacity: 0,
   duration: 0.7
-}, "-=0.3");
+},  `-=0.4`);
 
 // Underline pada "SmartSchool Exam" mengembang
 tl.to('.left h1 span::after', {
@@ -554,12 +654,12 @@ tl.to('.left h1 span::after', {
 }, "-=0.3");
 
 // --- 3. Shape dekorasi masuk satu per satu ---
-const shapes = ['.green', '.green-kecil', '.blue', '.yellow', '.yellow-kecil', '.wisuda', '.laptop'];
+const shapes = ['.green', '.green-kecil', '.blue', '.yellow', '.wisuda', '.laptop'];
 shapes.forEach((sel, i) => {
   const el = document.querySelector(sel);
   if (!el) return;
   tl.from(el, {
-    y: 60,
+    y: 30,
     opacity: 0,
     rotation: (i % 2 === 0 ? -8 : 8),
     duration: 0.7,
@@ -618,7 +718,6 @@ gsap.utils.toArray('.input-group input').forEach(input => {
 gsap.to('.green', { y: -12, duration: 3, repeat: -1, yoyo: true, ease: "sine.inOut" });
 gsap.to('.green-kecil', { y: -8, duration: 2.5, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 0.5 });
 gsap.to('.yellow', { y: -10, duration: 3.5, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 0.3 });
-gsap.to('.yellow-kecil', { y: -6, duration: 2.8, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 0.8 });
 gsap.to('.wisuda', { y: -8, duration: 4, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 0.2 });
 gsap.to('.laptop', { y: -10, duration: 3.2, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 0.6 });
 gsap.to('.blue', { y: 8, rotation: "+=3", duration: 3.8, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 1 });
@@ -630,6 +729,48 @@ gsap.to('.login-btn', {
   repeat: -1,
   yoyo: true,
   ease: "sine.inOut"
+});
+</script>
+<script>
+document.querySelector("form").addEventListener("submit", function() {
+
+    const btn = document.getElementById("login-btn");
+
+    btn.disabled = true;
+   
+});
+</script>
+<script>
+document.querySelector("form").addEventListener("submit", function() {
+
+    const btn = document.getElementById("login-btn");
+    const plane = document.querySelector(".plane-icon");
+    const text = document.querySelector(".btn-text");
+
+    btn.disabled = true;
+
+    // Ganti text
+    text.innerText = "Loading...";
+
+    // Animasi pesawat take off
+    gsap.to(plane, {
+        x: 180,
+        y: -80,
+        rotate: -25,
+        scale: 0.4,
+        opacity: 0,
+        duration: 1.2,
+        ease: "power2.in"
+    });
+
+    // Tombol glow
+    gsap.to(btn, {
+        boxShadow: "0 0 30px rgba(255,255,255,0.4)",
+        duration: 0.4,
+        yoyo: true,
+        repeat: 1
+    });
+
 });
 </script>
 

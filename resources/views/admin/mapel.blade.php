@@ -122,6 +122,20 @@
         font-size: 0.95rem;
         background: #fff;
     }
+    /* Default: background penuh */
+.button.is-danger.custom-delete {
+    background-color: #ff3860; /* warna danger Bulma */
+    color: white;
+    border: 1px solid #ff3860;
+    transition: 0.3s ease;
+}
+
+/* Hover: jadi outline */
+.button.is-danger.custom-delete:hover {
+    background-color: transparent;
+    color: #ff3860;
+    border: 1px solid #ff3860;
+}
 </style>
 
 <!-- Session Alerts -->
@@ -208,11 +222,12 @@
                             @foreach($map->guru as $guru)
                             <li style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed #eee;">
                                 <span style="font-size: 0.9rem;">{{ $guru->nama }}</span>
-                                <form action="{{ route('admin.letroy', $guru->id)}}" 
+                                <form action="{{ route('admin.roy', $guru->id)}}" 
                                       method="post" style="display: inline;">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="button is-danger is-outlined is-small" 
+                                    <input type="hidden" name="mapel_id" value="{{$map->id}}">
+                                    <button type="submit" class="button is-danger custom-delete is-small" 
                                             onclick="return confirm('Hapus guru ini dari mapel?')">
                                         <span class="icon is-small"><i class="fas fa-trash"></i></span>
                                     </button>
@@ -243,7 +258,7 @@
                         <form action="{{ route('admin.letroy', $map->id) }}" method="post" style="flex: 1;">
                             @csrf
                             @method("DELETE")
-                            <button class="button is-danger is-outlined" 
+                            <button class="button is-danger custom-delete" 
                                     type="submit" 
                                     style="width: 100%;"
                                     onclick="return confirm('Yakin ingin menghapus mapel ini beserta relasinya?')">

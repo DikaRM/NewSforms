@@ -3,6 +3,19 @@
 
 {{-- STYLE TAMBAHAN --}}
 <style>
+     :root {
+        --primary: #3085d6;
+        --primary-soft: #EEF2FF;
+        --text-main: #111827;
+        --text-muted: #6B7280;
+        --border: #E5E7EB;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 20px;
+        --input-height: 48px;
+        --shadow-sheet: 0 -4px 30px rgba(0, 0, 0, 0.1);
+        --focus-ring: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    }
     .stat-card {
     
         transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -53,6 +66,12 @@
         color: #ff3860;
         font-size: 0.9rem;
     }
+    .text-error {
+         display: block !important;
+    color: red;
+    font-size: 0.8rem;
+    margin-top: 5px;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -356,12 +375,12 @@ Swal.fire({
 </div>
 
 {{-- TABEL USERS (TIDAK BERUBAH) --}}
-<div class="card mt-5">
+<div class="card mt-5" id="tabel-users">
     <div class="card-header" style="background: #2e5b9a;">
         <p class="card-header-title has-text-white">Manajemen Pengguna</p>
         <div class="card-header-icon">
             <button class="button is-light is-small" onclick="document.getElementById('modals').classList.add('is-active');">
-                <i class="fas fa-plus"></i> Tambah Users
+                <i class="fas fa-plus" style="margin-right:6px;"></i> Tambah Users
             </button>
         </div>
     </div>
@@ -400,9 +419,9 @@ Swal.fire({
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($data as $d)
+                    @foreach($data as $index => $d)
                     <tr>
-                        <td>{{$d->id}}</td>
+                        <td>{{$index +1}}</td>
                         <td>{{$d->nama}}</td>
                         <td>
                             <span class="tag is-info is-light">
@@ -410,26 +429,35 @@ Swal.fire({
                             </span>
                         </td>
                         <td class="buttons">
-                            <button class="button is-small is-warning" onclick="document.getElementById('mod{{$d->id}}').classList.add('is-active')">
-                                <i class="fas fa-edit"></i> Edit
+                            <button class="button is-small is-warning is-light" onclick="document.getElementById('mod{{$d->id}}').classList.add('is-active')">
+                                <i class="fas fa-edit" style="margin-right:6px;"></i> Edit
                             </button>
                             <form action="{{route('admin.destroy',$d->id)}}" method="post" style="display: inline-block;">
                                 @csrf
                                 @method("DELETE")
-                                <button type="submit" class="button is-small is-danger" onclick="return confirm('Yakin dihapus ?')">
-                                    <i class="fas fa-trash"></i> Hapus
+                                <button type="submit" class="button is-small is-danger" style="gap:5px;"onclick="return confirm('Yakin dihapus ?')">
+                                    <i class="fas fa-trash" style="margin-right:6px;"></></i> Hapus
                                 </button>
                             </form>
                         </td>
                     </tr>
                     
-                    {{-- Modal Edit --}}
-                    <div class="modal" id="mod{{$d->id}}">
+                    
+                    @endforeach
+                </tbody>
+            </table>
+            <div style="margin-top:20px;">
+  {{ $data->withQueryString()->fragment('tabel-users')->links() }}
+</div>
+        </div>
+
+        @foreach($data as $d)
+            <div class="modal" id="mod{{$d->id}}">
                         <div class="modal-background"></div>
                         <div class="modal-card">
-                            <header class="modal-card-head" style="background: #2e5b9a;">
+                            <header class="modal-card-head" style="background: #2e5b9a;display:flex;flex-direction:row;justify-content:space-between;">
                                 <h5 class="title has-text-white">Edit Users</h5>
-                                <button class="delete" onclick="document.getElementById('mod{{$d->id}}').classList.remove('is-active')"></button>
+                                <button class="delete mt-5" onclick="document.getElementById('mod{{$d->id}}').classList.remove('is-active')"></button>
                             </header>
                             <form action="{{route('admin.update',$d->id)}}" method="post">
                                 @csrf
@@ -441,6 +469,15 @@ Swal.fire({
                                             <input type="text" class="input" value="{{$d->nama}}" name="nama" required>
                                         </div>
                                     </div>
+                                    <div class="field">
+                                        <label class="label">Password</label>
+                                    <div class="control">
+                                        <input type="password" class="input password-input" name="password" placeholder="Masukkan password" required>
+                                    </div>
+
+                                    <small class="text-error password-error"></small>
+                    
+                                </div>
                                     <div class="field">
                                         <label class="label">Role</label>
                                         <div class="control">
@@ -465,10 +502,7 @@ Swal.fire({
                             </form>
                         </div>
                     </div>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+        @endforeach
     </div>
 </div>
 
@@ -476,9 +510,9 @@ Swal.fire({
 <div class="modal" id="modals">
     <div class="modal-background"></div>
     <div class="modal-card">
-        <header class="modal-card-head" style="background: #2e5b9a;">
-            <h5 class="title has-text-white">Tambah Users</h5>
-            <button class="delete" onclick="document.getElementById('modals').classList.remove('is-active');"></button>
+        <header class="modal-card-head" style="background: #2e5b9a;display:flex;flex-direction:row;justify-content:space-between;">
+            <h5 class="title has-text-white mt-5">Tambah Users</h5>
+            <button class="delete " onclick="document.getElementById('modals').classList.remove('is-active');"></button>
         </header>
         <form action="{{route('admin.store')}}" method="post">
             @csrf
@@ -494,7 +528,9 @@ Swal.fire({
                     <div class="control">
                         <input type="password" class="input" name="password" placeholder="Masukkan password" required>
                     </div>
+                    <small class="text-error password-error"></small>
                 </div>
+                
                 <div class="field">
                     <label class="label">Role</label>
                     <div class="control">
@@ -510,8 +546,8 @@ Swal.fire({
             </section>
             <footer class="modal-card-foot">
                 <div class="buttons is-centered">
-                    <button type="submit" class="button is-info" style="background: #2e5b9a;">Create</button>
                     <button type="reset" class="button is-danger">Reset</button>
+                    <button type="submit" class="button is-info" style="background: #2e5b9a;">Create</button>
                 </div>
             </footer>
         </form>
@@ -527,169 +563,238 @@ Swal.fire({
 <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
 
 <script>
+// Validasi password
+document.addEventListener("DOMContentLoaded", function() {
+    if (window.location.search.includes("page=")) {
+        const el = document.getElementById("tabel-users");
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth" });
+        }
+    }
+});
+document.addEventListener('input', function(e) {
+    if (e.target.name !== 'password') return;
+
+    let form = e.target.closest('form');
+    if (!form) return;
+
+    let error = form.querySelector('.text-error');
+    if (!error) return;
+
+    let value = e.target.value;
+
+    if (value.length > 0 && value.length < 6) {
+        error.innerText = "Password minimal 6 karakter";
+        e.target.style.borderColor = "red";
+    } else {
+        error.innerText = "";
+        e.target.style.borderColor = "#ddd";
+    }
+});
+
 $(document).ready(function() {
-    // Data dari server (kirim dari controller)
-    const userData = {
-        siswa: {{ $totalSiswa }},
-        guru: {{ $totalGuru }}
-    };
+    console.log('=== DEBUG CHART.JS ===');
+    console.log('1. Cek library Chart.js:', typeof Chart);
     
-    const ujianStatus = {
-        ready: {{ $ujianReady }},
-        draft: {{ $ujianDraft }},
-        selesai: {{ $ujianDone }}
-    };
+    const userData = @json([
+        'siswa' => $totalSiswa ?? 0,
+        'guru' => $totalGuru ?? 0,
+    ]);
     
-    // 1. Pie Chart - Distribusi Pengguna
-    const ctx1 = document.getElementById('userDistributionChart').getContext('2d');
-    new Chart(ctx1, {
-        type: 'pie',
-        data: {
-            labels: ['Siswa', 'Guru'],
-            datasets: [{
-                data: [userData.siswa, userData.guru],
-                backgroundColor: ['#2e5b9a', '#4a90e2'],
-                borderWidth: 0,
-                hoverOffset: 10
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        font: {
-                            size: 12
-                        }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / total) * 100).toFixed(1);
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                }
-            }
-        }
+    const ujianStatus = @json([
+        'ready' => $ujianReady ?? 0,
+        'draft' => $ujianDraft ?? 0,
+        'selesai' => $ujianDone ?? 0
+    ]);
+    
+    const pelanggaranData = @json($pelanggaranPerBulan ?? array_fill(0, 12, 0));
+    
+    console.log('2. Data dari controller:', {
+        userData: userData,
+        ujianStatus: ujianStatus,
+        pelanggaranData: pelanggaranData
     });
     
-    // 2. Doughnut Chart - Status Ujian
-    const ctx2 = document.getElementById('ujianStatusChart').getContext('2d');
-    new Chart(ctx2, {
-        type: 'doughnut',
-        data: {
-            labels: ['Ujian Sedia', 'Draft', 'Selesai'],
-            datasets: [{
-                data: [ujianStatus.ready, ujianStatus.draft, ujianStatus.selesai],
-                backgroundColor: ['#48c774', '#ffd43b', '#2e5b9a'],
-                borderWidth: 0,
-                hoverOffset: 10
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        font: {
-                            size: 12
-                        }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / total) * 100).toFixed(1);
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                }
-            }
-        }
+    // Cek element canvas
+    const canvasUser = document.getElementById('userDistributionChart');
+    const canvasUjian = document.getElementById('ujianStatusChart');
+    const canvasViolation = document.getElementById('violationTrendChart');
+    
+    console.log('3. Canvas elements:', {
+        userChart: canvasUser ? 'Ditemukan' : 'TIDAK DITEMUKAN',
+        ujianChart: canvasUjian ? 'Ditemukan' : 'TIDAK DITEMUKAN',
+        violationChart: canvasViolation ? 'TIDAK DITEMUKAN' : 'TIDAK DITEMUKAN'
     });
     
-    // 3. Line Chart - Tren Pelanggaran (contoh data, sesuaikan dari controller)
-    const ctx3 = document.getElementById('violationTrendChart').getContext('2d');
-    new Chart(ctx3, {
-        type: 'line',
-        data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
-            datasets: [{
-                label: 'Jumlah Pelanggaran',
-               data: {{ json_encode($pelanggaranPerBulan ?? [0,0,0,0,0,0,0,0,0,0,0,0]) }},
-                borderColor: '#ff6b6b',
-                backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                borderWidth: 3,
-                pointBackgroundColor: '#c92a2a',
-                pointBorderColor: '#fff',
-                pointRadius: 5,
-                pointHoverRadius: 7,
-                tension: 0.3,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `Pelanggaran: ${context.raw} kali`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Jumlah Pelanggaran',
-                        font: {
-                            weight: 'bold'
-                        }
+    // 1. PIE CHART - Distribusi Pengguna
+    if (canvasUser) {
+        try {
+            const totalUsers = userData.siswa + userData.guru;
+            if (totalUsers > 0) {
+                new Chart(canvasUser, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Siswa', 'Guru'],
+                        datasets: [{
+                            data: [userData.siswa, userData.guru],
+                            backgroundColor: ['#2e5b9a', '#4a90e2'],
+                            borderWidth: 0,
+                            hoverOffset: 10
+                        }]
                     },
-                    grid: {
-                        color: 'rgba(0,0,0,0.05)'
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Bulan',
-                        font: {
-                            weight: 'bold'
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
                         }
-                    },
-                    grid: {
-                        display: false
                     }
-                }
+                });
+                console.log('✓ Pie chart berhasil dibuat');
+            } else {
+                console.warn('Total users = 0, tidak membuat pie chart');
+                canvasUser.parentElement.innerHTML = '<p class="has-text-centered has-text-grey">Belum ada data pengguna</p>';
             }
+        } catch(e) {
+            console.error('Error membuat pie chart:', e);
         }
-    });
+    } else {
+        console.error('Canvas userDistributionChart tidak ditemukan');
+    }
     
-    // Animasi counter untuk card (opsional)
-    $('.stat-card .title').each(function() {
+    // 2. DOUGHNUT CHART - Status Ujian
+    if (canvasUjian) {
+        try {
+            const totalUjian = ujianStatus.ready + ujianStatus.draft + ujianStatus.selesai;
+            if (totalUjian > 0) {
+                new Chart(canvasUjian, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Ujian Sedia', 'Draft', 'Selesai'],
+                        datasets: [{
+                            data: [ujianStatus.ready, ujianStatus.draft, ujianStatus.selesai],
+                            backgroundColor: ['#48c774', '#ffd43b', '#2e5b9a'],
+                            borderWidth: 0,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { position: 'bottom' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log('✓ Doughnut chart berhasil dibuat');
+            } else {
+                console.warn('Total ujian = 0, tidak membuat doughnut chart');
+                canvasUjian.parentElement.innerHTML = '<p class="has-text-centered has-text-grey">Belum ada data ujian</p>';
+            }
+        } catch(e) {
+            console.error('Error membuat doughnut chart:', e);
+        }
+    } else {
+        console.error('Canvas ujianStatusChart tidak ditemukan');
+    }
+    
+    // 3. LINE CHART - Tren Pelanggaran
+    if (canvasViolation) {
+        try {
+            const hasData = pelanggaranData.some(value => value > 0);
+            if (hasData) {
+                new Chart(canvasViolation, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+                        datasets: [{
+                            label: 'Jumlah Pelanggaran',
+                            data: pelanggaranData,
+                            borderColor: '#ff6b6b',
+                            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#c92a2a',
+                            pointBorderColor: '#fff',
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            tension: 0.3,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `Pelanggaran: ${context.raw} kali`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Jumlah Pelanggaran',
+                                    font: { weight: 'bold' }
+                                },
+                                grid: { color: 'rgba(0,0,0,0.05)' }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Bulan',
+                                    font: { weight: 'bold' }
+                                },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+                console.log('✓ Line chart berhasil dibuat');
+            } else {
+                console.warn('Data pelanggaran kosong, tidak membuat line chart');
+                canvasViolation.parentElement.innerHTML = '<p class="has-text-centered has-text-grey">Belum ada data pelanggaran</p>';
+            }
+        } catch(e) {
+            console.error('Error membuat line chart:', e);
+        }
+    } else {
+        console.error('Canvas violationTrendChart tidak ditemukan');
+    }
+    
+    // Animasi counter untuk card
+    $('.stat-card .subtitle').each(function() {
         const $this = $(this);
-        const target = parseInt($this.text().replace(/\./g, ''));
-        if(!isNaN(target)) {
+        const targetText = $this.text();
+        const target = parseInt(targetText.replace(/\./g, '')) || 0;
+        if(!isNaN(target) && target > 0) {
             let current = 0;
             const increment = Math.ceil(target / 50);
             const timer = setInterval(function() {
